@@ -29,11 +29,8 @@ from app.domain.errors import (
 from app.domain.quotes import normalize
 from app.domain.source_name import PASTED_TEXT_NAME, sanitize
 
-# 変換結果が、空白と Markdown の記号を除いてこの文字数に満たなければ「極端に短い」とする。
-# 仕様に具体的な値がないので、実在の職歴書では起こらない小さな値にする
+# 変換結果が、空白と Markdown の記号を除いてこの文字数に満たなければ「極端に短い」とする（仕様 13.1 #24）
 MIN_TEXT_CHARS = 20
-# これに満たないときは、評価はできるが、警告を出す
-SHORT_TEXT_WARNING_CHARS = 100
 
 _PDF_HEADER = b"%PDF-"
 # zip の中身を再帰的に展開する変換器があり、zip 爆弾の危険があるので受け付けない
@@ -64,18 +61,13 @@ class ResumeCheck(BaseModel):
     format: str
     source_name: str
     char_count: int | None
-    warnings: list[str]
 
 
 def check_of(resume: ResumeInput) -> ResumeCheck:
-    warnings: list[str] = []
-    if resume.text is not None and len(normalize(resume.text)) < SHORT_TEXT_WARNING_CHARS:
-        warnings.append("テキストが短いため、評価の精度が下がる可能性があります。")
     return ResumeCheck(
         format=resume.format,
         source_name=resume.source_name,
         char_count=None if resume.text is None else len(resume.text),
-        warnings=warnings,
     )
 
 
