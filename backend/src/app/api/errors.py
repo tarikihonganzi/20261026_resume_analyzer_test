@@ -10,6 +10,7 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api.schemas import ErrorResponse
 from app.domain.errors import (
@@ -25,6 +26,13 @@ from app.domain.errors import (
 )
 
 logger = logging.getLogger("app.api")
+
+_HTTP_MESSAGES = {
+    400: "リクエストの形式が正しくありません。",
+    404: "指定されたものが見つかりません。",
+    405: "この操作は使えません。",
+    413: "送信するデータが大きすぎます。",
+}
 
 
 def _json(status: int, body: ErrorResponse) -> JSONResponse:
@@ -78,5 +86,19 @@ def register_exception_handlers(app: FastAPI) -> None:
             ),
         )
 
+    async def handle_http_exception(  # pyright: ignore[reportUnusedFunction]
+        request: Request, error: StarletteHTTPException
+    ) -> JSONResponse:
+        # フレームワークが出す 400（multipart の不備など）・404・405 も、同じ形にする。
+        # 元のステータスとヘッダー（405 の Allow など）は保つ
+        message = _HTTP_MESSAGES.get(error.status_code, "リクエストを処理できませんでした。")
+        response = _json(
+            error.status_code, ErrorResponse(code=f"http_{error.status_code}", message=message)
+        )
+        if error.headers:
+            response.headers.update(error.headers)
+        return response
+
+    app.add_exception_handler(StarletteHTTPException, handle_http_exception)  # pyright: ignore[reportArgumentType]
     app.add_exception_handler(RequestValidationError, handle_invalid_request)  # pyright: ignore[reportArgumentType]
     app.add_exception_handler(ValidationError, handle_invalid_request)  # pyright: ignore[reportArgumentType]

@@ -521,19 +521,6 @@
         "title": "EvaluationResult",
         "type": "object"
       },
-      "HTTPValidationError": {
-        "properties": {
-          "detail": {
-            "items": {
-              "$ref": "#/components/schemas/ValidationError"
-            },
-            "title": "Detail",
-            "type": "array"
-          }
-        },
-        "title": "HTTPValidationError",
-        "type": "object"
-      },
       "JudgedCondition": {
         "description": "条件ごとの判定。抽出した値と、その根拠を含む。",
         "properties": {
@@ -808,46 +795,6 @@
         "title": "StreamError",
         "type": "object"
       },
-      "ValidationError": {
-        "properties": {
-          "ctx": {
-            "title": "Context",
-            "type": "object"
-          },
-          "input": {
-            "title": "Input"
-          },
-          "loc": {
-            "items": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "integer"
-                }
-              ]
-            },
-            "title": "Location",
-            "type": "array"
-          },
-          "msg": {
-            "title": "Message",
-            "type": "string"
-          },
-          "type": {
-            "title": "Error Type",
-            "type": "string"
-          }
-        },
-        "required": [
-          "loc",
-          "msg",
-          "type"
-        ],
-        "title": "ValidationError",
-        "type": "object"
-      },
       "VerifiedQuote": {
         "description": "根拠の引用と、原文との照合の結果（仕様 5.4 共通ルール）。",
         "properties": {
@@ -960,11 +907,11 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             },
-            "description": "Validation Error"
+            "description": "入力が正しくない"
           }
         },
         "summary": "Create Condition Set"
@@ -992,11 +939,11 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             },
-            "description": "Validation Error"
+            "description": "入力が正しくない"
           }
         },
         "summary": "Delete Condition Set"
@@ -1039,11 +986,11 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             },
-            "description": "Validation Error"
+            "description": "入力が正しくない"
           }
         },
         "summary": "Update Condition Set"
@@ -1118,7 +1065,7 @@
                 }
               }
             },
-            "description": "入力（条件・職歴書）が正しくない"
+            "description": "入力が正しくない"
           }
         },
         "summary": "Evaluate"
@@ -1174,11 +1121,11 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             },
-            "description": "Validation Error"
+            "description": "入力が正しくない"
           }
         },
         "summary": "Check Resume"
@@ -1229,11 +1176,11 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             },
-            "description": "Validation Error"
+            "description": "入力が正しくない"
           }
         },
         "summary": "Update Settings"
@@ -1268,11 +1215,11 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             },
-            "description": "Validation Error"
+            "description": "入力が正しくない"
           }
         },
         "summary": "Test Connection"

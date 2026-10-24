@@ -54,22 +54,49 @@ export function AppShell({ view, onNavigate, children }: AppShellProps) {
           </Button>
         )}
       </Layout.Header>
-      {keyIsUnset && view === 'flow' ? (
+      {settings.isError ? (
+        <Alert
+          banner
+          type="error"
+          showIcon
+          title="設定を読み込めませんでした"
+          description={settings.error.message}
+          action={
+            <Button
+              size="small"
+              loading={settings.isFetching}
+              onClick={() => {
+                void settings.refetch()
+              }}
+            >
+              再試行
+            </Button>
+          }
+        />
+      ) : null}
+      {/* 「全画面の上部」に出す（仕様 6.3）。設定ページでは、誘導のボタンは不要 */}
+      {keyIsUnset ? (
         <Alert
           banner
           type="warning"
           showIcon
           title="API キーが設定されていません"
-          description="評価するには、設定ページで API キーを登録してください。"
+          description={
+            view === 'settings'
+              ? '評価するには、API キーを入力して保存してください。'
+              : '評価するには、設定ページで API キーを登録してください。'
+          }
           action={
-            <Button
-              size="small"
-              onClick={() => {
-                onNavigate('settings')
-              }}
-            >
-              設定ページへ
-            </Button>
+            view === 'flow' ? (
+              <Button
+                size="small"
+                onClick={() => {
+                  onNavigate('settings')
+                }}
+              >
+                設定ページへ
+              </Button>
+            ) : undefined
           }
         />
       ) : null}

@@ -351,11 +351,6 @@ export interface components {
             /** Weaknesses */
             weaknesses: components["schemas"]["EvaluationPoint"][];
         };
-        /** HTTPValidationError */
-        HTTPValidationError: {
-            /** Detail */
-            detail?: components["schemas"]["ValidationError"][];
-        };
         /**
          * JudgedCondition
          * @description 条件ごとの判定。抽出した値と、その根拠を含む。
@@ -475,19 +470,6 @@ export interface components {
             /** Message */
             message: string;
         };
-        /** ValidationError */
-        ValidationError: {
-            /** Context */
-            ctx?: Record<string, never>;
-            /** Input */
-            input?: unknown;
-            /** Location */
-            loc: (string | number)[];
-            /** Message */
-            msg: string;
-            /** Error Type */
-            type: string;
-        };
         /**
          * VerifiedQuote
          * @description 根拠の引用と、原文との照合の結果（仕様 5.4 共通ルール）。
@@ -576,13 +558,13 @@ export interface operations {
                     "application/json": components["schemas"]["ConditionSet"];
                 };
             };
-            /** @description Validation Error */
+            /** @description 入力が正しくない */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -611,13 +593,13 @@ export interface operations {
                     "application/json": components["schemas"]["ConditionSet"];
                 };
             };
-            /** @description Validation Error */
+            /** @description 入力が正しくない */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -640,13 +622,13 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Validation Error */
+            /** @description 入力が正しくない */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -682,7 +664,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description 入力（条件・職歴書）が正しくない */
+            /** @description 入力が正しくない */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -737,13 +719,13 @@ export interface operations {
                     "application/json": components["schemas"]["ResumeCheck"];
                 };
             };
-            /** @description Validation Error */
+            /** @description 入力が正しくない */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -790,13 +772,13 @@ export interface operations {
                     "application/json": components["schemas"]["SettingsView"];
                 };
             };
-            /** @description Validation Error */
+            /** @description 入力が正しくない */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -823,13 +805,13 @@ export interface operations {
                     "application/json": components["schemas"]["ConnectionTestResponse"];
                 };
             };
-            /** @description Validation Error */
+            /** @description 入力が正しくない */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };

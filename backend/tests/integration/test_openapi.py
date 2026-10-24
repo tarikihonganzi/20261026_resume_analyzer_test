@@ -104,3 +104,29 @@ def test_committed_openapi_file_is_up_to_date(spec: dict[str, Any]) -> None:
     assert OPENAPI_PATH.read_text(encoding="utf-8") == render(spec), (
         "frontend/src/api/openapi.json が古い。npm run gen-types を実行してください"
     )
+
+
+def test_validation_errors_are_documented_as_the_error_response_for_every_endpoint(
+    spec: dict[str, Any],
+) -> None:
+    # 実際には、共通のハンドラーが ErrorResponse（code・message・fields）で返す（PR#17・#22）
+    found = 0
+    for item in spec["paths"].values():
+        for method, operation in item.items():
+            if method not in ("get", "post", "put", "delete"):
+                continue
+            response = operation["responses"].get("422")
+            if response is None:
+                continue
+            found += 1
+            assert response["content"] == {
+                "application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}
+            }
+    assert found >= 5
+
+
+def test_the_default_validation_error_types_are_not_published(spec: dict[str, Any]) -> None:
+    schemas = spec["components"]["schemas"]
+
+    assert "HTTPValidationError" not in schemas
+    assert "ValidationError" not in schemas

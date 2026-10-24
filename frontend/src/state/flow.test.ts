@@ -52,7 +52,7 @@ const withCheckedResume = () =>
   run(
     [
       { type: 'resumeSelected', source: { kind: 'text', text: '本文' }, name: '貼り付けテキスト' },
-      { type: 'resumeChecked', check },
+      { type: 'resumeChecked', check, checkId: 1 },
     ],
     atResume(),
   )
@@ -281,7 +281,7 @@ describe('② 職歴書', () => {
     expect(selected.resume?.check.status).toBe('checking')
     expect(canEvaluate(selected)).toBe(false)
 
-    expect(canEvaluate(reducer(selected, { type: 'resumeChecked', check }))).toBe(true)
+    expect(canEvaluate(reducer(selected, { type: 'resumeChecked', check, checkId: 1 }))).toBe(true)
   })
 
   it('検証に失敗すると、評価できない。別のファイルを選び直せる', () => {
@@ -295,6 +295,7 @@ describe('② 職歴書', () => {
         {
           type: 'resumeCheckFailed',
           error: { code: 'unsupported_format', message: '読み取れません' },
+          checkId: 1,
         },
       ],
       atResume(),
@@ -321,7 +322,7 @@ describe('② 職歴書', () => {
       [
         { type: 'resumeSelected', source: { kind: 'text', text: 'A' }, name: 'A' },
         { type: 'resumeSelected', source: { kind: 'text', text: 'B' }, name: 'B' },
-        { type: 'resumeChecked', check: { ...check, source_name: 'A' }, forName: 'A' },
+        { type: 'resumeChecked', check: { ...check, source_name: 'A' }, checkId: 1 },
       ],
       atResume(),
     )
@@ -350,7 +351,7 @@ describe('③ 評価', () => {
   })
 
   it('進捗は、抽出中 → 最終評価中', () => {
-    const state = reducer(running(), { type: 'stageChanged', stage: 'scoring' })
+    const state = reducer(running(), { type: 'stageChanged', stage: 'scoring', runId: 1 })
 
     expect(state.evaluation).toMatchObject({ status: 'running', stage: 'scoring' })
   })
@@ -364,7 +365,7 @@ describe('③ 評価', () => {
   })
 
   it('成功すると、結果を持つ', () => {
-    const state = reducer(running(), { type: 'evaluationSucceeded', result })
+    const state = reducer(running(), { type: 'evaluationSucceeded', result, runId: 1 })
 
     expect(state.evaluation).toEqual({ status: 'done', result })
     expect(stepStatuses(state)[2]).toBe('finish')
@@ -373,7 +374,7 @@ describe('③ 評価', () => {
   it('失敗すると、エラーを持ち、③ がエラー状態になる。条件・職歴書は残る', () => {
     const error = { code: 'llm_unavailable', message: '混み合っています' }
 
-    const state = reducer(running(), { type: 'evaluationFailed', error })
+    const state = reducer(running(), { type: 'evaluationFailed', error, runId: 1 })
 
     expect(state.evaluation).toEqual({ status: 'error', error })
     expect(stepStatuses(state)[2]).toBe('error')
@@ -385,6 +386,7 @@ describe('③ 評価', () => {
     const failed = reducer(running(), {
       type: 'evaluationFailed',
       error: { code: 'x', message: 'y' },
+      runId: 1,
     })
 
     const again = reducer(failed, { type: 'startEvaluation' })
@@ -402,6 +404,7 @@ describe('③ 評価', () => {
     const failed = reducer(running(), {
       type: 'evaluationFailed',
       error: { code: 'x', message: 'y' },
+      runId: 1,
     })
 
     const state = reducer(failed, { type: 'goTo', step: 0 })
@@ -420,24 +423,27 @@ describe('③ 評価', () => {
   })
 
   it('評価の終了後に遅れて届いたイベントは、無視する', () => {
-    const done = reducer(running(), { type: 'evaluationSucceeded', result })
+    const done = reducer(running(), { type: 'evaluationSucceeded', result, runId: 1 })
 
-    expect(reducer(done, { type: 'stageChanged', stage: 'extracting' })).toBe(done)
-    expect(reducer(done, { type: 'evaluationFailed', error: { code: 'x', message: 'y' } })).toBe(
-      done,
-    )
+    expect(reducer(done, { type: 'stageChanged', stage: 'extracting', runId: 1 })).toBe(done)
+    expect(
+      reducer(done, { type: 'evaluationFailed', error: { code: 'x', message: 'y' }, runId: 1 }),
+    ).toBe(done)
   })
 
   it('キャンセル後に届いた結果は、無視する', () => {
     const cancelled = reducer(running(), { type: 'cancelEvaluation' })
 
-    expect(reducer(cancelled, { type: 'evaluationSucceeded', result })).toBe(cancelled)
+    expect(reducer(cancelled, { type: 'evaluationSucceeded', result, runId: 1 })).toBe(cancelled)
   })
 })
 
 describe('結果画面からの操作（受け入れ基準 13）', () => {
   const done = () =>
-    run([{ type: 'startEvaluation' }, { type: 'evaluationSucceeded', result }], withCheckedResume())
+    run(
+      [{ type: 'startEvaluation' }, { type: 'evaluationSucceeded', result, runId: 1 }],
+      withCheckedResume(),
+    )
 
   it('「条件を変えて再評価」は、① に戻る。職歴書は残る', () => {
     const state = reducer(done(), { type: 'reevaluate' })
@@ -482,7 +488,7 @@ describe('結果画面からの操作（受け入れ基準 13）', () => {
           source: { kind: 'text', text: '別の人' },
           name: '貼り付けテキスト',
         },
-        { type: 'resumeChecked', check },
+        { type: 'resumeChecked', check, checkId: 2 },
         { type: 'startEvaluation' },
       ],
       done(),
@@ -495,7 +501,7 @@ describe('結果画面からの操作（受け入れ基準 13）', () => {
 describe('条件を変えたときの、後ろのステップの扱い', () => {
   it('結果が出たあとに条件を変えると、結果は古くなるので消える', () => {
     const done = run(
-      [{ type: 'startEvaluation' }, { type: 'evaluationSucceeded', result }],
+      [{ type: 'startEvaluation' }, { type: 'evaluationSucceeded', result, runId: 1 }],
       withCheckedResume(),
     )
 
@@ -576,7 +582,7 @@ describe('Steps の状態と要約（受け入れ基準 11）', () => {
     const failed = run(
       [
         { type: 'resumeSelected', source: { kind: 'text', text: 'x' }, name: 'x' },
-        { type: 'resumeCheckFailed', error: { code: 'x', message: 'y' } },
+        { type: 'resumeCheckFailed', error: { code: 'x', message: 'y' }, checkId: 1 },
       ],
       atResume(),
     )
@@ -647,5 +653,187 @@ describe('補足説明を評価に送る（仕様 13.1 #27）', () => {
     })
 
     expect(buildConditions([], reloaded)[0]?.description).toBe('直した説明')
+  })
+})
+
+// --- Copilot のレビュー（PR#24）: 通知の照合と、職歴書の差し替え ---
+
+describe('検証の要求の ID（同名・同じ貼り付けテキストの選び直し）', () => {
+  const select = (text: string): Action => ({
+    type: 'resumeSelected',
+    source: { kind: 'text', text },
+    name: '貼り付けテキスト',
+  })
+
+  it('同じ名前の職歴書を選び直しても、前の検証の結果は、新しい職歴書に適用されない', () => {
+    const state = run(
+      [select('A'), select('B'), { type: 'resumeChecked', check, checkId: 1 }],
+      atResume(),
+    )
+
+    expect(state.resume?.checkId).toBe(2)
+    expect(state.resume?.check.status).toBe('checking')
+    expect(canEvaluate(state)).toBe(false)
+  })
+
+  it('前の検証の失敗も、新しい職歴書には適用されない', () => {
+    const state = run(
+      [
+        select('A'),
+        select('B'),
+        { type: 'resumeCheckFailed', error: { code: 'x', message: 'y' }, checkId: 1 },
+      ],
+      atResume(),
+    )
+
+    expect(state.resume?.check.status).toBe('checking')
+  })
+
+  it('現在の検証の結果は、採用される', () => {
+    const state = run(
+      [select('A'), select('B'), { type: 'resumeChecked', check, checkId: 2 }],
+      atResume(),
+    )
+
+    expect(state.resume?.check.status).toBe('ok')
+  })
+
+  it('検証が済んだあとに、同じ ID の結果が重ねて届いても、無視する', () => {
+    const checked = run([select('A'), { type: 'resumeChecked', check, checkId: 1 }], atResume())
+
+    const again = reducer(checked, {
+      type: 'resumeCheckFailed',
+      error: { code: 'x', message: 'y' },
+      checkId: 1,
+    })
+
+    expect(again).toBe(checked)
+  })
+
+  it('職歴書を取り除いたあとに届いた結果は、無視する', () => {
+    const state = run(
+      [select('A'), { type: 'clearResume' }, { type: 'resumeChecked', check, checkId: 1 }],
+      atResume(),
+    )
+
+    expect(state.resume).toBeNull()
+  })
+
+  it('取り除いて選び直すと、ID は前のものと重ならない', () => {
+    const state = run([select('A'), { type: 'clearResume' }, select('B')], atResume())
+
+    expect(state.resume?.checkId).toBe(2)
+  })
+})
+
+describe('評価の実行 ID（キャンセル・再実行のあとに遅れて届く通知）', () => {
+  const cancelledThenRestarted = () =>
+    run(
+      [{ type: 'startEvaluation' }, { type: 'cancelEvaluation' }, { type: 'startEvaluation' }],
+      withCheckedResume(),
+    )
+
+  it('開始のたびに、新しい実行 ID が付く', () => {
+    const state = cancelledThenRestarted()
+
+    expect(state.evaluation).toMatchObject({ status: 'running', runId: 2 })
+  })
+
+  it('キャンセルした評価（A）の通知は、あとから始めた評価（B）に適用されない', () => {
+    const running = cancelledThenRestarted()
+
+    expect(reducer(running, { type: 'stageChanged', stage: 'scoring', runId: 1 })).toBe(running)
+    expect(reducer(running, { type: 'evaluationSucceeded', result, runId: 1 })).toBe(running)
+    expect(
+      reducer(running, { type: 'evaluationFailed', error: { code: 'x', message: 'y' }, runId: 1 }),
+    ).toBe(running)
+  })
+
+  it('A の通知を無視したあと、B の結果は、正しく採用される', () => {
+    const state = run(
+      [
+        { type: 'evaluationSucceeded', result: { score: 1 } as EvaluationResult, runId: 1 },
+        { type: 'evaluationSucceeded', result, runId: 2 },
+      ],
+      cancelledThenRestarted(),
+    )
+
+    expect(state.evaluation).toEqual({ status: 'done', result })
+  })
+
+  it('失敗した評価を再実行すると、前の実行の通知は無視される', () => {
+    const state = run(
+      [
+        { type: 'startEvaluation' },
+        { type: 'evaluationFailed', error: { code: 'x', message: 'y' }, runId: 1 },
+        { type: 'startEvaluation' },
+        { type: 'evaluationFailed', error: { code: 'old', message: 'old' }, runId: 1 },
+      ],
+      withCheckedResume(),
+    )
+
+    expect(state.evaluation).toMatchObject({ status: 'running', runId: 2 })
+  })
+})
+
+describe('職歴書を差し替える・取り除くと、前の応募者の結果は消える', () => {
+  const done = () =>
+    run(
+      [{ type: 'startEvaluation' }, { type: 'evaluationSucceeded', result, runId: 1 }],
+      withCheckedResume(),
+    )
+  const backToResume = () => reducer(done(), { type: 'goTo', step: 1 })
+
+  it('評価のあと ② に戻って別の職歴書を選ぶと、評価結果を捨て、③ へは進めない', () => {
+    const state = reducer(backToResume(), {
+      type: 'resumeSelected',
+      source: { kind: 'text', text: '別の人' },
+      name: '貼り付けテキスト',
+    })
+
+    expect(state.evaluation.status).toBe('idle')
+    expect(state.furthest).toBe(1)
+    expect(reducer(state, { type: 'goTo', step: 2 })).toBe(state)
+  })
+
+  it('評価のあと ② に戻って職歴書を取り除くと、評価結果を捨て、③ へは進めない', () => {
+    const state = reducer(backToResume(), { type: 'clearResume' })
+
+    expect(state.resume).toBeNull()
+    expect(state.evaluation.status).toBe('idle')
+    expect(state.furthest).toBe(1)
+    expect(reducer(state, { type: 'goTo', step: 2 })).toBe(state)
+  })
+
+  it('同じ職歴書の ② の確認（戻って、進む）だけなら、結果は残る', () => {
+    const state = run(
+      [
+        { type: 'goTo', step: 1 },
+        { type: 'goTo', step: 2 },
+      ],
+      done(),
+    )
+
+    expect(state.evaluation.status).toBe('done')
+  })
+
+  it('③ にいるときに取り除かれても、③ の結果を出し続けない（② に戻る）', () => {
+    const state = reducer(done(), { type: 'clearResume' })
+
+    expect(state.step).toBe(1)
+    expect(state.evaluation.status).toBe('idle')
+  })
+
+  it('評価中は、職歴書の差し替え・取り除きを受け付けない', () => {
+    const running = reducer(withCheckedResume(), { type: 'startEvaluation' })
+
+    expect(reducer(running, { type: 'clearResume' })).toBe(running)
+    expect(
+      reducer(running, {
+        type: 'resumeSelected',
+        source: { kind: 'text', text: 'x' },
+        name: 'x',
+      }),
+    ).toBe(running)
   })
 })

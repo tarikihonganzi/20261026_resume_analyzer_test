@@ -35,5 +35,6 @@ class AppSettings:
             else _REPOSITORY_ROOT / "data",
             llm_mode=mode,
             fake_delay_sec=float(env.get("APP_FAKE_DELAY_SEC", "0")),
-            allow_remote=env.get("APP_ALLOW_REMOTE", "").strip().lower() in ("1", "true", "yes"),
+            # 公開範囲を変える設定なので、仕様どおり 1 のときだけ有効にする（true・yes などは無効）
+            allow_remote=env.get("APP_ALLOW_REMOTE", "").strip() == "1",
         )

@@ -7,16 +7,19 @@
 import asyncio
 import json
 import socket
+import tempfile
 import threading
 import time
 from collections.abc import Callable, Iterator
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 import httpx2
 import pytest
 import uvicorn
 from fastapi.testclient import TestClient
+from starlette import formparsers
+from starlette.datastructures import UploadFile
 
 from app.domain.errors import LlmUnavailableError
 from app.domain.models import Config
@@ -382,6 +385,9 @@ class TrackingClient(FakeClient):
         raise AssertionError("到達しないはず")
 
     async def aclose(self) -> None:
+        # 実際の OpenAIClient.aclose() は、SDK の close() を await する。
+        # 中断点を挟んでも、終了処理が最後まで完了することを確かめる
+        await asyncio.sleep(0.05)
         self.closed.set()
 
 
@@ -431,3 +437,128 @@ async def test_disconnect_cancels_the_llm_call_and_closes_the_client(
 
     assert await asyncio.to_thread(tracking.cancelled.wait, 5), "切断で LLM 呼び出しが止まらない"
     assert await asyncio.to_thread(tracking.closed.wait, 5), "切断で LLM のクライアントが閉じない"
+
+
+# --- 上限を超えるファイルを、全量メモリに読み込まない（Copilot のレビュー: PR#17・#20） ---
+
+MB = 1024 * 1024
+
+
+class ReadSizes:
+    """`UploadFile.read` に渡されたサイズを記録する。"""
+
+    def __init__(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        self.sizes: list[int] = []
+        original = UploadFile.read
+
+        async def spy(upload: UploadFile, size: int = -1) -> bytes:
+            self.sizes.append(size)
+            return await original(upload, size)
+
+        monkeypatch.setattr(UploadFile, "read", spy)
+
+
+@pytest.mark.parametrize("path", ["/api/resumes/check", "/api/evaluations"])
+def test_a_file_over_the_limit_is_read_only_up_to_the_limit_plus_one_byte(
+    make_app: MakeApp, monkeypatch: pytest.MonkeyPatch, path: str
+) -> None:
+    client = make_app()
+    client.put("/api/settings", json={"max_file_size_mb": 1})
+    reads = ReadSizes(monkeypatch)
+    data = form() if path == "/api/evaluations" else {}
+
+    response = client.post(path, data=data, files={"file": ("big.txt", b"a" * (3 * MB))})
+
+    assert response.status_code == 413
+    assert reads.sizes == [1 * MB + 1]
+
+
+@pytest.mark.parametrize("path", ["/api/resumes/check", "/api/evaluations"])
+def test_without_a_limit_the_whole_file_is_read(
+    make_app: MakeApp, monkeypatch: pytest.MonkeyPatch, path: str
+) -> None:
+    client = make_app()
+    reads = ReadSizes(monkeypatch)
+    data = form() if path == "/api/evaluations" else {}
+
+    client.post(path, data=data, files={"file": ("a.txt", factory.make_text().encode())})
+
+    assert reads.sizes == [-1]
+
+
+# --- アップロードの一時ファイルが残らない（仕様 8.2。Copilot のレビュー: PR#20） ---
+
+
+class TrackedSpool(tempfile.SpooledTemporaryFile):  # pyright: ignore[reportMissingTypeArgument, reportUnknownBaseType]
+    """Starlette が、アップロードの受信に使う一時ファイル。作られたものを、すべて記録する。"""
+
+    created: ClassVar[list[TrackedSpool]] = []
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        TrackedSpool.created.append(self)
+
+
+@pytest.fixture
+def tracked_spools(monkeypatch: pytest.MonkeyPatch) -> list[TrackedSpool]:
+    TrackedSpool.created = []
+    # スプールの閾値（既定 1 MB）を超えるファイルは、OS の一時ファイルとしてディスクに書かれる
+    monkeypatch.setattr(formparsers, "SpooledTemporaryFile", TrackedSpool)
+    monkeypatch.setattr(formparsers.MultiPartParser, "spool_max_size", 1024)
+    return TrackedSpool.created
+
+
+def big_resume() -> bytes:
+    return (factory.make_text() * 200).encode("utf-8")  # 閾値を十分に超える（約 100 KB）
+
+
+@pytest.mark.parametrize("path", ["/api/resumes/check", "/api/evaluations"])
+def test_uploaded_temp_files_are_closed_after_a_normal_request(
+    make_app: MakeApp, tracked_spools: list[TrackedSpool], path: str
+) -> None:
+    data = form() if path == "/api/evaluations" else {}
+
+    response = make_app().post(path, data=data, files={"file": ("a.txt", big_resume())})
+
+    assert response.status_code == 200
+    assert tracked_spools
+    assert all(spool.closed for spool in tracked_spools)
+
+
+@pytest.mark.parametrize("path", ["/api/resumes/check", "/api/evaluations"])
+def test_uploaded_temp_files_are_closed_after_an_input_error(
+    make_app: MakeApp, tracked_spools: list[TrackedSpool], path: str
+) -> None:
+    client = make_app()
+    client.put("/api/settings", json={"max_file_size_mb": 1})
+    data = form() if path == "/api/evaluations" else {}
+
+    response = client.post(path, data=data, files={"file": ("big.txt", b"a" * (2 * MB))})
+
+    assert response.status_code == 413
+    assert tracked_spools
+    assert all(spool.closed for spool in tracked_spools)
+
+
+async def test_uploaded_temp_files_are_closed_after_a_disconnect(
+    live_server: tuple[str, TrackingClient], tracked_spools: list[TrackedSpool]
+) -> None:
+    base_url, tracking = live_server
+
+    async with (
+        httpx2.AsyncClient(base_url=base_url, timeout=10) as http,
+        http.stream(
+            "POST",
+            "/api/evaluations",
+            data=form(),
+            files={"file": ("a.txt", big_resume())},
+        ) as response,
+    ):
+        await anext(response.aiter_lines())
+        assert await asyncio.to_thread(tracking.started.wait, 5)
+
+    assert await asyncio.to_thread(tracking.cancelled.wait, 5)
+    assert await asyncio.to_thread(tracking.closed.wait, 5)
+    await asyncio.sleep(0.2)
+    assert tracked_spools
+    assert all(spool.closed for spool in tracked_spools)
