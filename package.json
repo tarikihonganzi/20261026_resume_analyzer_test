@@ -10,6 +10,8 @@
     "check:backend": "uv run --directory backend ruff check && uv run --directory backend ruff format --check && uv run --directory backend pyright && uv run --directory backend pytest -q",
     "check:frontend": "npm run lint --prefix frontend && npm run format:check --prefix frontend && npm run typecheck --prefix frontend && npm run test --prefix frontend",
     "build": "npm run build --prefix frontend",
+    "start": "npm run build && node scripts/start.mjs",
+    "start:demo": "npm run build && node scripts/start.mjs --demo",
     "e2e": "npm run test --prefix e2e",
     "gen-types": "uv run --directory backend python -m app.export_openapi ../frontend/src/api/openapi.json && npm run gen-types --prefix frontend"
   },

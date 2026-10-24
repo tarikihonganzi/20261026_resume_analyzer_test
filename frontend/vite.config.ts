@@ -18,6 +18,10 @@ export default defineConfig({
     // 元の Host を保つ（仕様 10・13.1 #20）
     proxy: { '/api': { target: `http://127.0.0.1:${apiPort}`, changeOrigin: false } },
   },
+  build: {
+    // 同じ PC（または社内ネットワーク）から配信するので、転送量は問題にならない。警告を出さない
+    chunkSizeWarningLimit: 2000,
+  },
   test: {
     environment: 'jsdom',
     globals: true,

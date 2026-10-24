@@ -254,7 +254,8 @@ resp = await client.responses.create(
 - `TrustedHostMiddleware(allowed_hosts=["127.0.0.1", "localhost"])`（DNS リバインディング対策）。
 - `GET` 以外では、`Origin` ヘッダーがある場合に、許可したオリジン（自身）と一致することを確認する。違えば 403。
 - CORS は有効にしない。開発時は Vite の転送で同一オリジンに見せる。
-- **デモモード**（`APP_ALLOW_REMOTE=1`。仕様 13.1 #26）: `--host 0.0.0.0` で起動し、`Host` の検査だけを外す（`Origin` の確認は残す）。素の ASGI ミドルウェア（`api/security.py`）の引数で切り替える。起動時に警告をログに出す。コマンドは `npm run start:demo`（T-M8-04）。通常の `dev`・`start` は、127.0.0.1 のまま。
+- **デモモード**（`APP_ALLOW_REMOTE=1`。仕様 13.1 #26）: `--host 0.0.0.0` で起動し、`Host` の検査だけを外す（`Origin` の確認は残す）。素の ASGI ミドルウェア（`api/security.py`）の引数で切り替える。起動時に警告をログに出す。コマンドは `npm run start:demo`。通常の `dev`・`start` は、127.0.0.1 のまま。
+- **画面の配信**（T-M8-04）: `AppSettings.static_dir`（環境変数 `APP_STATIC_DIR`。既定は `frontend/dist`）があれば、API のルートのあとに `StaticFiles(html=True)` を `/` に載せる。画面の切り替えはハッシュ（`#/settings`）なので、`index.html` のフォールバックは要らない。`/api/...` の未定義のパスは、統一したエラー（JSON の 404）になる。起動は `scripts/start.mjs`（環境変数の指定が `cmd.exe` で動かないため、npm scripts に直接書かず、Node で包む）。
 
 ### 5.6 ストレージ
 

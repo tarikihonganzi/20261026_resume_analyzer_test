@@ -3,6 +3,7 @@ from collections.abc import Callable, Mapping
 from datetime import date
 
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 
 from app.api import catalog, condition_sets, evaluations, health, resumes, settings_api
 from app.api.errors import register_exception_handlers
@@ -54,6 +55,10 @@ def create_app(
         evaluations.router,
     ):
         app.include_router(router)
+    # 画面の配信は、API のルートのあとに置く（/api/... が先に一致する）。画面の切り替えは
+    # ハッシュ（#/settings）なので、index.html のフォールバックは要らない
+    if settings.static_dir is not None and settings.static_dir.is_dir():
+        app.mount("/", StaticFiles(directory=settings.static_dir, html=True), name="frontend")
     return app
 
 
