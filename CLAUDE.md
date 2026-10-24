@@ -61,12 +61,12 @@
 - 改行は LF に統一する（`.gitattributes`）。プロンプトのゴールデンファイルが、改行の違いで失敗しないようにするため。
 - 社内の OpenAI API を使う。API キーとベース URL は、アプリの設定ページか環境変数で与える（コードやリポジトリに書かない）。
 
-## コマンド（ルートの `package.json` の npm scripts。`e2e`・`live`・`start` は後続のカードで追加する）
+## コマンド（ルートの `package.json` の npm scripts。`live`・`start` は後続のカードで追加する）
 
-- `npm run setup`: 依存の導入（ルートと `frontend/` の `npm ci`、`backend/` の `uv sync`）。
+- `npm run setup`: 依存の導入（ルートと `frontend/`・`e2e/` の `npm ci`、`backend/` の `uv sync`）。
 - `npm run dev`: バックエンド（127.0.0.1:8000）と Vite（5173）を `concurrently` で起動。Vite が `/api` をバックエンドへ転送する。**止めるときは、`uvicorn --reload` が起動する子プロセス（Python の `multiprocessing` のワーカー）が残ることがある。残るとポートと `backend/.venv` のファイルを掴み続けるので、`Get-CimInstance Win32_Process` で親 PID を確認して止める。**
 - `npm run check`: lint・型検査・単体・統合・フロントのテスト。`check:backend`（ruff・pyright・pytest）と `check:frontend`（ESLint・Prettier・tsc・Vitest）に分けて実行もできる。**ネットワークと API 費用を使わない。**
-- `npm run e2e`: Playwright（偽の LLM で起動したサーバーに対して実行）。
+- `npm run e2e`: Playwright（偽の LLM で起動したサーバーに対して実行）。開発用とは別のポート（API 8100・Vite 5273）で、バックエンドと Vite を自動で起動・停止し、データは毎回まっさらにする。ブラウザは初回だけ `npm run install:browsers --prefix e2e` で入れる。`npm run check` には含めない。
 - `npm run live`: 実 API のテスト。**費用がかかるので、ユーザーが依頼したときだけ実行する。**
 - `npm run build`: フロントを型検査してビルドする。`npm run start`（FastAPI が配信する 1 プロセスで起動）は T-M8-04 で追加する。
 - npm scripts の中身は、`cmd.exe` でも `sh` でも動く書き方にする（`&&` と引数だけ。シェル固有の構文を避ける）。

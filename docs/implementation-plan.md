@@ -375,6 +375,8 @@ type FlowState = {
 
 GitHub などの CI は使わず、`npm run check`（lint・型検査・単体・統合・フロントのテスト）をローカルのコミット前に実行する。E2E（`npm run e2e`）と実 API（`npm run live`）は手動で実行する。
 
+**E2E の構成（T-M8-01）:** `e2e/` に Playwright（`@playwright/test` を Playwright のブラウザのバージョンに固定）。`playwright.config.ts` の `webServer` が、`APP_LLM_MODE=fake`・`APP_FAKE_DELAY_SEC=1.0` のバックエンド（127.0.0.1:8100。`start-backend.mjs` が、起動のたびに `e2e/.data` を空にする）と、Vite（127.0.0.1:5273。`APP_API_PORT`・`APP_WEB_PORT` で転送先とポートを切り替える）を起動する。開発用の 8000・5173 とぶつからない。画面は Vite 経由で開くので、`/api` の転送と `Origin` の確認も通る。架空の職歴書は、`global-setup.ts` がバックエンドの `resume_factory.py` で生成する（Git に入れない）。サーバーのデータを共有するため、`workers: 1`。
+
 ---
 
 ## 8. 実装フェーズ
