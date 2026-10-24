@@ -1,0 +1,54 @@
+[project]
+name = "resume-matching-backend"
+version = "0.1.0"
+description = "職歴書マッチング評価アプリのバックエンド"
+requires-python = ">=3.14,<3.15"
+dependencies = [
+    "fastapi>=0.162.0",
+    "markitdown[docx,pptx,xls,xlsx]>=0.1.9",
+    "openai>=3.37.0",
+    "pydantic>=2.14.1",
+    "python-multipart>=0.0.32",
+    "uvicorn[standard]>=0.54.0",
+]
+
+[build-system]
+requires = ["uv_build>=0.13.5,<0.14.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "app"
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "pyright>=1.1.414",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "ruff>=0.17.2",
+]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "ASYNC", "SIM", "RUF"]
+
+[tool.pyright]
+include = ["src", "tests"]
+pythonVersion = "3.14"
+typeCheckingMode = "strict"
+venvPath = "."
+venv = ".venv"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+# 実 API のテストは、依頼があったときだけ `-m live` で実行する
+addopts = "-m 'not live'"
+markers = ["live: 実 API を呼ぶテスト（費用がかかる。通常は実行しない）"]
+
+[tool.uv]
+# キャッシュとプロジェクトが別ドライブでも、ハードリンクの警告が出ないようにする
+link-mode = "copy"

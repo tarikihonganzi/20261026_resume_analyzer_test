@@ -1,6 +1,6 @@
 # 職歴書マッチング評価アプリ 実装計画
 
-- 対象仕様: [spec.md](spec.md) v0.6
+- 対象仕様: [spec.md](spec.md) v0.8
 - 作成日: 2026-10-25
 - 調査日: 2026-10-25（公式ドキュメントとパッケージレジストリで確認。出典は末尾）
 
@@ -32,10 +32,11 @@
 | 11 | Vite 8.3.5 は Node 20.19 以上または 22.12 以上が必要。Vitest 5.0.5 は Node 22.12 以上、`eventsource-parser` 4.1.2 も Node 22.12 以上 | Node 24.x（LTS）を使えば問題なし |
 | 12 | `react-markdown` 10.1.0 は ESM のみ。`rehype-raw` と `rehype-sanitize` を組み合わせて `<u>` だけ許可できる | 仕様 5.5 のとおり |
 | 13 | **開発・実行環境を Windows に変更した（2026-10-25）。** `make` は Windows に標準でなく、Git Bash にも含まれない。Claude Code は、Git for Windows があれば Git Bash、なければ PowerShell でコマンドを実行する。`uv` は `winget install --id=astral-sh.uv -e` で導入できる | タスクの入口を、ルートの `package.json` の npm scripts にする（Node.js は必須なので追加の導入が要らない）。scripts は `cmd.exe` と `sh` の両方で動く書き方にする |
-| 14 | TypeScript の最新が 7.0.2 で、新しい世代である | `typescript-eslint` などの周辺ツールが対応しているかを M0 で確認し、対応していなければ 6.x を使う |
-| 15 | `onnxruntime`（MarkItDown → `magika` の依存）は、1.24.1 以降で macOS x86_64 の wheel を配布していない（[公式リリースノート](https://github.com/microsoft/onnxruntime/releases/tag/v1.24.1)）。`magika` は Python 3.13 で `onnxruntime>=1.21.0` とだけ指定している。macOS Intel で依存を導入しようとして、この問題で失敗した | Windows では問題にならない。macOS（Intel）は対象外とする。`uv.lock` は最新の `onnxruntime` で解決する（macOS Intel 向けに入れた `required-environments` は外した） |
+| 14 | TypeScript の最新が 7.0.2 で、新しい世代である。**`typescript-eslint` 8.72.0（最新）の peer 依存は `typescript >=4.8.4 <6.1.0` で、7.x に対応していない**（2026-10-25、`npm view` で確認） | **TypeScript は 6.0.x（`~6.0.3`）に固定する。** `typescript-eslint` が 7.x に対応したら移行を検討する |
+| 15 | `onnxruntime`（MarkItDown → `magika` の依存）は、1.24.1 以降で macOS x86_64 の wheel を配布していない（[公式リリースノート](https://github.com/microsoft/onnxruntime/releases/tag/v1.24.1)）。`magika` は Python 3.13 で `onnxruntime>=1.21.0`（3.14 では `>=1.24.1`）とだけ指定している。macOS Intel で依存を導入しようとして、この問題で失敗した | Windows では問題にならない。macOS（Intel）は対象外とする。`uv.lock` は最新の `onnxruntime` で解決する（macOS Intel 向けに入れた `required-environments` は外した） |
 | 16 | Windows では、Python の `os.chmod` は読み取り専用の属性しか変えられず、`0600` で所有者のみに制限できない（Python の公式ドキュメントの記載）。また、開いているファイルへの `os.replace` は失敗することがある | `data/config.json` の保護は ACL で行う（方法は T-M2-01 で公式ドキュメントを確認して決める）。`json_store` の置き換えは、短い待ちを挟んだリトライを入れる |
 | 17 | Windows の Git の既定は、チェックアウト時に改行を CRLF にすることがある | `.gitattributes` で LF に固定する。プロンプトのゴールデンファイルのテストが、改行の違いで失敗しないようにする |
+| 18 | **Python は 3.14 を使う（2026-10-25 に 3.13 から変更）。** サポート終了は 3.13 が 2029-10、3.14 が 2030-10（3.13 は既にセキュリティ修正のみ）。3.15 は 2026-10-09 に公開済みだが、MarkItDown 0.1.9 が `<3.15` のため使えない。3.13 と 3.14 で、同じ依存（`pyproject.toml`）から作ったロックの全パッケージの版が同一で、どちらもソースからのビルドなし（`uv sync --no-build`）で Windows に導入できた。FastAPI＋Pydantic（前方参照・`float \| None`・`Field` 制約）、`openai` の strict スキーマ生成、MarkItDown の `convert_stream` のスモークテストも、両方で通った。`magika` は 3.14 で `onnxruntime>=1.24.1` を要求する（Windows には wheel がある）。3.14 では注釈が遅延評価になる（PEP 649）ため、Pydantic のスキーマ生成の確認は T-M1-01 のテストに含める | 3.14 にする。`backend/.python-version` と `requires-python`（`>=3.14,<3.15`）を直し、`uv.lock` を作り直す。他の PC にも `uv python install 3.14` で入れられる |
 
 ---
 
@@ -47,7 +48,7 @@
 
 | 項目 | 選択 | 備考 |
 |---|---|---|
-| Python | 3.13 | `uv` で管理。MarkItDown は 3.10 以上 3.15 未満 |
+| Python | 3.14 | `uv` で管理。MarkItDown は 3.10 以上 3.15 未満（上限）。選定の根拠は 1 章 #18 |
 | パッケージ管理 | `uv` | ロックファイルで固定 |
 | Web | FastAPI 0.162.0（0.135.0 以降が必要）、`uvicorn[standard]` | |
 | LLM | `openai` 3.37.0（非同期クライアント） | |
@@ -67,7 +68,7 @@
 | パッケージ管理 | `npm` | |
 | タスクの入口 | ルートの `package.json` の npm scripts | `make` は Windows で使えないため。`concurrently` で開発サーバーの同時起動を行う |
 | ビルド | Vite 8.3.5、`@vitejs/plugin-react` 6.1.2 | |
-| UI | React 19.3.1、TypeScript（7.0.2。非対応なら 6.x）、Ant Design 6.6.7、`@ant-design/icons` 6 | |
+| UI | React 19.3.1、TypeScript（6.0.3 に固定。7.x は `typescript-eslint` が非対応。1 章 #14）、Ant Design 6.6.7、`@ant-design/icons` 6 | |
 | サーバー状態 | `@tanstack/react-query` 5.104.5 | 条件セット・設定・プリセットの取得と更新に使う |
 | 評価フローの状態 | React の `useReducer` + Context | 外部の状態管理ライブラリは入れない |
 | SSE の受信 | `fetch` + `eventsource-parser` 4.1.2（`eventsource-parser/stream`） | `EventSource` は POST を使えないため |
@@ -105,6 +106,7 @@
 │   │   ├── settings.py       # 実行時の設定（データディレクトリ、LLM のモード）
 │   │   ├── api/
 │   │   │   ├── security.py   # Host／Origin の検査
+│   │   │   ├── health.py     # GET /api/health（死活確認）
 │   │   │   ├── catalog.py
 │   │   │   ├── condition_sets.py
 │   │   │   ├── settings_api.py
@@ -317,7 +319,7 @@ type FlowState = {
 | 単体 | `prompts` | 入力の組み立て結果をゴールデンファイルと比較（出典名・今日の日付・条件・タグの囲み）。PDF と非 PDF と貼り付けの 3 通り |
 | 単体 | `storage` | 原子的な書き込み、`os.replace` 失敗時のリトライ、所有者のみの権限、破損ファイルの扱い、API キーのマスク、未入力のキーは既存を残す |
 | 単体 | `ingest` | docx／xlsx／pptx／テキストの変換、空・短すぎる、未対応形式、サイズ上限（0 は無制限）、PDF の判定 |
-| 統合 | API（ASGI） | `resumes/check`、条件セットの CRUD、設定の取得・更新・接続テスト（OpenAI をモック）、Host／Origin の拒否、条件 0 件で 422 |
+| 統合 | API（ASGI） | `health`（200 と `{"status": "ok"}`）、`resumes/check`、条件セットの CRUD、設定の取得・更新・接続テスト（OpenAI をモック）、Host／Origin の拒否、条件 0 件で 422 |
 | 統合 | `pipeline` + `FakeClient` | 正常系のイベント順（`stage` → `stage` → `result`）、構造不整合で再実行、再実行後も不整合でエラー、LLM のエラーごとの `error` の内容 |
 | 統合 | SSE | 実際の HTTP で、`UploadFile` を読みながらストリームが流れること、**切断で LLM 呼び出しがキャンセルされること** |
 | 統合 | `OpenAIClient` | `httpx.MockTransport` などで HTTP を差し替え、リクエストの形（`input_file` の `data:` URL、`detail`、`filename`、`store=false`、`text_format`）と、拒否・`incomplete`・401・429 の扱いを確認 |
@@ -380,7 +382,7 @@ GitHub などの CI は使わず、`npm run check`（lint・型検査・単体�
 
 目的: 開発環境を整え、**社内 OpenAI API で必要な機能が通ることを最初に確認する**。
 
-- `uv` のインストール、Python 3.13 の用意。`git init`、`.gitignore`。
+- `uv` のインストール、Python 3.14 の用意。`git init`、`.gitignore`。
 - `backend/` と `frontend/` の雛形、ルートの `package.json`（npm scripts）、`.gitattributes`、ruff・pyright・ESLint・Prettier・pytest・Vitest の設定。
 - **スパイクのスクリプト**（`backend/tests/live/spike_connectivity.py`）で次を確認する。
   1. 設定した `base_url`・モデル（`gpt-5.5`）で `responses.parse` が通る。`temperature` を指定しなくて問題ない。
@@ -495,7 +497,8 @@ M1 と M2 と M5 は並行して進められる（フロントの M5 は、API �
 
 1. **PDF の引用照合**: 行わない。PDF から手元でテキストを取り出すと、OCR の手法が LLM と異なり表記揺れが生じ、誤った「原文で確認できず」が増えるため。PDF の引用は「未照合」のままとする（`markitdown[pdf]` は入れない）。
 2. **PDF の `detail: high`**: `high` に固定する。M0 と M8 で費用を実測し、重ければ `data/config.json` の `pdf_detail` で切り替える。
-3. **開発環境**: `git init`（ブランチ `main`）は完了した。**開発・実行環境は Windows に変更する**（2026-10-25）。当初の macOS（Intel）での導入（`uv` の入手など）は、Windows に移したため使わない。Windows では `winget install --id=astral-sh.uv -e` で `uv` を導入し、`uv python install 3.13` で Python を用意する。コミットは、ユーザーが依頼したときにだけ行う。
+3. **開発環境**: `git init`（ブランチ `main`）は完了した。**開発・実行環境は Windows に変更する**（2026-10-25）。当初の macOS（Intel）での導入（`uv` の入手など）は、Windows に移したため使わない。Windows では `winget install --id=astral-sh.uv -e` で `uv` を導入し、`uv python install 3.14` で Python を用意する。コミットは、ユーザーが依頼したときにだけ行う。
+4. **Python の版**: 3.13 から **3.14 に変更する**（2026-10-25、ユーザーの承認）。根拠は 1 章 #18。
 
 ---
 
@@ -504,5 +507,6 @@ M1 と M2 と M5 は並行して進められる（フロントの M5 は、API �
 - OpenAI: [Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs)、[File inputs](https://developers.openai.com/api/docs/guides/file-inputs)、[GPT-5.5 モデルページ](https://developers.openai.com/api/docs/models/gpt-5.5)、[openai-python README](https://github.com/openai/openai-python)、[`ResponseInputFileParam`](https://github.com/openai/openai-python/blob/main/src/openai/types/responses/response_input_file_param.py)
 - FastAPI: [Server-Sent Events](https://fastapi.tiangolo.com/tutorial/server-sent-events/)、[`fastapi/sse.py`](https://github.com/fastapi/fastapi/blob/master/fastapi/sse.py)
 - MarkItDown: [PyPI](https://pypi.org/project/markitdown/)、[README](https://github.com/microsoft/markitdown)、[`_markitdown.py`](https://github.com/microsoft/markitdown/blob/main/packages/markitdown/src/markitdown/_markitdown.py)
+- Python: [サポート期間（Python Developer's Guide）](https://devguide.python.org/versions/)、[What's New in 3.14](https://docs.python.org/3/whatsnew/3.14.html)、PyPI の [markitdown](https://pypi.org/project/markitdown/) と [magika](https://pypi.org/project/magika/) の `requires_python`・`requires_dist`（いずれも 2026-10-25 に確認）
 - Ant Design: [v6 への移行](https://ant.design/docs/react/migration-v6)
 - パッケージのバージョン: [PyPI](https://pypi.org/)（openai、fastapi、pydantic、ruff、pytest、markitdown）、[npm レジストリ](https://registry.npmjs.org/)（antd、vite、react、react-markdown、@tanstack/react-query、vitest、@vitejs/plugin-react、typescript、@playwright/test、eventsource-parser）

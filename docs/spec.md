@@ -1,8 +1,8 @@
 # 職歴書マッチング評価アプリ 要件定義・仕様書
 
-- バージョン: 0.7（ドラフト）
+- バージョン: 0.8（ドラフト）
 - 作成日: 2026-10-25
-- ステータス: 対象 OS を Windows に変更（3 章、8.1 章。ファイルの権限の制限方法を OS ごとに規定）。実装計画は `docs/implementation-plan.md`
+- ステータス: 死活確認の `GET /api/health` を追加（7 章、13.1 章 #22）。v0.7: 対象 OS を Windows に変更（3 章、8.1 章。ファイルの権限の制限方法を OS ごとに規定）。実装計画は `docs/implementation-plan.md`
 
 ---
 
@@ -450,6 +450,7 @@ Ant Design の `Steps` を画面上部に常時表示し、現在位置と各ス
 
 | メソッド | パス | 内容 |
 |---|---|---|
+| GET | `/api/health` | 死活確認。`{"status": "ok"}` を返す。ファイル・LLM・設定に触れない。開発時の起動確認と E2E のサーバー起動待ちに使う |
 | GET | `/api/catalog` | プリセット条件の一覧 |
 | GET | `/api/condition-sets` | 保存済み条件セットの一覧 |
 | POST | `/api/condition-sets` | 条件セットの保存 |
@@ -660,6 +661,7 @@ Ant Design の `Steps` を画面上部に常時表示し、現在位置と各ス
 | 19 | PDF の画質指定 | `detail: high` に固定（`data/config.json` の `pdf_detail`）。コストは増えるが、スキャン PDF の読み取りを優先する |
 | 20 | ローカル API の保護 | `127.0.0.1` のみで待ち受け、`Host`／`Origin` を検査する。CORS は無効 |
 | 21 | 対象 OS | Windows。開発も Windows で行う。macOS（Intel）は、`onnxruntime` が 1.24.1 以降で macOS x86_64 の wheel を配布していないため対象外 |
+| 22 | 死活確認の API | `GET /api/health` を追加する（2026-10-25）。開発サーバーの起動確認と E2E の起動待ちに使う。他の API と同じく `Host` を検査する。内部の情報（版・設定・パス）は返さない |
 
 ### 13.2 確認事項
 

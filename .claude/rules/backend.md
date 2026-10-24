@@ -7,7 +7,7 @@ paths:
 
 ## 全般
 
-- Python 3.13、パッケージ管理は `uv`（`uv add` / `uv sync` / `uv run`）。`pip install` を直接使わない。依存を追加したら `uv.lock` もコミット対象に含める。
+- Python 3.14、パッケージ管理は `uv`（`uv add` / `uv sync` / `uv run`）。`pip install` を直接使わない。依存を追加したら `uv.lock` もコミット対象に含める。
 - 整形・lint は `ruff`、型検査は `pyright`。型ヒントを省略しない。
 - Web 層は `async def`。**同期の重い処理（MarkItDown の変換など）は、イベントループを止めないよう `run_in_threadpool` で実行する。**
 - 例外は `domain/errors.py` の型に集約し、`api/` で HTTP ステータスと利用者向けの日本語メッセージに対応づける。API キーや職歴書の内容を、例外メッセージやログに入れない。
