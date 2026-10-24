@@ -31,7 +31,6 @@
 ## Backlog
 
 ### M1: ドメインロジック
-- **T-M1-04** `quotes`（正規化・原文照合） [M] — AC: 15
 - **T-M1-05** `source_name`（出典名の整形） [S] — NFC・パス除去・制御文字・200 文字
 
 ### M2: 取り込みとストレージ
@@ -77,6 +76,7 @@
 
 ## Done
 
+- **T-M1-04** `quotes`（正規化・原文照合） — 2026-10-25。branch: `feat/T-M1-04-quotes`。domain/quotes.py（normalize・verify）。NFKC → 空白除去 → Markdown 記号（| * # ` >）除去で、全角半角・濁点の分解形・改行・表の区切り・強調の違いを吸収。source_text=None は skipped、見つからない・言い換え・「…」でつないだ引用は not_found。仕様に定めがない点: 空の引用（正規化後）は not_found、大文字小文字は区別する。npm run check exit 0（pytest 123 件）。AC15 のコード側（表示は T-M6-03）
 - **T-M1-03** `clipping`（最終スコアの ±20 補正） — 2026-10-25。branch: `feat/T-M1-03-clipping`。domain/clipping.py（clip_score。マッチ度合い ±20 点を 0〜100 に収め、補正の有無と元スコアを返す）。上限・下限ちょうど、rate=0／100 の端、下限が負・上限が 100 超になる場合をテスト。npm run check exit 0（pytest 103 件）。AC5 のうちコード側（表示は T-M6-03）
 - **T-M1-02** `judging`（判定・マッチ度合い・必須未達） — 2026-10-25。branch: `feat/T-M1-02-judging`。domain/judging.py（judge・match_rate・missing_required）と domain/errors.py。四捨五入は整数演算の half-up（5/8 → 63）。不明は未達として数える。抽出結果の型は Protocol で受け、domain を llm に依存させない（ConditionExtraction をそのまま渡せることを型検査つきのテストで確認）。npm run check exit 0（pytest 79 件）。AC4（同じ抽出結果なら同じマッチ度合い）のテストあり
 - **T-M1-01** `models.py` と LLM 出力スキーマ（`schemas.py`） — 2026-10-25。branch: `feat/T-M1-01-models-schemas`。domain/models.py（Condition・Judgement）と llm/schemas.py（仕様 5.4 章の 5 モデル）。strict 規則・制約・仕様書とのスキーマ一致をテスト。npm run check exit 0（pytest 43 件・Vitest 1 件）。Python 3.14 の注釈の遅延評価と Pydantic／OpenAI SDK の strict 変換の相性を確認（オフライン。実 API は T-M0-02）
