@@ -6,6 +6,9 @@ import { useEvaluationRun } from './useEvaluationRun'
 
 const STAGES: Stage[] = ['extracting', 'scoring']
 
+// 設定ページで直せる失敗: 認証（API キー）と、リクエストの拒否（モデル名・ベース URL の誤り）
+const SETTINGS_ERROR_CODES: ReadonlySet<string> = new Set(['llm_auth', 'llm_request'])
+
 /** ③ 結果。評価中は進捗とキャンセル、失敗したら原因と再実行、成功したら結果を表示する。 */
 export function ResultStep() {
   const { state, dispatch } = useFlow()
@@ -69,11 +72,11 @@ export function ResultStep() {
             </Button>,
           ]}
         >
-          {code === 'llm_auth' ? (
+          {SETTINGS_ERROR_CODES.has(code) ? (
             <Alert
               type="warning"
               showIcon
-              title="API キーを確認してください"
+              title="設定を確認してください"
               description={<a href="#/settings">設定ページを開く</a>}
             />
           ) : null}

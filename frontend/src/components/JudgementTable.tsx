@@ -1,14 +1,15 @@
 import { CheckCircleOutlined, CloseCircleOutlined, QuestionCircleOutlined } from '@ant-design/icons'
 import { Flex, Table, Tag, Typography } from 'antd'
-import type { ReactNode } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import type { JudgedCondition } from '../api/types'
 import { formatExtracted, formatRequirement, STATUS_LABELS } from '../lib/result'
 import { EvidenceView } from './EvidenceView'
+import { TAG_STYLES } from './tagStyles'
 
-const STATUS_TAGS: Record<JudgedCondition['status'], { color: string; icon: ReactNode }> = {
-  achieved: { color: 'success', icon: <CheckCircleOutlined /> },
-  unmet: { color: 'error', icon: <CloseCircleOutlined /> },
-  unknown: { color: 'default', icon: <QuestionCircleOutlined /> },
+const STATUS_TAGS: Record<JudgedCondition['status'], { style: CSSProperties; icon: ReactNode }> = {
+  achieved: { style: TAG_STYLES.success, icon: <CheckCircleOutlined /> },
+  unmet: { style: TAG_STYLES.error, icon: <CloseCircleOutlined /> },
+  unknown: { style: TAG_STYLES.neutral, icon: <QuestionCircleOutlined /> },
 }
 
 /** 条件別の判定表（仕様 5.5）。色だけに頼らず、アイコンと文字でも判定を示す。 */
@@ -32,7 +33,11 @@ export function JudgementTable({ conditions }: { conditions: readonly JudgedCond
           key: 'required',
           width: 72,
           render: (_, row) =>
-            row.condition.required ? <Tag color="red">必須</Tag> : <Tag color="blue">任意</Tag>,
+            row.condition.required ? (
+              <Tag style={TAG_STYLES.error}>必須</Tag>
+            ) : (
+              <Tag style={TAG_STYLES.info}>任意</Tag>
+            ),
         },
         {
           title: '判定',
@@ -41,7 +46,7 @@ export function JudgementTable({ conditions }: { conditions: readonly JudgedCond
           render: (_, row) => {
             const tag = STATUS_TAGS[row.status]
             return (
-              <Tag color={tag.color} icon={tag.icon}>
+              <Tag style={tag.style} icon={tag.icon}>
                 {STATUS_LABELS[row.status]}
               </Tag>
             )

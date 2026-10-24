@@ -2,6 +2,7 @@ import { Flex, InputNumber, Segmented, Tag, Typography } from 'antd'
 import type { ReactNode } from 'react'
 import type { ConditionItem } from '../lib/conditionItems'
 import type { Mode, Selection } from '../state/flow'
+import { TAG_STYLES } from './tagStyles'
 
 interface ConditionRowProps {
   item: ConditionItem
@@ -20,7 +21,7 @@ const MODE_OPTIONS: { label: string; value: Mode }[] = [
 
 const MODE_COLORS: Record<Mode, string> = {
   off: 'transparent',
-  optional: '#1677ff',
+  optional: '#0958d9',
   required: '#cf1322',
 }
 
@@ -58,7 +59,7 @@ export function ConditionRow({
         <Flex vertical gap={2} style={{ minWidth: 0, flex: 1 }}>
           <Flex align="center" gap={8}>
             <Typography.Text strong={mode !== 'off'}>{item.label}</Typography.Text>
-            {item.source === 'custom' ? <Tag color="purple">独自</Tag> : null}
+            {item.source === 'custom' ? <Tag style={TAG_STYLES.custom}>独自</Tag> : null}
           </Flex>
           {item.description ? (
             <Typography.Paragraph

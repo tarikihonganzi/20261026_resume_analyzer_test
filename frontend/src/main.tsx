@@ -4,6 +4,7 @@ import jaJP from 'antd/locale/ja_JP'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App'
+import { theme } from './theme'
 import './index.css'
 
 const root = document.getElementById('root')
@@ -17,7 +18,7 @@ const queryClient = new QueryClient({
 createRoot(root).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <ConfigProvider locale={jaJP} button={{ autoInsertSpace: false }}>
+      <ConfigProvider locale={jaJP} theme={theme} button={{ autoInsertSpace: false }}>
         <App />
       </ConfigProvider>
     </QueryClientProvider>

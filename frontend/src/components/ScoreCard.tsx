@@ -1,5 +1,6 @@
 import { Card, Flex, Statistic, Tag, Typography } from 'antd'
 import type { EvaluationResult } from '../api/types'
+import { TAG_STYLES } from './tagStyles'
 
 /** 最終スコアとマッチ度合い。補正があったときは、元のスコアと補正の理由を併記する（仕様 5.5）。 */
 export function ScoreCard({ result }: { result: EvaluationResult }) {
@@ -15,7 +16,7 @@ export function ScoreCard({ result }: { result: EvaluationResult }) {
           />
           {result.clipped ? (
             <Flex gap={8} align="center" wrap>
-              <Tag color="orange">補正あり</Tag>
+              <Tag style={TAG_STYLES.warning}>補正あり</Tag>
               <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                 AI の元のスコアは {result.original_score} 点。マッチ度合いから ±20
                 点の範囲に収めました。

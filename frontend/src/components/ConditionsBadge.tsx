@@ -1,4 +1,5 @@
 import { Button, Flex, Tag, Typography } from 'antd'
+import { TAG_STYLES } from './tagStyles'
 
 interface ConditionsBadgeProps {
   required: number
@@ -13,8 +14,8 @@ export function ConditionsBadge({ required, optional, onChange, disabled }: Cond
   return (
     <Flex align="center" gap={8}>
       <Typography.Text type="secondary">評価する条件:</Typography.Text>
-      <Tag color="red">必須 {required}</Tag>
-      <Tag color="blue">任意 {optional}</Tag>
+      <Tag style={TAG_STYLES.error}>必須 {required}</Tag>
+      <Tag style={TAG_STYLES.info}>任意 {optional}</Tag>
       <Button type="link" size="small" disabled={disabled} onClick={onChange}>
         変更
       </Button>

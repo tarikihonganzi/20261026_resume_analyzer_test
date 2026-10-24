@@ -1,5 +1,5 @@
 import { PlusOutlined } from '@ant-design/icons'
-import { Button, Card, Empty, Flex, Typography } from 'antd'
+import { Button, Card, Empty, Flex, Typography, theme } from 'antd'
 import type { SelectionSummaryData, SummaryEntry } from '../lib/conditionItems'
 
 interface SelectionSummaryProps {
@@ -54,6 +54,8 @@ function Section({
 /** 右側の要約パネル。選んだ条件を「必須」「任意」に分けて、リアルタイムで表示する。 */
 export function SelectionSummary({ summary, onJump, onAddCustom }: SelectionSummaryProps) {
   const total = summary.required.length + summary.optional.length
+  // 任意の色は、テーマの主色（コントラストを確保した青）に合わせる
+  const { token } = theme.useToken()
 
   return (
     <Card title="選択中の条件" size="small">
@@ -65,7 +67,12 @@ export function SelectionSummary({ summary, onJump, onAddCustom }: SelectionSumm
       ) : (
         <>
           <Section title="必須" color="#cf1322" entries={summary.required} onJump={onJump} />
-          <Section title="任意" color="#1677ff" entries={summary.optional} onJump={onJump} />
+          <Section
+            title="任意"
+            color={token.colorPrimary}
+            entries={summary.optional}
+            onJump={onJump}
+          />
         </>
       )}
       <Flex justify="flex-start">

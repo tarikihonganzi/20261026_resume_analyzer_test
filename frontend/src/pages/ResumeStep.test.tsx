@@ -177,6 +177,29 @@ describe('② 職歴書', () => {
     expect(await screen.findByText(/上限（20 MB）/)).toBeInTheDocument()
   })
 
+  it('テキストが得られないファイルは、「テキスト化できませんでした」を示す（仕様 5.6）', async () => {
+    await reachResumeStep()
+    server.use(
+      http.post('*/api/resumes/check', () =>
+        HttpResponse.json(
+          {
+            code: 'empty_text',
+            message: 'テキスト化できませんでした。内容が空か、極端に短いようです。',
+          },
+          { status: 422 },
+        ),
+      ),
+    )
+
+    await uploadFile('空.docx')
+
+    expect(await screen.findByText(/テキスト化できませんでした/)).toBeInTheDocument()
+    expect(
+      screen.getByText(/別のファイルを選ぶか、テキストを貼り付けてください/),
+    ).toBeInTheDocument()
+    expect(evaluateButton()).toBeDisabled()
+  })
+
   it('サーバーに接続できないときも、理由を出す', async () => {
     await reachResumeStep()
     server.use(http.post('*/api/resumes/check', () => HttpResponse.error()))
