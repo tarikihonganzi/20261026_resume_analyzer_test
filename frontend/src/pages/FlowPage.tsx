@@ -3,6 +3,7 @@ import { FlowSteps, type FlowStepItem } from '../components/FlowSteps'
 import { conditionCounts, stepStatuses } from '../state/flow'
 import { useFlow } from '../state/flow-context'
 import { ConditionsStep } from './ConditionsStep'
+import { ResultStep } from './ResultStep'
 import { ResumeStep } from './ResumeStep'
 
 /** 評価フロー（① 条件 → ② 職歴書 → ③ 結果）。Steps と、現在のステップの内容。 */
@@ -41,7 +42,7 @@ export function FlowPage() {
       />
       {state.step === 0 ? <ConditionsStep /> : null}
       {state.step === 1 ? <ResumeStep /> : null}
-      {state.step === 2 ? <p>この画面は、これから作ります。</p> : null}
+      {state.step === 2 ? <ResultStep /> : null}
     </Flex>
   )
 }

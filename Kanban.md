@@ -42,7 +42,6 @@
 ### M5: フロント 基盤と ① 条件
 
 ### M6: フロント ② 職歴書と ③ 結果
-- **T-M6-02** SSE クライアントと進捗・キャンセル [M]
 - **T-M6-03** 結果画面（スコア・必須未達・判定表・根拠・注意書き） [L] — AC: 5, 6, 14, 15
 - **T-M6-05** 「条件を変えて再評価」「別の応募者を評価」 [S] — AC: 13
 
@@ -57,6 +56,7 @@
 
 ## Done
 
+- **T-M6-02** SSE クライアントと進捗・キャンセル — 2026-10-25。branch: `feat/T-M6-02-sse`。SSE クライアント（sse.ts）と評価の実行 hook（useEvaluationRun）、③ の進捗（2 段階）・キャンセル（要求の取り消し）・エラー表示（再実行・条件に戻る・認証エラーは設定リンク）。check 通過（pytest 613・vitest 223）。偽 LLM で実ブラウザ確認（Vite プロキシ経由の SSE・キャンセル・結果）。結果画面は T-M6-03
 - **T-M6-01** `ResumeInput` と `resumes/check` の表示 — 2026-10-25。branch: `feat/T-M6-01-resume-input`。ResumeStep（② 職歴書）・ResumeInput（Ant Design 6 の Upload.Dragger。beforeUpload で false を返し、アップロードはせず、選んだ File を画面の状態に持つ／テキストの貼り付けは、入力が止まって 700ms 後に確認）・ResumeCheckResult（確認中・成功（名前・形式・文字数。PDF は評価時に AI が読む旨）・エラー（サーバーのメッセージ＋別のファイルを選ぶ案内。条件は残る））・ConditionsBadge（必須 n・任意 m と「変更」）・useResumeCheck（選ぶたびの検証の要求 ID つきで /api/resumes/check を呼び、画面を離れたら取り消し、戻れば再確認。選び直した前の要求は AbortController で取り消し、遅れて届いた前の結果は ID で無視）。「評価する」は、検証が成功し、条件がそろい、API キーが設定済みのときだけ押せる（仕様 5.6）。テスト 16 件（検証中・成功・PDF・読めないファイル・上限超過・接続失敗・貼り付け・全消去・同名の選び直し・取り消し・API キー未設定・戻る・変更・① へ戻って戻っても職歴書が残る）。jsdom の FormData は Node の fetch で msw と遅延させると接続エラーになるため、遅延・順序の制御が要るテストは fetch を差し替え。実際のブラウザで、3 つの状態（空・成功・エラー）を確認。npm run check exit 0（pytest 613 件・Vitest 202 件）。AC3・AC12 のフロント側
 - **T-M6-04** `MarkdownView`（サニタイズ・`<u>`） — 2026-10-25。branch: `feat/T-M6-04-markdown`。MarkdownView（react-markdown 10 + remark-gfm + rehype-raw + rehype-sanitize。順序は raw → sanitize）と lib/markdown.ts（許可するタグ）。太字・斜体・箇条書き・見出し・表（GFM）・<u> の下線を描画。リンクは新しいタブで rel=noopener noreferrer。【仕様より厳しくした点】rehype-sanitize の既定のスキーマが許可する img・picture・source・input を許可しない（LLM の出力に、外部の画像が含まれると、ブラウザが読み込むときに職歴書の内容が外部へ送られるため。機能は失わない）。仕様 v0.15（5.5・13.1 #29）とルールに反映。XSS のテスト 30 件（script・on* 属性・javascript:／data: の URL・画像・iframe など・style 属性・id の接頭辞・壊れた HTML）。わざと img のブロックを外すと、画像のテストが落ちることを確認。npm run check exit 0（pytest 613 件・Vitest 186 件）。AC7 のフロント側
 - **T-M4-09** プリセットの再編（39 件 → 75 件前後。カテゴリの再編） — 2026-10-25。branch: `feat/T-M4-09-presets-v2`。プリセットを 39 件から 75 件に、カテゴリを 6 つ（資格・認定／スキル・ツール／施工図・図面／施工管理／現場事務・書類／経験年数）に再編。仕様 v0.14（11 章・13.1 #28）。docs/proposals/presets-v2.md の表から、catalog.json と仕様 11 章を生成（既存の条件の id を引き継ぎ、保存済みの条件セットがそのまま読める。「施工図作成」は「施工図の作成（全般）」に改称）。未確認だった項目のうち、建築 CAD 検定（全国建築 CAD 連盟の民間資格）・2 級電気／管工事施工管理技士・衛生管理者／安全管理者・産業廃棄物のマニフェスト（元請が排出事業者）は、Web で確認して提案書に記録。調査で確認できなかった項目（一般的な資格、Excel の活用、質疑書、10 億円以上の案件など）は、叩き台として、実際の職歴書での確認（T-M3-03）で調整する。全 75 件に補足説明があること、曖昧な 4 件（工程・原価・品質・安全）に「含めない」例があること、仕様 11 章の表と一致することをテストで保証。画面で、8 つのカテゴリのボタンが、広い画面（1280px）と狭い画面（820px）で収まることを確認。npm run check exit 0（pytest 613 件・Vitest 156 件）
