@@ -1,0 +1,30 @@
+# 実行時データ・秘密情報
+data/
+.env
+.env.*
+CLAUDE.local.md
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.pyright/
+.coverage
+htmlcov/
+
+# Node
+node_modules/
+frontend/dist/
+.vite/
+coverage/
+
+# Playwright
+playwright-report/
+test-results/
+
+# OS・エディタ
+.DS_Store
+.idea/
+*.swp
