@@ -99,6 +99,18 @@ async def test_extract_is_deterministic_and_mixes_achieved_and_unmet() -> None:
     assert any(y < c.min_value for y, c in zip(years, CONDITIONS[1::2], strict=True) if c.min_value)
 
 
+async def test_unmet_number_condition_with_a_zero_minimum_is_unknown_not_zero_years() -> None:
+    # years=0 は、最低値 0 に対して「達成」になってしまう。記載がないときは null（不明）にする
+    zero_minimum = [condition("z0", "number", min_value=0), condition("z1", "number", min_value=0)]
+    request = ExtractRequest(resume=TEXT_RESUME, today=date(2026, 10, 25), conditions=zero_minimum)
+
+    result = await FakeClient().extract(request)
+
+    unmet = [r for r in result.results if not r.quotes]
+    assert unmet
+    assert all(r.years is None for r in unmet)
+
+
 async def test_every_extraction_names_the_source_and_quotes_it_as_given() -> None:
     result = await FakeClient().extract(extract_request())
 

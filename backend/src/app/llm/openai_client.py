@@ -36,6 +36,9 @@ logger = logging.getLogger("app.llm")
 
 # 推論モデルは、出力トークンに推論の分も含まれる。途中で切れないよう、十分に大きくする
 MAX_OUTPUT_TOKENS = 32_000
+# ベース URL が空のとき。None を渡すと、SDK が環境変数 OPENAI_BASE_URL を読んでしまい、設定
+# （保存した空文字は環境変数より優先する。仕様 4.1）と違う宛先に、職歴書と API キーを送ってしまう
+DEFAULT_BASE_URL = "https://api.openai.com/v1"
 
 
 def _json_schema_format(model: type[BaseModel]) -> ResponseFormatTextJSONSchemaConfigParam:
@@ -77,7 +80,7 @@ class OpenAIClient:
         if self._sdk is None:
             self._sdk = AsyncOpenAI(
                 api_key=self._config.openai_api_key,
-                base_url=self._config.openai_base_url or None,
+                base_url=self._config.openai_base_url or DEFAULT_BASE_URL,
                 timeout=self._config.request_timeout_sec,
                 max_retries=self._max_retries,
                 http_client=self._http_client,

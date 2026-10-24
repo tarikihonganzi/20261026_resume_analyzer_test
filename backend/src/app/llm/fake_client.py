@@ -67,7 +67,11 @@ class FakeClient:
             has_skill = achieved
         else:
             minimum = condition.min_value or 0.0
-            years = minimum + 1.0 if achieved else max(minimum - 1.0, 0.0)
+            if achieved:
+                years = minimum + 1.0
+            elif minimum >= 1.0:
+                years = minimum - 1.0
+            # 最低値が 1 年未満のとき、年数を 0 にすると「達成」になる。記載がないので null（不明）
 
         if achieved:
             reason = f'"{name}"の位置に「{quote}」という記載があったため。'

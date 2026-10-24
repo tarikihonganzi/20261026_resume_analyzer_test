@@ -1,5 +1,6 @@
 """条件の判定、マッチ度合い、必須未達（仕様 5.4 ステップ 2）。"""
 
+import math
 from collections.abc import Sequence
 from typing import Protocol
 
@@ -126,8 +127,12 @@ def find_extraction_problems(
             problems.append("boolean の条件に years がある")
         elif condition.kind == "number" and extracted.has_skill is not None:
             problems.append("number の条件に has_skill がある")
-        elif condition.kind == "number" and extracted.years is not None and extracted.years < 0:
-            problems.append("years が負の値")
+        elif (
+            condition.kind == "number"
+            and extracted.years is not None
+            and not (math.isfinite(extracted.years) and extracted.years >= 0)
+        ):
+            problems.append("years が、有限の 0 以上の値ではない")
 
     if missing := expected.keys() - seen:
         problems.append(f"{len(missing)} 件の条件の抽出結果がない")

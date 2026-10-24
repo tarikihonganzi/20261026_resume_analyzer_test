@@ -262,6 +262,19 @@ async def test_empty_base_url_uses_the_sdk_default() -> None:
     assert str(recorder.requests[0].url) == "https://api.openai.com/v1/responses"
 
 
+async def test_empty_base_url_ignores_the_sdk_environment_variable(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # 保存済みの空文字は、環境変数より優先する（仕様 4.1）。SDK が環境変数を再参照してはならない
+    monkeypatch.setenv("OPENAI_BASE_URL", "https://other.example.internal/v1")
+    recorder = Recorder(ok(EXTRACTION_RESULT))
+    config = Config(openai_api_key=API_KEY, openai_base_url="")
+
+    await make_client(recorder, config=config).extract(extract_request())
+
+    assert str(recorder.requests[0].url) == "https://api.openai.com/v1/responses"
+
+
 async def test_configured_timeout_is_applied() -> None:
     recorder = Recorder(ok(EXTRACTION_RESULT))
     config = Config(openai_api_key=API_KEY, openai_base_url=BASE_URL, request_timeout_sec=77)

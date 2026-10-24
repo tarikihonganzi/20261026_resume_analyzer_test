@@ -353,11 +353,25 @@ async def test_pdf_header_without_a_version_is_not_a_pdf() -> None:
     [
         "-" * 40,
         "=" * 40,
+        "- - -\n" * 7,
+        "_ _ _\n" * 7,
+        "* * *\n" * 7,
+        "| | |\n" * 7,
         "| --- | --- | --- | --- | --- | --- |\n" * 6,
         "|" * 40,
         "# 見出しだけの文書です。長い見出しだけでは職歴書になりません\n## もう一つの長い見出しです",
     ],
-    ids=["hyphens", "equals", "table-separators", "pipes", "headings-only"],
+    ids=[
+        "hyphens",
+        "equals",
+        "spaced-hyphens",
+        "spaced-underscores",
+        "spaced-asterisks",
+        "empty-table-rows",
+        "table-separators",
+        "pipes",
+        "headings-only",
+    ],
 )
 async def test_text_made_only_of_markup_is_empty(text: str) -> None:
     with pytest.raises(EmptyResumeError):

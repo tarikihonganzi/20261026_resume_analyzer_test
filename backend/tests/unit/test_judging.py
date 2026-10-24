@@ -300,5 +300,18 @@ def test_number_condition_with_has_skill_is_a_problem() -> None:
     assert find_extraction_problems([number("a", 3)], [Extracted("a", has_skill=True, years=3.0)])
 
 
-def test_negative_years_is_a_problem() -> None:
-    assert find_extraction_problems([number("a", 3)], [Extracted("a", years=-1.0)])
+@pytest.mark.parametrize("years", [-1.0, float("nan"), float("inf"), float("-inf")])
+def test_invalid_years_is_a_problem(years: float) -> None:
+    # inf は、どの最低年数でも「達成」になってしまう。nan は比較が成り立たない
+    assert find_extraction_problems([number("a", 3)], [Extracted("a", years=years)])
+
+
+def test_zero_and_fractional_years_are_not_problems() -> None:
+    conditions = [number("a", 3), number("b", 0)]
+
+    assert (
+        find_extraction_problems(
+            conditions, [Extracted("a", years=0.0), Extracted("b", years=0.25)]
+        )
+        == []
+    )

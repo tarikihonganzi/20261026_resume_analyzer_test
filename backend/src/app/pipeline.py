@@ -14,7 +14,7 @@ from app.domain.clipping import clip_score
 from app.domain.errors import ExtractionInconsistentError, LlmError, NoConditionsError
 from app.domain.judging import find_extraction_problems, judge, match_rate, missing_required
 from app.domain.models import Condition, Judgement
-from app.domain.quotes import verify
+from app.domain.quotes import QuoteVerification, verify
 from app.domain.results import (
     EvaluationPoint,
     EvaluationResult,
@@ -24,6 +24,7 @@ from app.domain.results import (
 )
 from app.ingest.resume import ResumeInput
 from app.llm.client import LlmClient
+from app.llm.prompts import neutralize_resume_text
 from app.llm.requests import EvaluateRequest, ExtractRequest
 from app.llm.schemas import ConditionExtraction, EvaluatedPoint, ExtractionResult, Quote
 
@@ -71,6 +72,14 @@ async def _extract(
     raise ExtractionInconsistentError
 
 
+def _verify(quote_text: str, resume: ResumeInput) -> QuoteVerification:
+    """原文と照合する。原文に見つからなければ、LLM に渡した変換後の文字列とも照合する。"""
+    verdict = verify(quote_text, resume.text)
+    if verdict == "not_found" and resume.text is not None:
+        return verify(quote_text, neutralize_resume_text(resume.text))
+    return verdict
+
+
 def _verified_quotes(quotes: Sequence[Quote], resume: ResumeInput) -> list[VerifiedQuote]:
     """出典名を、与えた名前に置き換え、原文と照合する（テキストがない PDF は未照合）。"""
     return [
@@ -78,7 +87,7 @@ def _verified_quotes(quotes: Sequence[Quote], resume: ResumeInput) -> list[Verif
             source_name=resume.source_name,
             location=q.location,
             text=q.text,
-            verified=verify(q.text, resume.text),
+            verified=_verify(q.text, resume),
         )
         for q in quotes
     ]
