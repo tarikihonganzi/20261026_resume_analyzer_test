@@ -27,7 +27,7 @@ paths:
 
 ## Markdown の表示
 
-- `react-markdown` + `remark-gfm` + `rehype-raw` + `rehype-sanitize`。サニタイズの設定は `defaultSchema` に `u` を足したものだけ。**これ以上、許可するタグを増やさない。**
+- `react-markdown` + `remark-gfm` + `rehype-raw` + `rehype-sanitize`。サニタイズの設定は、`defaultSchema` に `u` を足し、**画像（`img`・`picture`・`source`）とフォーム部品（`input`）を除いたもの**（`lib/markdown.ts`。外部の画像の読み込みで、職歴書の内容が送られるのを防ぐ）。**これ以上、許可するタグを増やさない。**
 - 引用（`quotes[].text`）は Markdown として解釈せず、プレーンテキストで表示する。
 - XSS のテスト（`<script>`、`onerror` が除去されること、`<u>` と太字が残ること）を、`lib/` の単体テストに必ず置く。
 
