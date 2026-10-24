@@ -11,7 +11,7 @@ from pydantic import BaseModel, ConfigDict, ValidationError
 
 from app.domain.errors import ConditionSetNotFoundError, StorageCorruptedError
 from app.domain.models import Condition, ConditionSet
-from app.storage.json_store import read_json, write_json
+from app.storage.json_store import MISSING, read_json, write_json
 
 
 class _File(BaseModel):
@@ -34,7 +34,7 @@ class ConditionSetStore:
 
     def _load(self) -> list[ConditionSet]:
         raw = read_json(self._path)
-        if raw is None:
+        if raw is MISSING:
             return []
         try:
             return _File.model_validate(raw).sets

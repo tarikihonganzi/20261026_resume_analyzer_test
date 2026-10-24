@@ -231,6 +231,17 @@ def test_missing_required_without_required_conditions_is_empty() -> None:
     assert missing_required([boolean("a")], judgements_of("unmet")) == []
 
 
+def test_missing_required_with_duplicate_judgements_is_an_error() -> None:
+    # 辞書にまとめると後の判定で上書きされ、並び順だけで必須未達が消えてしまう
+    judgements = [
+        Judgement(condition_id="a", status="unmet"),
+        Judgement(condition_id="a", status="achieved"),
+    ]
+
+    with pytest.raises(ConditionMismatchError):
+        missing_required([boolean("a", required=True)], judgements)
+
+
 def test_missing_required_with_a_missing_judgement_is_an_error() -> None:
     with pytest.raises(ConditionMismatchError):
         missing_required([boolean("a", required=True)], [])

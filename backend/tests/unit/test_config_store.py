@@ -13,7 +13,7 @@ API_KEY = "sk-proj-abcdefghijklmnopqrstuvwxyz1234"
 
 
 def test_missing_file_gives_the_defaults(tmp_path: Path) -> None:
-    config = ConfigStore(tmp_path / "config.json").load()
+    config = ConfigStore(tmp_path / "config.json", environ={}).load()
 
     assert config == Config(
         openai_api_key="",
@@ -26,14 +26,14 @@ def test_missing_file_gives_the_defaults(tmp_path: Path) -> None:
 
 
 def test_loading_does_not_create_the_file(tmp_path: Path) -> None:
-    ConfigStore(tmp_path / "config.json").load()
+    ConfigStore(tmp_path / "config.json", environ={}).load()
 
     assert list(tmp_path.iterdir()) == []
 
 
 def test_saved_config_uses_the_keys_of_the_spec_and_survives_a_restart(tmp_path: Path) -> None:
     path = tmp_path / "config.json"
-    ConfigStore(path).save(
+    ConfigStore(path, environ={}).save(
         Config(
             openai_api_key=API_KEY,
             openai_base_url="https://llm.example.internal/v1",
@@ -52,7 +52,7 @@ def test_saved_config_uses_the_keys_of_the_spec_and_survives_a_restart(tmp_path:
         "pdf_detail",
         "request_timeout_sec",
     }
-    reloaded = ConfigStore(path).load()
+    reloaded = ConfigStore(path, environ={}).load()
     assert reloaded.openai_api_key == API_KEY
     assert reloaded.max_file_size_mb == 20
     assert reloaded.pdf_detail == "low"
@@ -63,7 +63,7 @@ def test_saved_file_is_owner_only(
 ) -> None:
     path = tmp_path / "config.json"
 
-    ConfigStore(path).save(Config(openai_api_key=API_KEY))
+    ConfigStore(path, environ={}).save(Config(openai_api_key=API_KEY))
 
     assert_owner_only(path)
 
@@ -72,7 +72,7 @@ def test_partial_file_is_completed_with_defaults(tmp_path: Path) -> None:
     path = tmp_path / "config.json"
     path.write_text(json.dumps({"openai_api_key": API_KEY}), encoding="utf-8")
 
-    config = ConfigStore(path).load()
+    config = ConfigStore(path, environ={}).load()
 
     assert config.openai_api_key == API_KEY
     assert config.model == "gpt-5.5"
@@ -83,7 +83,7 @@ def test_unknown_keys_in_the_file_are_ignored(tmp_path: Path) -> None:
     path = tmp_path / "config.json"
     path.write_text(json.dumps({"model": "gpt-5.5", "future_option": 1}), encoding="utf-8")
 
-    assert ConfigStore(path).load().model == "gpt-5.5"
+    assert ConfigStore(path, environ={}).load().model == "gpt-5.5"
 
 
 @pytest.mark.parametrize(
@@ -97,7 +97,7 @@ def test_corrupted_or_invalid_file_is_an_error_without_leaking_the_key(
     path.write_text(content, encoding="utf-8")
 
     with pytest.raises(StorageCorruptedError) as excinfo:
-        ConfigStore(path).load()
+        ConfigStore(path, environ={}).load()
 
     assert API_KEY not in str(excinfo.value)
 
@@ -106,7 +106,7 @@ def test_corrupted_or_invalid_file_is_an_error_without_leaking_the_key(
 
 
 def test_update_changes_only_the_given_fields(tmp_path: Path) -> None:
-    store = ConfigStore(tmp_path / "config.json")
+    store = ConfigStore(tmp_path / "config.json", environ={})
     store.save(Config(openai_api_key=API_KEY, model="gpt-5.5", max_file_size_mb=10))
 
     updated = store.update(ConfigUpdate(model="gpt-5.5-mini", max_file_size_mb=0))
@@ -121,7 +121,7 @@ def test_update_changes_only_the_given_fields(tmp_path: Path) -> None:
 def test_update_without_an_api_key_keeps_the_existing_one(
     tmp_path: Path, blank: str | None
 ) -> None:
-    store = ConfigStore(tmp_path / "config.json")
+    store = ConfigStore(tmp_path / "config.json", environ={})
     store.save(Config(openai_api_key=API_KEY))
 
     updated = store.update(ConfigUpdate(openai_api_key=blank, model="gpt-5.5-mini"))
@@ -131,7 +131,7 @@ def test_update_without_an_api_key_keeps_the_existing_one(
 
 
 def test_update_with_a_new_api_key_replaces_it(tmp_path: Path) -> None:
-    store = ConfigStore(tmp_path / "config.json")
+    store = ConfigStore(tmp_path / "config.json", environ={})
     store.save(Config(openai_api_key=API_KEY))
 
     updated = store.update(ConfigUpdate(openai_api_key="  sk-new-key-0000000000  "))
@@ -140,7 +140,7 @@ def test_update_with_a_new_api_key_replaces_it(tmp_path: Path) -> None:
 
 
 def test_update_can_set_the_base_url_and_clear_it(tmp_path: Path) -> None:
-    store = ConfigStore(tmp_path / "config.json")
+    store = ConfigStore(tmp_path / "config.json", environ={})
 
     store.update(ConfigUpdate(openai_base_url="https://llm.example.internal/v1"))
     assert store.load().openai_base_url == "https://llm.example.internal/v1"
@@ -150,7 +150,7 @@ def test_update_can_set_the_base_url_and_clear_it(tmp_path: Path) -> None:
 
 
 def test_update_on_a_missing_file_starts_from_the_defaults(tmp_path: Path) -> None:
-    store = ConfigStore(tmp_path / "config.json")
+    store = ConfigStore(tmp_path / "config.json", environ={})
 
     updated = store.update(ConfigUpdate(openai_api_key=API_KEY))
 
@@ -175,6 +175,92 @@ def test_invalid_update_is_rejected_and_nothing_is_written(
         ConfigUpdate.model_validate(invalid)
 
     assert list(tmp_path.iterdir()) == []
+
+
+# --- 環境変数（仕様 4.1: 設定ファイルに値がないときの初期値） ---
+
+ENV = {
+    "OPENAI_API_KEY": "sk-from-env-0000000000",
+    "OPENAI_BASE_URL": "https://env.example.internal/v1",
+    "OPENAI_MODEL": "gpt-env",
+}
+
+
+def test_environment_variables_are_used_when_the_file_does_not_exist(tmp_path: Path) -> None:
+    config = ConfigStore(tmp_path / "config.json", environ=ENV).load()
+
+    assert config.openai_api_key == "sk-from-env-0000000000"
+    assert config.openai_base_url == "https://env.example.internal/v1"
+    assert config.model == "gpt-env"
+
+
+def test_environment_variables_fill_only_the_items_missing_from_the_file(tmp_path: Path) -> None:
+    path = tmp_path / "config.json"
+    path.write_text(json.dumps({"model": "gpt-file"}), encoding="utf-8")
+
+    config = ConfigStore(path, environ=ENV).load()
+
+    assert config.model == "gpt-file"  # 保存済みの値を優先
+    assert config.openai_api_key == "sk-from-env-0000000000"
+    assert config.openai_base_url == "https://env.example.internal/v1"
+
+
+def test_saved_empty_string_wins_over_the_environment(tmp_path: Path) -> None:
+    path = tmp_path / "config.json"
+    path.write_text(json.dumps({"openai_base_url": "", "openai_api_key": ""}), encoding="utf-8")
+
+    config = ConfigStore(path, environ=ENV).load()
+
+    assert config.openai_base_url == ""
+    assert config.openai_api_key == ""
+
+
+def test_blank_environment_variables_are_ignored(tmp_path: Path) -> None:
+    environ = {"OPENAI_API_KEY": "  ", "OPENAI_BASE_URL": "", "OPENAI_MODEL": " "}
+
+    config = ConfigStore(tmp_path / "config.json", environ=environ).load()
+
+    assert (config.openai_api_key, config.openai_base_url, config.model) == ("", "", "gpt-5.5")
+
+
+def test_update_does_not_write_environment_values_into_the_file(tmp_path: Path) -> None:
+    path = tmp_path / "config.json"
+    store = ConfigStore(path, environ=ENV)
+
+    updated = store.update(ConfigUpdate(max_file_size_mb=5))
+
+    assert json.loads(path.read_text(encoding="utf-8")) == {"max_file_size_mb": 5}
+    assert updated.openai_api_key == "sk-from-env-0000000000"  # 実際に使われる値には反映される
+    assert store.load().max_file_size_mb == 5
+
+
+def test_update_with_a_blank_api_key_keeps_the_environment_key(tmp_path: Path) -> None:
+    store = ConfigStore(tmp_path / "config.json", environ=ENV)
+
+    updated = store.update(ConfigUpdate(openai_api_key="", model="gpt-5.5-mini"))
+
+    assert updated.openai_api_key == "sk-from-env-0000000000"
+    assert updated.model == "gpt-5.5-mini"
+
+
+def test_saving_a_new_api_key_overrides_the_environment(tmp_path: Path) -> None:
+    store = ConfigStore(tmp_path / "config.json", environ=ENV)
+
+    store.update(ConfigUpdate(openai_api_key="sk-new-key-1111111111"))
+
+    assert store.load().openai_api_key == "sk-new-key-1111111111"
+
+
+def test_file_containing_null_is_corrupted_not_defaults(tmp_path: Path) -> None:
+    path = tmp_path / "config.json"
+    path.write_text("null", encoding="utf-8")
+
+    with pytest.raises(StorageCorruptedError):
+        ConfigStore(path, environ={}).load()
+    with pytest.raises(StorageCorruptedError):
+        ConfigStore(path, environ={}).update(ConfigUpdate(model="gpt-5.5-mini"))
+
+    assert path.read_text(encoding="utf-8") == "null"
 
 
 # --- マスク ---

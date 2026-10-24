@@ -110,6 +110,7 @@ def test_all_fixtures_have_unique_non_empty_files() -> None:
     assert {"resume.txt", "resume.docx", "resume.xlsx", "resume.pptx", "resume_digital.pdf"} <= set(
         names
     )
+    assert {"broken.docx", "empty.docx"} <= set(names)
 
 
 def test_command_line_writes_every_fixture(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

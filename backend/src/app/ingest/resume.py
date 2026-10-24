@@ -5,17 +5,30 @@ PDF は手元でテキストにせず、バイト列のまま LLM に渡す。�
 """
 
 import asyncio
+import codecs
 import functools
 import io
+import re
+import zipfile
 from dataclasses import dataclass
 from pathlib import PurePath
 
 from markitdown import (
+    PRIORITY_GENERIC_FILE_FORMAT,
     FileConversionException,
     MarkItDown,
     MissingDependencyException,
     StreamInfo,
     UnsupportedFormatException,
+)
+from markitdown.converters import (
+    CsvConverter,
+    DocxConverter,
+    HtmlConverter,
+    PlainTextConverter,
+    PptxConverter,
+    XlsConverter,
+    XlsxConverter,
 )
 from pydantic import BaseModel
 
@@ -33,17 +46,38 @@ from app.domain.source_name import PASTED_TEXT_NAME, sanitize
 # とする（仕様 13.1 #24）
 MIN_TEXT_CHARS = 20
 
-_PDF_HEADER = b"%PDF-"
-# zip の中身を再帰的に展開する変換器があり、zip 爆弾の危険があるので受け付けない
-_REJECTED_EXTENSIONS = frozenset({"zip"})
-# 拡張子を信じて、中身をそのまま文字として読んでしまう形式
-_TEXT_EXTENSIONS = frozenset({"txt", "md", "csv", "json", "xml", "html", "htm", "log"})
-_BINARY_SIGNATURES = (b"PK\x03\x04", b"\xd0\xcf\x11\xe0")  # zip 系（docx など）、旧 Office
+# Office 形式。拡張子と内容（zip・旧 Office の署名）が一致するはずの形式
+_OFFICE_EXTENSIONS = frozenset({"docx", "xlsx", "xls", "pptx"})
+# テキストとして読む拡張子（MarkItDown の PlainText・Html・Csv の変換器が、拡張子だけで受け付ける）
+_TEXT_EXTENSIONS = frozenset(
+    {"txt", "text", "md", "markdown", "json", "jsonl", "csv", "html", "htm", "log"}
+)
+# zip の中のファイル名の先頭から、拡張子のないファイルの形式を判定する
+_OFFICE_DIRECTORIES = (("word/", "docx"), ("xl/", "xlsx"), ("ppt/", "pptx"))
+_ZIP_SIGNATURE = b"PK\x03\x04"
+_BINARY_SIGNATURES = (_ZIP_SIGNATURE, b"\xd0\xcf\x11\xe0")  # zip 系、旧 Office（OLE）
+# BOM のある Unicode テキストは、NUL バイトを含んでいても正常（UTF-32 を UTF-16 より先に）
+_UNICODE_BOMS = (
+    codecs.BOM_UTF8,
+    codecs.BOM_UTF32_LE,
+    codecs.BOM_UTF32_BE,
+    codecs.BOM_UTF16_LE,
+    codecs.BOM_UTF16_BE,
+)
+
+# PDF の見出し。ファイルの先頭（BOM・空白は許す）にあれば、拡張子に関わらず PDF とする。
+# 拡張子が .pdf のときだけ、先頭 1024 バイト以内の行頭にあれば許す（PDF の仕様の許容範囲）
+_PDF_AT_START = re.compile(rb"(?:\xef\xbb\xbf)?\s*%PDF-[12]\.\d")
+_PDF_AT_LINE_START = re.compile(rb"(?:^|[\r\n])%PDF-[12]\.\d")
 
 _SUPPORTED_FORMATS_HINT = (
     "対応している形式は、PDF、Word（docx）、Excel（xlsx・xls）、PowerPoint（pptx）、"
     "テキスト（txt・md・csv）です。"
 )
+
+# 変換結果から、本文でない行を除くための規則（見出し、水平線、表の区切り）
+_HEADING_LINE = re.compile(r"^#{1,6}(?:\s|$)")
+_RULE_RUN = re.compile(r"[-=_~:]{3,}")
 
 
 @dataclass(frozen=True)
@@ -74,8 +108,23 @@ def check_of(resume: ResumeInput) -> ResumeCheck:
 
 @functools.cache
 def _markitdown() -> MarkItDown:
-    # プラグインは使わない（外部のコードを読み込まない）
-    return MarkItDown(enable_plugins=False)
+    """使う変換器だけを登録した MarkItDown を返す。
+
+    組み込みの変換器をすべて有効にすると、zip を再帰的に展開する変換器など、このアプリに
+    不要で危険なものが、ファイル名に関わらず内容の推測で選ばれる。許可する形式だけを登録する。
+    """
+    converter = MarkItDown(enable_builtins=False, enable_plugins=False)
+    converter.register_converter(PlainTextConverter(), priority=PRIORITY_GENERIC_FILE_FORMAT)
+    converter.register_converter(HtmlConverter(), priority=PRIORITY_GENERIC_FILE_FORMAT)
+    for specific in (
+        DocxConverter(),
+        XlsxConverter(),
+        XlsConverter(),
+        PptxConverter(),
+        CsvConverter(),
+    ):
+        converter.register_converter(specific)
+    return converter
 
 
 def _convert(content: bytes, extension: str, filename: str) -> str:
@@ -106,38 +155,94 @@ def _check_size(size: int, max_size_mb: int) -> None:
         raise FileTooLargeError(max_size_mb)
 
 
+def _content_length(text: str) -> int:
+    """本文の文字数。空白・Markdown の記号・見出し・水平線・表の区切りを数えない。
+
+    MarkItDown は、空のシートでもシート名を見出しとして出力し、表の区切り行も作る。
+    これらは本文ではないので、数えない。
+    """
+    total = 0
+    for line in text.splitlines():
+        stripped = line.strip()
+        if _HEADING_LINE.match(stripped):
+            continue
+        total += len(normalize(_RULE_RUN.sub("", stripped)))
+    return total
+
+
 def _check_text_length(text: str) -> None:
-    if len(normalize(text)) < MIN_TEXT_CHARS:
+    if _content_length(text) < MIN_TEXT_CHARS:
         raise EmptyResumeError(
             "テキスト化できませんでした。内容が空か、極端に短いようです。"
             "スキャン画像の場合は PDF で保存し直してください。"
         )
 
 
+def _is_pdf(content: bytes, extension: str) -> bool:
+    head = content[:1024]
+    if _PDF_AT_START.match(head):
+        return True
+    return extension == "pdf" and _PDF_AT_LINE_START.search(head) is not None
+
+
 def _looks_binary(content: bytes) -> bool:
-    return content.startswith(_BINARY_SIGNATURES) or b"\x00" in content[:8192]
+    """Office や zip の署名、または（BOM のない）NUL バイトを含むなら、テキストではない。"""
+    if content.startswith(_BINARY_SIGNATURES):
+        return True
+    if content.startswith(_UNICODE_BOMS):
+        return False
+    return b"\x00" in content[:8192]
+
+
+def _office_format_of_zip(content: bytes) -> str | None:
+    """拡張子のない zip 系のファイルが Office 形式かを、zip の中のファイル名だけで判定する。
+
+    中身は展開しない。Office 形式でなければ None（汎用の zip は受け付けない）。
+    """
+    try:
+        with zipfile.ZipFile(io.BytesIO(content)) as archive:
+            names = archive.namelist()
+    except zipfile.BadZipFile, ValueError, OSError:
+        return None
+    for directory, format_ in _OFFICE_DIRECTORIES:
+        if any(name.startswith(directory) for name in names):
+            return format_
+    return None
 
 
 async def _load_file(filename: str, content: bytes, max_size_mb: int) -> ResumeInput:
     _check_size(len(content), max_size_mb)
     source_name = sanitize(filename)
     extension = _extension_of(source_name)
-    has_pdf_header = _PDF_HEADER in content[:1024]
 
-    # 拡張子が違っていても、PDF の見出しがあれば PDF として扱う
-    if has_pdf_header:
+    if _is_pdf(content, extension):
         return ResumeInput(source_name=source_name, format="pdf", pdf=content)
     if extension == "pdf":
         raise ConversionFailedError(
             "PDF として読み取れませんでした。ファイルが壊れていないかを確認してください。"
         )
-    if extension in _REJECTED_EXTENSIONS:
+    if extension == "zip":
         raise UnsupportedFormatError(
-            f"このファイル形式（{extension}）は読み取れません。{_SUPPORTED_FORMATS_HINT}"
+            "zip は読み取れません。中のファイルを取り出して選んでください。"
+            f"{_SUPPORTED_FORMATS_HINT}"
         )
-    if extension in _TEXT_EXTENSIONS and _looks_binary(content):
-        raise ConversionFailedError(
-            "テキストファイルとして読み取れませんでした。拡張子と内容が一致しているかを確認してください。"
+
+    if extension == "" and content.startswith(_ZIP_SIGNATURE):
+        office_format = _office_format_of_zip(content)
+        if office_format is None:
+            raise ConversionFailedError(
+                "ファイルの形式を判定できませんでした。拡張子（.docx など）を付けてください。"
+            )
+        extension = office_format
+    elif extension not in _OFFICE_EXTENSIONS and _looks_binary(content):
+        if extension in _TEXT_EXTENSIONS:
+            raise ConversionFailedError(
+                "テキストファイルとして読み取れませんでした。"
+                "拡張子と内容が一致しているかを確認してください。"
+            )
+        label = extension or "拡張子なし"
+        raise UnsupportedFormatError(
+            f"このファイル形式（{label}）は読み取れません。{_SUPPORTED_FORMATS_HINT}"
         )
 
     text = await asyncio.to_thread(_convert, content, extension, source_name)

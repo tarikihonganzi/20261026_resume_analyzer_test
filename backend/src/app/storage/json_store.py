@@ -16,12 +16,25 @@ _REPLACE_ATTEMPTS = 10
 _REPLACE_DELAY_SEC = 0.05
 
 
+class _Missing:
+    """ファイルが存在しないことを表す。JSON の `null`（None）と区別するための専用の型。"""
+
+    def __repr__(self) -> str:
+        return "MISSING"
+
+
+MISSING = _Missing()
+
+
 def read_json(path: Path) -> Any:
-    """JSON を読む。ファイルがなければ None。壊れていればエラー（内容はメッセージに入れない）。"""
+    """JSON を読む。ファイルがなければ `MISSING`。壊れていればエラー（内容はメッセージに入れない）。
+
+    ファイルの内容が `null` のときは None を返す。未作成とは別物として、呼び出し側が検証で拒否する。
+    """
     try:
         raw = path.read_bytes()
     except FileNotFoundError:
-        return None
+        return MISSING
     except OSError as e:
         raise StorageError(f"{path.name} を読み込めません") from e
 

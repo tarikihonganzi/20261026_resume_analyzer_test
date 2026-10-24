@@ -26,6 +26,8 @@ def sanitize(filename: str) -> str:
     name = _PATH_SEPARATORS.split(filename)[-1]
     name = unicodedata.normalize("NFC", name)
     name = "".join(ch for ch in name if unicodedata.category(ch) not in _REMOVED_CATEGORIES)
+    # 除いた文字の両側にあった基底文字と結合文字が隣り合い、NFC が崩れることがある
+    name = unicodedata.normalize("NFC", name)
     name = name.strip()[:MAX_LENGTH]
     # 切り詰めの結果、末尾に空白が残ることがある
     return name.rstrip() or UNNAMED
