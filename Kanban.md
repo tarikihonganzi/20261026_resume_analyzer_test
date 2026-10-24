@@ -18,7 +18,7 @@
 
 ## In Progress
 
-- **T-M0-01** プロジェクト雛形 [M] — branch: `chore/T-M0-01-scaffold`。`backend/`（uv・FastAPI・pytest・ruff・pyright）、`frontend/`（Vite・React・TypeScript・Ant Design 6・Vitest・ESLint・Prettier）、ルートの `package.json`（npm scripts: setup/dev/check/build。`make` は Windows で使えないため。e2e・live・start は後続カードで追加）。`npm run check` が空のプロジェクトで通る。TypeScript 7 と typescript-eslint の互換も確認する（非互換なら 6.x）。完了時に CLAUDE.md の「コマンド」を実際の内容に直す。**引き継ぎ（macOS での途中経過）**: `backend/` の uv プロジェクト（`pyproject.toml`・`uv.lock`・`src/app/__init__.py`）まで作成済み。**Windows で `uv sync` が通るかの確認から再開する**。`frontend/` と `package.json` は未着手
+（なし）
 
 ## In Review
 
@@ -52,7 +52,7 @@
 - **T-M4-02** `pipeline`（抽出 → 判定 → 最終評価 → 補正 → 照合） [M]
 - **T-M4-03** 条件セット・設定・`resumes/check` の API [M] — AC: 8, 10, 12
 - **T-M4-04** `POST /api/evaluations`（SSE）と切断・`UploadFile` の統合テスト [L] — 切断で LLM 呼び出しがキャンセルされることを確認
-- **T-M4-05** ローカル API の保護（Host・Origin） [S]
+- **T-M4-05** ローカル API の保護（Host・Origin） [S] — `/api/health` も Host の検査対象（仕様 13.1 #22）
 - **T-M4-06** OpenAPI から TypeScript の型を生成（`npm run gen-types`） [S] — SSE のイベント型が含まれるか確認
 
 ### M5: フロント 基盤と ① 条件
@@ -80,6 +80,7 @@
 
 ## Done
 
+- **T-M0-01** プロジェクト雛形 — 2026-10-25。branch: `chore/T-M0-01-scaffold`。`backend/`（FastAPI 最小アプリ・`GET /api/health`・pytest・ruff・pyright strict）、`frontend/`（Vite 8・React 19・TypeScript 6.0.3・Ant Design 6・Vitest 5・ESLint 10・Prettier）、ルートの `package.json`（setup/dev/check/build）。確認: クリーンな状態から `npm run setup` → `npm run check`（exit 0。pytest 2 件・Vitest 1 件）、`npm run build`、`npm run dev` で `/api/health`（直・Vite 経由）。決定: Python 3.14（計画書 1 章 #18）、TypeScript 6.x 固定（同 #14）、仕様 v0.8 で `/api/health` を追加。未確認: ブラウザでの画面表示（見出しのみ）
 - **T-00-01** 仕様書 v0.6 — 2026-10-25。ヒアリング反映、技術調査の結果を反映。`docs/spec.md`
 - **T-00-02** 実装計画 — 2026-10-25。`docs/implementation-plan.md`
 - **T-00-03** 環境の準備 — 2026-10-25。`git init`（`main`）、uv 0.13.5、Python 3.13.17。`uv` は `~/.local/bin`（PATH 未追加）
