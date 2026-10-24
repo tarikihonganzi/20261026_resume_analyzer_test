@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { AppShell, type View } from './components/AppShell'
 import { FlowPage } from './pages/FlowPage'
+import { SettingsPage } from './pages/SettingsPage'
 import { FlowProvider } from './state/flow-context'
 
 function viewFromHash(): View {
@@ -35,7 +36,7 @@ export default function App() {
     // 評価フローの状態は、設定ページに移っても保つ（FlowProvider は、画面の切り替えの外に置く）
     <FlowProvider>
       <AppShell view={view} onNavigate={navigate}>
-        {view === 'settings' ? <p>設定ページ（準備中）</p> : <FlowPage />}
+        {view === 'settings' ? <SettingsPage /> : <FlowPage />}
       </AppShell>
     </FlowProvider>
   )
