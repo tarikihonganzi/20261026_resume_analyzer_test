@@ -1,0 +1,13 @@
+# 改行は LF に固定する（Windows でも。プロンプトのゴールデンファイルなどが改行の違いで失敗しないように）
+* text=auto eol=lf
+
+# バイナリ
+*.pdf  binary
+*.docx binary
+*.xlsx binary
+*.xls  binary
+*.pptx binary
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.ico  binary

@@ -35,4 +35,4 @@ paths:
 
 - Vitest + Testing Library。API は `msw` で差し替える。Ant Design は jsdom で `matchMedia` などの補完が要る。補完はテストのセットアップに置く。
 - E2E（Playwright）は、`APP_LLM_MODE=fake` で起動したサーバーに対して実行する。実 API を使わない。
-- UI を変えたら、`make dev` で実際に開いて確認する。
+- UI を変えたら、`npm run dev` で実際に開いて確認する。

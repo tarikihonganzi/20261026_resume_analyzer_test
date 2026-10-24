@@ -29,10 +29,13 @@
 | 8 | MarkItDown 0.1.9（2026-10-21）は Python 3.10 以上 3.15 未満。`convert_stream(BinaryIO, stream_info=StreamInfo(...))` は、一時ファイルを作らずメモリ上で処理する。未対応形式は `UnsupportedFormatException`、変換失敗は `FileConversionException`。「現在のプロセスの権限で I/O を行う」と警告があり、最も狭い `convert_*` を使うことが勧められている | `convert_stream` のみを使う。PDF 以外の形式の extras（`docx`／`xlsx`／`xls`／`pptx`）だけを入れる。変換は同期処理なので、スレッドプールで実行する |
 | 9 | OpenAI の API は docx／xlsx などもテキスト抽出して読めるが、スプレッドシートは 1 シートあたり先頭 1,000 行まで | 非 PDF を手元で MarkItDown 変換する方針は妥当（引用の照合にも手元のテキストが要る） |
 | 10 | Ant Design は 6.6.7、React 18 以上が必要。v6 では、Steps の `description` は `content` に、`labelPlacement` は `titlePlacement` に、`direction` は `orientation` に変わった（旧名は v7 で削除予定）。サイズの値は `large`／`medium`／`small` に統一された | v6 の新しい API 名で書く。日本語化は `ConfigProvider` の `locale` で行う |
-| 11 | Vite 8.3.5 は Node 20.19 以上または 22.12 以上が必要。Vitest 5.0.5 は Node 22.12 以上、`eventsource-parser` 4.1.2 も Node 22.12 以上 | ローカルの Node 24.18 で問題なし |
+| 11 | Vite 8.3.5 は Node 20.19 以上または 22.12 以上が必要。Vitest 5.0.5 は Node 22.12 以上、`eventsource-parser` 4.1.2 も Node 22.12 以上 | Node 24.x（LTS）を使えば問題なし |
 | 12 | `react-markdown` 10.1.0 は ESM のみ。`rehype-raw` と `rehype-sanitize` を組み合わせて `<u>` だけ許可できる | 仕様 5.5 のとおり |
-| 13 | ローカルの Python は 3.9.9（pyenv）で、MarkItDown の要件（3.10 以上）を満たさない。`uv` は未インストール | M0 で `uv` を入れ、Python 3.13 を管理させる |
+| 13 | **開発・実行環境を Windows に変更した（2026-10-25）。** `make` は Windows に標準でなく、Git Bash にも含まれない。Claude Code は、Git for Windows があれば Git Bash、なければ PowerShell でコマンドを実行する。`uv` は `winget install --id=astral-sh.uv -e` で導入できる | タスクの入口を、ルートの `package.json` の npm scripts にする（Node.js は必須なので追加の導入が要らない）。scripts は `cmd.exe` と `sh` の両方で動く書き方にする |
 | 14 | TypeScript の最新が 7.0.2 で、新しい世代である | `typescript-eslint` などの周辺ツールが対応しているかを M0 で確認し、対応していなければ 6.x を使う |
+| 15 | `onnxruntime`（MarkItDown → `magika` の依存）は、1.24.1 以降で macOS x86_64 の wheel を配布していない（[公式リリースノート](https://github.com/microsoft/onnxruntime/releases/tag/v1.24.1)）。`magika` は Python 3.13 で `onnxruntime>=1.21.0` とだけ指定している。macOS Intel で依存を導入しようとして、この問題で失敗した | Windows では問題にならない。macOS（Intel）は対象外とする。`uv.lock` は最新の `onnxruntime` で解決する（macOS Intel 向けに入れた `required-environments` は外した） |
+| 16 | Windows では、Python の `os.chmod` は読み取り専用の属性しか変えられず、`0600` で所有者のみに制限できない（Python の公式ドキュメントの記載）。また、開いているファイルへの `os.replace` は失敗することがある | `data/config.json` の保護は ACL で行う（方法は T-M2-01 で公式ドキュメントを確認して決める）。`json_store` の置き換えは、短い待ちを挟んだリトライを入れる |
+| 17 | Windows の Git の既定は、チェックアウト時に改行を CRLF にすることがある | `.gitattributes` で LF に固定する。プロンプトのゴールデンファイルのテストが、改行の違いで失敗しないようにする |
 
 ---
 
@@ -60,8 +63,9 @@
 
 | 項目 | 選択 | 備考 |
 |---|---|---|
-| Node | 24.18（インストール済み） | |
-| パッケージ管理 | `npm`（インストール済み） | |
+| Node | 24.x（LTS） | |
+| パッケージ管理 | `npm` | |
+| タスクの入口 | ルートの `package.json` の npm scripts | `make` は Windows で使えないため。`concurrently` で開発サーバーの同時起動を行う |
 | ビルド | Vite 8.3.5、`@vitejs/plugin-react` 6.1.2 | |
 | UI | React 19.3.1、TypeScript（7.0.2。非対応なら 6.x）、Ant Design 6.6.7、`@ant-design/icons` 6 | |
 | サーバー状態 | `@tanstack/react-query` 5.104.5 | 条件セット・設定・プリセットの取得と更新に使う |
@@ -75,7 +79,7 @@
 ### 実行形態
 
 - **開発時**: `uvicorn --reload`（127.0.0.1:8000）と Vite（5173）を起動する。Vite の開発サーバーが `/api` をバックエンドへ転送する。
-- **利用時**: `make build` でフロントをビルドし、FastAPI が `frontend/dist` を静的ファイルとして配信する。**1 つのプロセス**（`make start`）で、ブラウザから `http://127.0.0.1:8000` を開くだけで使える。
+- **利用時**: `npm run build` でフロントをビルドし、FastAPI が `frontend/dist` を静的ファイルとして配信する。**1 つのプロセス**（`npm run start`）で、ブラウザから `http://127.0.0.1:8000` を開くだけで使える。
 
 ---
 
@@ -83,11 +87,12 @@
 
 ```
 20261023_appliation_check/
-├── Makefile                  # setup / dev / test / lint / build / start / e2e / gen-types
+├── package.json              # タスクの入口（npm scripts）: setup / dev / check / build / start / e2e / live / gen-types
+├── .gitattributes            # 改行を LF に固定
 ├── README.md
 ├── .gitignore                # data/, .env, node_modules, .venv, dist など
 ├── data/                     # 実行時に作られる（Git 管理外）
-│   ├── config.json           # 設定（権限 0600）
+│   ├── config.json           # 設定（所有者のみアクセス可）
 │   └── condition_sets.json   # 保存済みの条件セット
 ├── docs/
 │   ├── spec.md
@@ -122,7 +127,7 @@
 │   │   │   └── resume.py     # 種別判定、サイズ検査、MarkItDown 変換、空チェック
 │   │   ├── pipeline.py       # 抽出 → 判定 → 最終評価 → 補正 → 照合（非同期ジェネレーター）
 │   │   ├── storage/
-│   │   │   ├── json_store.py # 原子的な書き込み、権限 0600
+│   │   │   ├── json_store.py # 原子的な書き込み、所有者のみの権限
 │   │   │   ├── config_store.py
 │   │   │   └── condition_set_store.py
 │   │   └── data/catalog.json # 建築業界向けプリセット（仕様 11 章）
@@ -248,7 +253,7 @@ resp = await client.responses.parse(
 
 ### 5.6 ストレージ
 
-- `json_store`: 同じディレクトリの一時ファイルに書いて `os.replace` する。新規作成時は 0600。読み書きはロックで直列化する（1 プロセス前提）。
+- `json_store`: 同じディレクトリの一時ファイルに書いて `os.replace` する。新規作成時に所有者のみに制限する（POSIX は 0600、Windows は ACL。リスク R14）。`os.replace` が失敗したときは、短い待ちを挟んで数回リトライする。読み書きはロックで直列化する（1 プロセス前提）。
 - `config_store`: 環境変数を初期値にし、保存した値を優先。`GET` は API キーをマスクして返す。`PUT` は API キー欄が未入力なら既存の値を残す。
 - `condition_set_store`: `version` フィールドを持たせ、将来の形式変更に備える。ID は UUID。
 
@@ -297,7 +302,7 @@ type FlowState = {
 ### 7.1 方針
 
 - LLM の出力は決定的でないため、**「コードで確定できる部分を厚く」「LLM の部分は契約（スキーマ・検証）と、実 API での少数のスモーク」** に分ける。
-- 通常の `make test` は、ネットワークを使わず、API 費用もかからない。実 API のテストは `-m live`（手動）。
+- 通常の `npm run test` は、ネットワークを使わず、API 費用もかからない。実 API のテストは `-m live`（手動）。
 - テスト用の職歴書はすべて**架空**で、`tests/fixtures` の生成スクリプトで作る。
 
 ### 7.2 バックエンド
@@ -310,7 +315,7 @@ type FlowState = {
 | 単体 | `source_name` | `/` と `\` を含むパス、NFD → NFC（`ガ` が分解された形）、制御文字・改行、200 文字超、空のファイル名 |
 | 単体 | `schemas` | Pydantic のモデルから生成した JSON Schema が、OpenAI の strict の規則（全フィールド必須、`additionalProperties: false`、深さ）を満たすこと。`score` の 0〜100、配列の件数が JSON Schema に出ていること |
 | 単体 | `prompts` | 入力の組み立て結果をゴールデンファイルと比較（出典名・今日の日付・条件・タグの囲み）。PDF と非 PDF と貼り付けの 3 通り |
-| 単体 | `storage` | 原子的な書き込み、権限 0600、破損ファイルの扱い、API キーのマスク、未入力のキーは既存を残す |
+| 単体 | `storage` | 原子的な書き込み、`os.replace` 失敗時のリトライ、所有者のみの権限、破損ファイルの扱い、API キーのマスク、未入力のキーは既存を残す |
 | 単体 | `ingest` | docx／xlsx／pptx／テキストの変換、空・短すぎる、未対応形式、サイズ上限（0 は無制限）、PDF の判定 |
 | 統合 | API（ASGI） | `resumes/check`、条件セットの CRUD、設定の取得・更新・接続テスト（OpenAI をモック）、Host／Origin の拒否、条件 0 件で 422 |
 | 統合 | `pipeline` + `FakeClient` | 正常系のイベント順（`stage` → `stage` → `result`）、構造不整合で再実行、再実行後も不整合でエラー、LLM のエラーごとの `error` の内容 |
@@ -363,7 +368,7 @@ type FlowState = {
 
 ### 7.5 CI 相当
 
-GitHub などの CI は使わず、`make check`（lint・型検査・単体・統合・フロントのテスト）をローカルのコミット前に実行する。E2E（`make e2e`）と実 API（`make live`）は手動で実行する。
+GitHub などの CI は使わず、`npm run check`（lint・型検査・単体・統合・フロントのテスト）をローカルのコミット前に実行する。E2E（`npm run e2e`）と実 API（`npm run live`）は手動で実行する。
 
 ---
 
@@ -376,7 +381,7 @@ GitHub などの CI は使わず、`make check`（lint・型検査・単体・�
 目的: 開発環境を整え、**社内 OpenAI API で必要な機能が通ることを最初に確認する**。
 
 - `uv` のインストール、Python 3.13 の用意。`git init`、`.gitignore`。
-- `backend/` と `frontend/` の雛形、`Makefile`、ruff・pyright・ESLint・Prettier・pytest・Vitest の設定。
+- `backend/` と `frontend/` の雛形、ルートの `package.json`（npm scripts）、`.gitattributes`、ruff・pyright・ESLint・Prettier・pytest・Vitest の設定。
 - **スパイクのスクリプト**（`backend/tests/live/spike_connectivity.py`）で次を確認する。
   1. 設定した `base_url`・モデル（`gpt-5.5`）で `responses.parse` が通る。`temperature` を指定しなくて問題ない。
   2. `Quote`／`ConditionExtraction`／`ExtractionResult` のスキーマ（`float | None`、入れ子、`Field` の制約）が strict で受け付けられる。
@@ -385,7 +390,7 @@ GitHub などの CI は使わず、`make check`（lint・型検査・単体・�
   5. 所要時間とトークン使用量（PDF ありで、抽出と最終評価のそれぞれ）。
 - TypeScript 7 と周辺ツール（typescript-eslint など）の対応を確認する。
 
-完了条件: スパイクの結果が記録され、`make check` が空のプロジェクトで通る。**スパイクで問題が出た場合は、ここで計画を見直す**（例: 社内 API が `input_file` を通さない → 手元で PDF を画像またはテキストに変換して渡す設計に変更）。
+完了条件: スパイクの結果が記録され、`npm run check` が空のプロジェクトで通る。**スパイクで問題が出た場合は、ここで計画を見直す**（例: 社内 API が `input_file` を通さない → 手元で PDF を画像またはテキストに変換して渡す設計に変更）。
 
 ### M1: ドメインロジック（L）
 
@@ -415,7 +420,7 @@ GitHub などの CI は使わず、`make check`（lint・型検査・単体・�
 
 - `pipeline.py`、`api/*`、`security.py`、`main.py`（ルーター、静的配信、起動時のクライアント作成と終了時の `close`）。
 - 統合テスト（7.2）。特に、**切断でのキャンセル**と **`UploadFile` + SSE**。
-- OpenAPI から TypeScript の型を生成する流れ（`make gen-types`）。SSE のイベント型が生成物に含まれるかを確認する。
+- OpenAPI から TypeScript の型を生成する流れ（`npm run gen-types`）。SSE のイベント型が生成物に含まれるかを確認する。
 
 完了条件: `curl` と統合テストで、条件と職歴書を送ると SSE で結果が返る。
 
@@ -448,7 +453,7 @@ GitHub などの CI は使わず、`make check`（lint・型検査・単体・�
 - Playwright の E2E（7.3 のシナリオ）。
 - 実 API で通しの動作確認（実在しない職歴書）。**トークン使用量とコストを実測**する（`detail: high` の影響）。待ち時間が長ければ、最適化の候補（仕様 13.1 の決定事項 12 のとおり、プロンプトキャッシュは対象外。推論負荷の調整など）を相談する。
 - エラー表示の網羅確認（仕様 5.6）、アクセシビリティの基本（キーボード操作、ラベル）。
-- `make build`・`make start` の確認、`README.md`（セットアップ、起動、設定、テストの実行方法）。
+- `npm run build`・`npm run start` の確認、`README.md`（セットアップ、起動、設定、テストの実行方法）。
 
 完了条件: 受け入れ基準（仕様 12 章）の全項目が、7.4 の対応表どおりに確認できる。
 
@@ -479,7 +484,10 @@ M1 と M2 と M5 は並行して進められる（フロントの M5 は、API �
 | R9 | Vite の開発用転送で SSE が詰まる | 開発時に進捗が出ない | M4 以降で確認。問題があれば開発時だけバックエンドに直接接続する |
 | R10 | TypeScript 7 と周辺ツールの非互換 | 開発環境の不具合 | M0 で確認し、非互換なら 6.x に下げる |
 | R11 | Ant Design 6 と jsdom のテストの相性（`matchMedia` など） | コンポーネントテストの失敗 | テストのセットアップで補う |
-| R12 | Python 3.9 のままで MarkItDown が入らない | 環境構築の失敗 | `uv` で 3.13 を用意する（M0） |
+| R12 | `make` などの Unix 前提のツールを使うと、Windows で動かない | 開発・実行の手順が壊れる | タスクの入口を npm scripts にし、`cmd.exe` と `sh` の両方で動く書き方にする。スクリプト内でシェル固有の構文を使わない |
+| R13 | Windows でしか確認できない挙動（パス、改行、ファイルのロック）の不具合を、macOS 上では見つけられない | 手戻り | 開発と動作確認は Windows で行う（macOS では行わない）。改行は `.gitattributes` で LF に固定 |
+| R14 | Windows では `0600` で所有者のみに制限できない | API キーを保存するファイルの保護が弱くなる | ACL（`icacls` など）で継承を外して現在のユーザーのみに許可する。T-M2-01 で公式ドキュメントを確認して実装し、テストで確認する |
+| R15 | 開いているファイルへの `os.replace` が Windows で失敗する（ウイルス対策ソフトなどが掴むことがある） | 設定・条件セットの保存失敗 | 短い待ちを挟んだリトライを `json_store` に入れ、単体テストで確認する |
 
 ---
 
@@ -487,7 +495,7 @@ M1 と M2 と M5 は並行して進められる（フロントの M5 は、API �
 
 1. **PDF の引用照合**: 行わない。PDF から手元でテキストを取り出すと、OCR の手法が LLM と異なり表記揺れが生じ、誤った「原文で確認できず」が増えるため。PDF の引用は「未照合」のままとする（`markitdown[pdf]` は入れない）。
 2. **PDF の `detail: high`**: `high` に固定する。M0 と M8 で費用を実測し、重ければ `data/config.json` の `pdf_detail` で切り替える。
-3. **開発環境**: `git init`（ブランチ `main`）と、`uv` 0.13.5・Python 3.13.17 の導入は完了した。`uv` は `~/.local/bin` にあり、PATH には追加していない（`export PATH="$HOME/.local/bin:$PATH"`）。Homebrew は、この Mac（Intel）が公式サポート外のため使わなかった。コミットは、ユーザーが依頼したときにだけ行う。
+3. **開発環境**: `git init`（ブランチ `main`）は完了した。**開発・実行環境は Windows に変更する**（2026-10-25）。当初の macOS（Intel）での導入（`uv` の入手など）は、Windows に移したため使わない。Windows では `winget install --id=astral-sh.uv -e` で `uv` を導入し、`uv python install 3.13` で Python を用意する。コミットは、ユーザーが依頼したときにだけ行う。
 
 ---
 
