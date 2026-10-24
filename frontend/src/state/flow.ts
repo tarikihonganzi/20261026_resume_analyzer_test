@@ -39,12 +39,18 @@ export type ResumeCheckState =
 export interface ResumeState {
   source: ResumeSource
   name: string
+  /**
+   * 選ぶたびに、リデューサーが付ける、一意な検証の要求の ID。検証の結果は、この ID が一致する
+   * ときだけ採用する（名前では、同名のファイルの選び直しや、貼り付けテキスト同士を区別できない）。
+   */
+  checkId: number
   check: ResumeCheckState
 }
 
 export type EvaluationState =
   | { status: 'idle' }
-  | { status: 'running'; stage: Stage }
+  /** `runId`: 開始するたびに付ける、一意な評価の ID。通知は、この ID が一致するときだけ採用する。 */
+  | { status: 'running'; stage: Stage; runId: number }
   | { status: 'done'; result: EvaluationResult }
   | { status: 'error'; error: FlowError }
 
@@ -56,6 +62,8 @@ export interface FlowState {
   customConditions: Condition[]
   resume: ResumeState | null
   evaluation: EvaluationState
+  /** ID の採番用。増えるだけで、戻らない（古い通知の ID と、新しい要求の ID が重ならないように）。 */
+  counters: { check: number; run: number }
 }
 
 export const initialState: FlowState = {
@@ -65,6 +73,7 @@ export const initialState: FlowState = {
   customConditions: [],
   resume: null,
   evaluation: { status: 'idle' },
+  counters: { check: 0, run: 0 },
 }
 
 export type Action =
@@ -78,13 +87,13 @@ export type Action =
   | { type: 'back' }
   | { type: 'goTo'; step: Step }
   | { type: 'resumeSelected'; source: ResumeSource; name: string }
-  | { type: 'resumeChecked'; check: ResumeCheck; forName?: string }
-  | { type: 'resumeCheckFailed'; error: FlowError; forName?: string }
+  | { type: 'resumeChecked'; check: ResumeCheck; checkId: number }
+  | { type: 'resumeCheckFailed'; error: FlowError; checkId: number }
   | { type: 'clearResume' }
   | { type: 'startEvaluation' }
-  | { type: 'stageChanged'; stage: Stage }
-  | { type: 'evaluationSucceeded'; result: EvaluationResult }
-  | { type: 'evaluationFailed'; error: FlowError }
+  | { type: 'stageChanged'; stage: Stage; runId: number }
+  | { type: 'evaluationSucceeded'; result: EvaluationResult; runId: number }
+  | { type: 'evaluationFailed'; error: FlowError; runId: number }
   | { type: 'cancelEvaluation' }
   | { type: 'reevaluate' }
   | { type: 'newApplicant' }
@@ -208,6 +217,29 @@ function selectionFromCondition(condition: Condition): Selection {
   }
 }
 
+/** 検証の結果が、いま選ばれている職歴書のもので、まだ検証中か。 */
+function isCurrentCheck(state: FlowState, checkId: number): boolean {
+  return state.resume?.checkId === checkId && state.resume.check.status === 'checking'
+}
+
+/** 評価の通知が、いま実行中の評価のものか（キャンセルした評価や、前の評価の通知を無視する）。 */
+function isCurrentRun(state: FlowState, runId: number): boolean {
+  return state.evaluation.status === 'running' && state.evaluation.runId === runId
+}
+
+/**
+ * 職歴書を差し替える・取り除くとき: 前の職歴書の評価結果を捨て、③ へ進めなくする。
+ * ③ にいる場合は ② に戻す（別の応募者の結果が、表示され続けないように）。
+ */
+function discardEvaluation(state: FlowState): FlowState {
+  return {
+    ...state,
+    step: state.step === 2 ? 1 : state.step,
+    furthest: Math.min(state.furthest, 1) as Step,
+    evaluation: { status: 'idle' },
+  }
+}
+
 export function reducer(state: FlowState, action: Action): FlowState {
   switch (action.type) {
     case 'setMode': {
@@ -302,33 +334,41 @@ export function reducer(state: FlowState, action: Action): FlowState {
       return { ...state, step: action.step }
     }
 
-    case 'resumeSelected':
+    case 'resumeSelected': {
+      if (state.evaluation.status === 'running') return state
+      const checkId = state.counters.check + 1
       return {
-        ...state,
-        resume: { source: action.source, name: action.name, check: { status: 'checking' } },
+        ...discardEvaluation(state),
+        resume: {
+          source: action.source,
+          name: action.name,
+          checkId,
+          check: { status: 'checking' },
+        },
+        counters: { ...state.counters, check: checkId },
       }
+    }
 
     case 'resumeChecked':
-      // 選び直したあとに、前の職歴書の検証結果が届いても、無視する
-      if (!state.resume || (action.forName !== undefined && action.forName !== state.resume.name)) {
-        return state
-      }
+      if (!isCurrentCheck(state, action.checkId)) return state
       return {
         ...state,
-        resume: { ...state.resume, check: { status: 'ok', result: action.check } },
+        resume: state.resume && { ...state.resume, check: { status: 'ok', result: action.check } },
       }
 
     case 'resumeCheckFailed':
-      if (!state.resume || (action.forName !== undefined && action.forName !== state.resume.name)) {
-        return state
-      }
+      if (!isCurrentCheck(state, action.checkId)) return state
       return {
         ...state,
-        resume: { ...state.resume, check: { status: 'error', error: action.error } },
+        resume: state.resume && {
+          ...state.resume,
+          check: { status: 'error', error: action.error },
+        },
       }
 
     case 'clearResume':
-      return { ...state, resume: null }
+      if (state.evaluation.status === 'running') return state
+      return { ...discardEvaluation(state), resume: null }
 
     case 'startEvaluation': {
       const canStart =
@@ -337,24 +377,29 @@ export function reducer(state: FlowState, action: Action): FlowState {
         state.resume?.check.status === 'ok' &&
         isConditionsComplete(state)
       if (!canStart) return state
+      const runId = state.counters.run + 1
       return {
         ...state,
         step: 2,
         furthest: 2,
-        evaluation: { status: 'running', stage: 'extracting' },
+        evaluation: { status: 'running', stage: 'extracting', runId },
+        counters: { ...state.counters, run: runId },
       }
     }
 
     case 'stageChanged':
-      if (state.evaluation.status !== 'running') return state
-      return { ...state, evaluation: { status: 'running', stage: action.stage } }
+      if (!isCurrentRun(state, action.runId)) return state
+      return {
+        ...state,
+        evaluation: { status: 'running', stage: action.stage, runId: action.runId },
+      }
 
     case 'evaluationSucceeded':
-      if (state.evaluation.status !== 'running') return state
+      if (!isCurrentRun(state, action.runId)) return state
       return { ...state, evaluation: { status: 'done', result: action.result } }
 
     case 'evaluationFailed':
-      if (state.evaluation.status !== 'running') return state
+      if (!isCurrentRun(state, action.runId)) return state
       return { ...state, evaluation: { status: 'error', error: action.error } }
 
     case 'cancelEvaluation':

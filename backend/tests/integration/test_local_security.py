@@ -220,7 +220,16 @@ def test_normal_mode_does_not_warn(make_app: MakeApp, caplog: pytest.LogCaptureF
 
 
 @pytest.mark.parametrize(
-    ("value", "expected"), [("1", True), ("true", True), ("TRUE", True), ("0", False), ("", False)]
+    ("value", "expected"),
+    [
+        ("1", True),
+        (" 1 ", True),
+        ("true", False),
+        ("TRUE", False),
+        ("yes", False),
+        ("0", False),
+        ("", False),
+    ],
 )
 def test_demo_mode_is_read_from_the_environment(value: str, expected: bool) -> None:
     settings = AppSettings.from_env({"APP_ALLOW_REMOTE": value})
@@ -230,3 +239,32 @@ def test_demo_mode_is_read_from_the_environment(value: str, expected: bool) -> N
 
 def test_demo_mode_is_off_when_the_variable_is_missing() -> None:
     assert AppSettings.from_env({}).allow_remote is False
+
+
+# --- フレームワークが出すエラーも、同じ形にする（Copilot のレビュー: PR#17） ---
+
+
+def test_unsupported_method_is_a_json_error_that_keeps_the_allow_header(make_app: MakeApp) -> None:
+    response = make_app().put("/api/catalog", json={})
+
+    assert response.status_code == 405
+    assert response.json()["code"] == "http_405"
+    assert "detail" not in response.json()
+    assert "GET" in response.headers["allow"]
+
+
+def test_unknown_path_is_a_json_error(make_app: MakeApp) -> None:
+    response = make_app().get("/api/nothing-here")
+
+    assert response.status_code == 404
+    assert response.json()["code"] == "http_404"
+
+
+def test_broken_multipart_is_a_json_error(make_app: MakeApp) -> None:
+    response = make_app().post(
+        "/api/resumes/check", content=b"abc", headers={"Content-Type": "multipart/form-data"}
+    )
+
+    assert response.status_code == 400
+    assert response.json()["code"] == "http_400"
+    assert set(response.json()) == {"code", "message"}

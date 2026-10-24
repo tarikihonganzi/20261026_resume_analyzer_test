@@ -49,12 +49,23 @@ describe('AppShell', () => {
     })
   })
 
-  it('設定ページでは、バナーを出さず、評価に戻るボタンを出す', async () => {
+  it('設定ページにも、バナーを出す（仕様 6.3「全画面の上部」）。誘導のボタンは出さない', async () => {
     server.use(
       http.get('*/api/settings', () =>
         HttpResponse.json({ ...defaultSettings, openai_api_key_masked: '' }),
       ),
     )
+    renderWithProviders(
+      <AppShell view="settings" onNavigate={vi.fn()}>
+        <p>設定</p>
+      </AppShell>,
+    )
+
+    expect(await screen.findByText('API キーが設定されていません')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '設定ページへ' })).not.toBeInTheDocument()
+  })
+
+  it('設定ページでは、評価に戻るボタンから戻れる', async () => {
     const onNavigate = vi.fn()
     renderWithProviders(
       <AppShell view="settings" onNavigate={onNavigate}>
@@ -65,6 +76,33 @@ describe('AppShell', () => {
     await userEvent.click(screen.getByRole('button', { name: /評価に戻る/ }))
 
     expect(onNavigate).toHaveBeenCalledWith('flow')
-    expect(screen.queryByText('API キーが設定されていません')).not.toBeInTheDocument()
+  })
+
+  it('設定を取得できなかったら、理由を出し、再試行できる（サーバーが復旧すれば直る）', async () => {
+    let healthy = false
+    server.use(
+      http.get('*/api/settings', () =>
+        healthy
+          ? HttpResponse.json({ ...defaultSettings, openai_api_key_masked: '' })
+          : HttpResponse.json(
+              { code: 'storage_error', message: '設定ファイルを読めません' },
+              { status: 500 },
+            ),
+      ),
+    )
+    renderWithProviders(
+      <AppShell view="flow" onNavigate={vi.fn()}>
+        <p>本文</p>
+      </AppShell>,
+    )
+
+    expect(await screen.findByText('設定を読み込めませんでした')).toBeInTheDocument()
+    expect(screen.getByText('設定ファイルを読めません')).toBeInTheDocument()
+
+    healthy = true
+    await userEvent.click(screen.getByRole('button', { name: '再試行' }))
+
+    expect(await screen.findByText('API キーが設定されていません')).toBeInTheDocument()
+    expect(screen.queryByText('設定を読み込めませんでした')).not.toBeInTheDocument()
   })
 })

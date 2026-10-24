@@ -84,6 +84,8 @@ def test_source_and_test_files_are_not_ignored_by_git() -> None:
     """`.gitignore` の `data/` の指定が、`app/data/` のプリセットまで除外していた（PR#15）。
 
     除外されたファイルは、手元にあるのでテストが通るのに、クローンした環境では存在しない。
+    未追跡のファイル（`--others`）と、追跡済みのファイル（`--cached`）の両方を調べる。
+    追跡済みのものを調べないと、`.gitignore` を元に戻しても、このテストが通ってしまう（PR#19）。
     """
     import shutil
     import subprocess
@@ -91,30 +93,32 @@ def test_source_and_test_files_are_not_ignored_by_git() -> None:
     if shutil.which("git") is None:
         pytest.skip("git がない")
     repository = Path(__file__).resolve().parents[3]
-    result = subprocess.run(
-        [
-            "git",
-            "ls-files",
-            "--others",
-            "--ignored",
-            "--exclude-standard",
-            "backend/src",
-            "backend/tests",
-        ],
-        cwd=repository,
-        capture_output=True,
-        text=True,
-        check=False,
-        encoding="utf-8",
-    )
-    if result.returncode != 0:
-        pytest.skip("git のリポジトリではない")
 
-    ignored = [
-        line
-        for line in result.stdout.splitlines()
-        if "__pycache__" not in line and not line.startswith("backend/tests/fixtures/out/")
-    ]
+    ignored: list[str] = []
+    for scope in ("--others", "--cached"):
+        result = subprocess.run(
+            [
+                "git",
+                "ls-files",
+                scope,
+                "--ignored",
+                "--exclude-standard",
+                "backend/src",
+                "backend/tests",
+            ],
+            cwd=repository,
+            capture_output=True,
+            text=True,
+            check=False,
+            encoding="utf-8",
+        )
+        if result.returncode != 0:
+            pytest.skip("git のリポジトリではない")
+        ignored += [
+            line
+            for line in result.stdout.splitlines()
+            if "__pycache__" not in line and not line.startswith("backend/tests/fixtures/out/")
+        ]
     assert ignored == []
 
 

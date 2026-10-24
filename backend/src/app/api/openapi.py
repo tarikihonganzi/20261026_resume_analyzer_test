@@ -3,7 +3,8 @@
 FastAPI の SSE は、イベントの中身（`data`）の型を OpenAPI に出さない。また、エラー応答の
 媒体の種類を、ストリームのもの（`text/event-stream`）にしてしまう。次のように補う。
 - `EvaluationResult` と、SSE の各イベント（`StageEventData` など）を、スキーマに加える
-- `/api/evaluations` の 413・422 を、JSON にする
+- すべてのエンドポイントの 422 を、実際の応答（`ErrorResponse`）にする
+- `/api/evaluations` の 413 を、JSON にする
 """
 
 from typing import Any
@@ -29,12 +30,23 @@ def build_openapi(app: FastAPI) -> dict[str, Any]:
     schemas: dict[str, Any] = spec.setdefault("components", {}).setdefault("schemas", {})
     schemas.update(definitions.get("$defs", {}))
 
+    error_body = {
+        "application/json": {"schema": {"$ref": _COMPONENTS.format(model="ErrorResponse")}}
+    }
+    # 検証エラー（422）は、どのエンドポイントも、共通のハンドラー（errors.py）が
+    # ErrorResponse で返す。FastAPI が公開する既定の型（HTTPValidationError。`detail`）は、
+    # 実際の応答と違うので置き換える
+    for path_item in spec["paths"].values():
+        for operation in path_item.values():
+            responses = operation.get("responses", {})
+            if "422" in responses:
+                responses["422"] = {"description": "入力が正しくない", "content": error_body}
+    for unused in ("HTTPValidationError", "ValidationError"):
+        schemas.pop(unused, None)
+
     post = spec["paths"]["/api/evaluations"]["post"]
-    for status in ("413", "422"):
-        if status in post["responses"]:
-            post["responses"][status]["content"] = {
-                "application/json": {"schema": {"$ref": _COMPONENTS.format(model="ErrorResponse")}}
-            }
+    if "413" in post["responses"]:
+        post["responses"]["413"]["content"] = error_body
     # イベントの種類ごとの型を、200 の説明に添える（ドキュメントの読み手のため）
     post["responses"]["200"]["content"]["text/event-stream"]["x-event-schemas"] = [
         {"$ref": _COMPONENTS.format(model=model.__name__)} for model in _EVENT_MODELS

@@ -8,12 +8,14 @@ from collections.abc import AsyncIterable
 from dataclasses import dataclass
 from typing import Annotated
 
+import anyio
 from fastapi import APIRouter, Depends, File, Form, UploadFile
 from fastapi.sse import EventSourceResponse, ServerSentEvent
 from pydantic import TypeAdapter, ValidationError
 
 from app.api.deps import ServicesDep
 from app.api.schemas import ErrorResponse, StageData, StreamError
+from app.api.uploads import read_upload
 from app.domain.errors import InvalidConditionsError, LlmAuthError, NoConditionsError
 from app.domain.models import Condition, Config
 from app.ingest.resume import ResumeInput, load_resume
@@ -54,7 +56,7 @@ async def get_evaluation_input(
         )
 
     # ファイルは、ここで読み切る（検証のあとに、サーバーに残さない）
-    content = await file.read() if file is not None else None
+    content = await read_upload(file, config.max_file_size_mb) if file is not None else None
     resume = await load_resume(
         filename=(file.filename or "") if file is not None else None,
         content=content,
@@ -97,5 +99,7 @@ async def evaluate(
         ):
             yield _to_sse(event)
     finally:
-        # 切断されたとき（CancelledError）も、LLM のクライアントを閉じる
-        await client.aclose()
+        # 切断（キャンセル）のときも、LLM のクライアントを閉じる。キャンセルの中では、await の
+        # たびに取り消しが再び届く（anyio）ので、保護しないと、終了処理が途中で打ち切られる
+        with anyio.CancelScope(shield=True):
+            await client.aclose()
