@@ -22,9 +22,14 @@ module-name = "app"
 [dependency-groups]
 dev = [
     "httpx>=0.28.1",
+    "openpyxl>=3.1.5",
+    "pillow>=13.0.0",
     "pyright>=1.1.414",
     "pytest>=9.1.1",
     "pytest-asyncio>=1.4.0",
+    "python-docx>=1.2.0",
+    "python-pptx>=1.0.2",
+    "reportlab>=5.1.0",
     "ruff>=0.17.2",
 ]
 
@@ -43,6 +48,8 @@ ignore = ["RUF001", "RUF002", "RUF003"]
 
 [tool.pyright]
 include = ["src", "tests"]
+# tests/fixtures を `fixtures` パッケージとして import できるようにする（pytest も tests/ を探索パスに加える）
+extraPaths = ["src", "tests"]
 pythonVersion = "3.14"
 typeCheckingMode = "strict"
 venvPath = "."
