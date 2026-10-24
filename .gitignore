@@ -1,5 +1,5 @@
 # 実行時データ・秘密情報
-data/
+/data/
 .env
 .env.*
 CLAUDE.local.md

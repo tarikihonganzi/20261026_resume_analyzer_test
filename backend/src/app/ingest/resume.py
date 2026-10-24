@@ -78,6 +78,8 @@ _SUPPORTED_FORMATS_HINT = (
 # 変換結果から、本文でない行を除くための規則（見出し、水平線、表の区切り）
 _HEADING_LINE = re.compile(r"^#{1,6}(?:\s|$)")
 _RULE_RUN = re.compile(r"[-=_~:]{3,}")
+# 水平線（`- - -`・`___`・`* * *`）や、空の表の行（`| | |`）のように、記号と空白だけの行
+_RULE_ONLY_LINE = re.compile(r"[\s|:\-=_*~]*")
 
 
 @dataclass(frozen=True)
@@ -164,7 +166,7 @@ def _content_length(text: str) -> int:
     total = 0
     for line in text.splitlines():
         stripped = line.strip()
-        if _HEADING_LINE.match(stripped):
+        if _HEADING_LINE.match(stripped) or _RULE_ONLY_LINE.fullmatch(stripped):
             continue
         total += len(normalize(_RULE_RUN.sub("", stripped)))
     return total

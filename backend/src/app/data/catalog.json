@@ -1,0 +1,278 @@
+{
+  "version": 1,
+  "items": [
+    {
+      "id": "qual-kenchiku-sekou-1",
+      "label": "1級建築施工管理技士",
+      "kind": "boolean",
+      "unit": null,
+      "category": "資格"
+    },
+    {
+      "id": "qual-kenchiku-sekou-2",
+      "label": "2級建築施工管理技士",
+      "kind": "boolean",
+      "unit": null,
+      "category": "資格"
+    },
+    {
+      "id": "qual-doboku-sekou-1",
+      "label": "1級土木施工管理技士",
+      "kind": "boolean",
+      "unit": null,
+      "category": "資格"
+    },
+    {
+      "id": "qual-doboku-sekou-2",
+      "label": "2級土木施工管理技士",
+      "kind": "boolean",
+      "unit": null,
+      "category": "資格"
+    },
+    {
+      "id": "qual-denki-sekou-1",
+      "label": "1級電気工事施工管理技士",
+      "kind": "boolean",
+      "unit": null,
+      "category": "資格"
+    },
+    {
+      "id": "qual-kan-sekou-1",
+      "label": "1級管工事施工管理技士",
+      "kind": "boolean",
+      "unit": null,
+      "category": "資格"
+    },
+    {
+      "id": "qual-kenchikushi-1",
+      "label": "1級建築士",
+      "kind": "boolean",
+      "unit": null,
+      "category": "資格"
+    },
+    {
+      "id": "qual-kenchikushi-2",
+      "label": "2級建築士",
+      "kind": "boolean",
+      "unit": null,
+      "category": "資格"
+    },
+    {
+      "id": "qual-setsubi",
+      "label": "建築設備士",
+      "kind": "boolean",
+      "unit": null,
+      "category": "資格"
+    },
+    {
+      "id": "qual-kanri-gijutsusha",
+      "label": "監理技術者資格者証",
+      "kind": "boolean",
+      "unit": null,
+      "category": "資格"
+    },
+    {
+      "id": "qual-kikan-ginosha",
+      "label": "登録基幹技能者",
+      "kind": "boolean",
+      "unit": null,
+      "category": "資格"
+    },
+    {
+      "id": "qual-denki-koji-2",
+      "label": "第二種電気工事士",
+      "kind": "boolean",
+      "unit": null,
+      "category": "資格"
+    },
+    {
+      "id": "qual-takken",
+      "label": "宅地建物取引士",
+      "kind": "boolean",
+      "unit": null,
+      "category": "資格"
+    },
+    {
+      "id": "qual-sekisan",
+      "label": "建築積算士",
+      "kind": "boolean",
+      "unit": null,
+      "category": "資格"
+    },
+    {
+      "id": "qual-ashiba",
+      "label": "足場の組立て等作業主任者",
+      "kind": "boolean",
+      "unit": null,
+      "category": "資格"
+    },
+    {
+      "id": "qual-tamakake",
+      "label": "玉掛け技能講習修了",
+      "kind": "boolean",
+      "unit": null,
+      "category": "資格"
+    },
+    {
+      "id": "qual-shokucho",
+      "label": "職長・安全衛生責任者教育修了",
+      "kind": "boolean",
+      "unit": null,
+      "category": "資格"
+    },
+    {
+      "id": "qual-driver",
+      "label": "普通自動車運転免許",
+      "kind": "boolean",
+      "unit": null,
+      "category": "資格"
+    },
+    {
+      "id": "skill-autocad",
+      "label": "AutoCAD の実務経験",
+      "kind": "number",
+      "unit": "年",
+      "category": "スキル・ツール"
+    },
+    {
+      "id": "skill-jwcad",
+      "label": "Jw_cad の実務経験",
+      "kind": "number",
+      "unit": "年",
+      "category": "スキル・ツール"
+    },
+    {
+      "id": "skill-revit",
+      "label": "Revit（BIM）の実務経験",
+      "kind": "number",
+      "unit": "年",
+      "category": "スキル・ツール"
+    },
+    {
+      "id": "skill-archicad",
+      "label": "ArchiCAD の実務経験",
+      "kind": "number",
+      "unit": "年",
+      "category": "スキル・ツール"
+    },
+    {
+      "id": "skill-shikozu",
+      "label": "施工図作成",
+      "kind": "boolean",
+      "unit": null,
+      "category": "スキル・ツール"
+    },
+    {
+      "id": "skill-estimate",
+      "label": "積算・見積作成",
+      "kind": "boolean",
+      "unit": null,
+      "category": "スキル・ツール"
+    },
+    {
+      "id": "skill-structural",
+      "label": "構造計算",
+      "kind": "boolean",
+      "unit": null,
+      "category": "スキル・ツール"
+    },
+    {
+      "id": "exp-industry",
+      "label": "建築業界での実務経験年数",
+      "kind": "number",
+      "unit": "年",
+      "category": "経験・実績"
+    },
+    {
+      "id": "exp-genba-kantoku",
+      "label": "現場監督（施工管理）の経験年数",
+      "kind": "number",
+      "unit": "年",
+      "category": "経験・実績"
+    },
+    {
+      "id": "exp-genba-dairinin",
+      "label": "現場代理人の経験",
+      "kind": "boolean",
+      "unit": null,
+      "category": "経験・実績"
+    },
+    {
+      "id": "exp-kanri-gijutsusha",
+      "label": "監理技術者としての経験",
+      "kind": "boolean",
+      "unit": null,
+      "category": "経験・実績"
+    },
+    {
+      "id": "exp-design",
+      "label": "設計（意匠・構造・設備）の経験年数",
+      "kind": "number",
+      "unit": "年",
+      "category": "経験・実績"
+    },
+    {
+      "id": "exp-schedule",
+      "label": "工程管理",
+      "kind": "boolean",
+      "unit": null,
+      "category": "経験・実績"
+    },
+    {
+      "id": "exp-cost",
+      "label": "原価管理",
+      "kind": "boolean",
+      "unit": null,
+      "category": "経験・実績"
+    },
+    {
+      "id": "exp-quality",
+      "label": "品質管理",
+      "kind": "boolean",
+      "unit": null,
+      "category": "経験・実績"
+    },
+    {
+      "id": "exp-safety",
+      "label": "安全管理",
+      "kind": "boolean",
+      "unit": null,
+      "category": "経験・実績"
+    },
+    {
+      "id": "exp-negotiation",
+      "label": "発注者・設計者との折衝",
+      "kind": "boolean",
+      "unit": null,
+      "category": "経験・実績"
+    },
+    {
+      "id": "exp-subcontractor",
+      "label": "協力会社（下請）の管理",
+      "kind": "boolean",
+      "unit": null,
+      "category": "経験・実績"
+    },
+    {
+      "id": "exp-management",
+      "label": "部下・チームのマネジメント経験年数",
+      "kind": "number",
+      "unit": "年",
+      "category": "経験・実績"
+    },
+    {
+      "id": "exp-public-works",
+      "label": "官公庁工事の経験",
+      "kind": "boolean",
+      "unit": null,
+      "category": "経験・実績"
+    },
+    {
+      "id": "exp-large-project",
+      "label": "大規模案件（請負金額10億円以上）の経験",
+      "kind": "boolean",
+      "unit": null,
+      "category": "経験・実績"
+    }
+  ]
+}

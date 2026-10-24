@@ -85,6 +85,15 @@ def _resume_header(resume: ResumeInput, today: str) -> str:
     return f"今日の日付: {today}\n職歴書の名前: {resume.source_name}\n形式: {resume.format}"
 
 
+def neutralize_resume_text(text: str) -> str:
+    """職歴書の中の閉じタグ（`</resume>`）を無害にして、<resume> の外に出られないようにする。
+
+    LLM は、この変換後の文字列から引用する。引用の照合（pipeline）は、原文とこの変換後の
+    文字列の両方に対して行う（変換は元に戻せないので、引用を原文に戻すのではなく、照合先を増やす）。
+    """
+    return re.sub(r"</\s*resume\s*>", "&lt;/resume&gt;", text, flags=re.IGNORECASE)
+
+
 def _resume_parts(resume: ResumeInput, pdf_detail: PdfDetail) -> list[dict[str, Any]]:
     """職歴書の部分。PDF は添付ファイル、それ以外は <resume> タグで囲んだテキスト。"""
     if resume.pdf is not None:
@@ -99,8 +108,7 @@ def _resume_parts(resume: ResumeInput, pdf_detail: PdfDetail) -> list[dict[str, 
         ]
 
     assert resume.text is not None
-    # 職歴書の中の閉じタグで、<resume> の外に出られないようにする
-    body = re.sub(r"</\s*resume\s*>", "&lt;/resume&gt;", resume.text, flags=re.IGNORECASE)
+    body = neutralize_resume_text(resume.text)
     name = html.escape(resume.source_name, quote=True)
     format_ = html.escape(resume.format, quote=True)
     return [

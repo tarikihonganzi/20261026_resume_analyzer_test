@@ -78,3 +78,41 @@ def test_invalid_item_is_rejected(overrides: dict[str, object]) -> None:
 
     with pytest.raises(ValidationError):
         CatalogItem.model_validate(base | overrides)
+
+
+def test_source_and_test_files_are_not_ignored_by_git() -> None:
+    """`.gitignore` の `data/` の指定が、`app/data/` のプリセットまで除外していた（PR#15）。
+
+    除外されたファイルは、手元にあるのでテストが通るのに、クローンした環境では存在しない。
+    """
+    import shutil
+    import subprocess
+
+    if shutil.which("git") is None:
+        pytest.skip("git がない")
+    repository = Path(__file__).resolve().parents[3]
+    result = subprocess.run(
+        [
+            "git",
+            "ls-files",
+            "--others",
+            "--ignored",
+            "--exclude-standard",
+            "backend/src",
+            "backend/tests",
+        ],
+        cwd=repository,
+        capture_output=True,
+        text=True,
+        check=False,
+        encoding="utf-8",
+    )
+    if result.returncode != 0:
+        pytest.skip("git のリポジトリではない")
+
+    ignored = [
+        line
+        for line in result.stdout.splitlines()
+        if "__pycache__" not in line and not line.startswith("backend/tests/fixtures/out/")
+    ]
+    assert ignored == []
