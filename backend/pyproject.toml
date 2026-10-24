@@ -34,6 +34,12 @@ src = ["src", "tests"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "ASYNC", "SIM", "RUF"]
+# 日本語の文字列・コメント・docstring で、全角の括弧や句読点を使うため
+ignore = ["RUF001", "RUF002", "RUF003"]
+
+[tool.ruff.lint.per-file-ignores]
+# description は仕様書 5.4 章の文言をそのまま写す。折り返すと仕様書と見比べにくくなる
+"src/app/llm/schemas.py" = ["E501"]
 
 [tool.pyright]
 include = ["src", "tests"]

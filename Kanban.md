@@ -31,7 +31,6 @@
 ## Backlog
 
 ### M1: ドメインロジック
-- **T-M1-01** `models.py` と LLM 出力スキーマ（`schemas.py`） [M] — 依存: T-M0-01。スキーマの strict 検査テストを含む
 - **T-M1-02** `judging`（判定・マッチ度合い・必須未達） [M] — AC: 4。half-up の四捨五入（62.5→63）、条件 0 件のエラー
 - **T-M1-03** `clipping`（最終スコアの ±20 補正） [S] — AC: 5
 - **T-M1-04** `quotes`（正規化・原文照合） [M] — AC: 15
@@ -80,6 +79,7 @@
 
 ## Done
 
+- **T-M1-01** `models.py` と LLM 出力スキーマ（`schemas.py`） — 2026-10-25。branch: `feat/T-M1-01-models-schemas`。domain/models.py（Condition・Judgement）と llm/schemas.py（仕様 5.4 章の 5 モデル）。strict 規則・制約・仕様書とのスキーマ一致をテスト。npm run check exit 0（pytest 43 件・Vitest 1 件）。Python 3.14 の注釈の遅延評価と Pydantic／OpenAI SDK の strict 変換の相性を確認（オフライン。実 API は T-M0-02）
 - **T-M0-01** プロジェクト雛形 — 2026-10-25。branch: `chore/T-M0-01-scaffold`。`backend/`（FastAPI 最小アプリ・`GET /api/health`・pytest・ruff・pyright strict）、`frontend/`（Vite 8・React 19・TypeScript 6.0.3・Ant Design 6・Vitest 5・ESLint 10・Prettier）、ルートの `package.json`（setup/dev/check/build）。確認: クリーンな状態から `npm run setup` → `npm run check`（exit 0。pytest 2 件・Vitest 1 件）、`npm run build`、`npm run dev` で `/api/health`（直・Vite 経由）。決定: Python 3.14（計画書 1 章 #18）、TypeScript 6.x 固定（同 #14）、仕様 v0.8 で `/api/health` を追加。未確認: ブラウザでの画面表示（見出しのみ）
 - **T-00-01** 仕様書 v0.6 — 2026-10-25。ヒアリング反映、技術調査の結果を反映。`docs/spec.md`
 - **T-00-02** 実装計画 — 2026-10-25。`docs/implementation-plan.md`
