@@ -46,6 +46,7 @@ EXTRACT_SYSTEM_PROMPT = f"""\
 - kind が boolean の条件: 職歴書の記載から保有が読み取れれば has_skill を true、読み取れなければ false にします。関連しそうな別の資格・経験からの類推で true にしません。years は null にします。
 - kind が number の条件: 職歴書の記載から経験年数を算出して years に入れます（小数可、年単位。月数を 12 で割って表し、丸めません。1 年 3 か月は 1.25）。期間が重なる場合は、重複を除いて数えます。終了日がない（在籍中の）期間の終了日は、入力の「今日の日付」とします。期間が読み取れず算出できない場合は null にします。has_skill は null にします。
 - 年数を算出した場合は、reason に、使った期間と計算も書きます。
+- 条件に description（補足説明）がある場合は、それが、その条件として数えるものの定義です。定義に当てはまる記載だけを根拠にします。条件の名前に関連していても、定義に当てはまらない記載（定義が「含めない」としているものを含む）は、数えません（has_skill を true にしない。年数に含めない）。description がない条件は、条件の名前の一般的な意味で判定します。
 
 {_EVIDENCE_RULES}
 - 判定に使った記載があるときは、quotes に 1 件以上入れます。記載が見つからないことが根拠の場合だけ、quotes を空にします。
@@ -64,6 +65,7 @@ EVALUATE_SYSTEM_PROMPT = f"""\
 - strengths は良かった点、weaknesses は懸念点・不足している点です。重要なものから順に、具体的に書きます（「経験が豊富」のような抽象的な表現だけにしません）。
 - 必須条件の未達（「必須条件の未達」の一覧）がある場合は、summary と weaknesses の両方で、必ず触れます。
 - text は Markdown で書きます。重要な語句は **太字**、特に強調したい箇所は <u>下線</u> を使ってかまいません。
+- 条件の「補足説明」は、その条件として数えるものの定義です。評価の文章も、この定義に沿って書きます（定義に当てはまらない記載を、その条件を満たす根拠にしません）。
 
 {_EVIDENCE_RULES}
 - 根拠が条件の判定結果だけの場合は、その旨を reason に書き、quotes は空にしてかまいません。
@@ -128,13 +130,17 @@ def _message(header: str, resume: ResumeInput, pdf_detail: PdfDetail) -> InputIt
 
 
 def _condition_for_extraction(condition: Condition) -> dict[str, Any]:
-    return {
+    entry: dict[str, Any] = {
         "id": condition.id,
         "label": condition.label,
         "kind": condition.kind,
         "min_value": condition.min_value,
         "unit": condition.unit,
     }
+    # 補足説明（何をその条件として数えるか）がある条件にだけ付ける
+    if condition.description is not None:
+        entry["description"] = condition.description
+    return entry
 
 
 def build_extract_input(request: ExtractRequest, *, pdf_detail: PdfDetail) -> InputItems:
@@ -168,8 +174,10 @@ def _evaluated_condition(
         "必須": condition.required,
         "最低値": condition.min_value,
         "単位": condition.unit,
-        "結果": _STATUS_LABELS[judgement.status],
     }
+    if condition.description is not None:
+        result["補足説明"] = condition.description
+    result["結果"] = _STATUS_LABELS[judgement.status]
     if condition.kind == "boolean":
         result["抽出した有無"] = extraction.has_skill
     else:

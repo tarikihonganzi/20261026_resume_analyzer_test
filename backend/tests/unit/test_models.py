@@ -80,3 +80,42 @@ def test_judgement_accepts_each_status(status: str) -> None:
 def test_judgement_rejects_unknown_status() -> None:
     with pytest.raises(ValidationError):
         Judgement.model_validate({"condition_id": "c1", "status": "partial"})
+
+
+# --- 補足説明（仕様 5.1・13.1 #27） ---
+
+
+def test_description_is_optional_and_defaults_to_none() -> None:
+    assert make_condition().description is None
+
+
+def test_description_is_kept_and_trimmed() -> None:
+    condition = make_condition(description="  検査への立会い・試験の記録を数える。\n")
+
+    assert condition.description == "検査への立会い・試験の記録を数える。"
+
+
+@pytest.mark.parametrize("blank", ["", "   ", "\n\t "])
+def test_blank_description_means_no_description(blank: str) -> None:
+    assert make_condition(description=blank).description is None
+
+
+def test_description_of_500_characters_is_accepted_and_501_is_rejected() -> None:
+    assert make_condition(description="あ" * 500).description == "あ" * 500
+    with pytest.raises(ValidationError):
+        make_condition(description="あ" * 501)
+
+
+def test_condition_saved_without_a_description_can_still_be_read() -> None:
+    legacy = {
+        "id": "a",
+        "label": "A",
+        "kind": "boolean",
+        "required": True,
+        "min_value": None,
+        "unit": None,
+        "source": "custom",
+        "category": None,
+    }
+
+    assert Condition.model_validate(legacy).description is None

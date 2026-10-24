@@ -140,6 +140,7 @@ export function buildConditions(catalog: readonly CatalogItem[], state: FlowStat
       unit: item.unit,
       source: 'preset',
       category: item.category,
+      description: item.description ?? null,
     })
   }
   for (const custom of state.customConditions) {

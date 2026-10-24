@@ -6,6 +6,7 @@ interface FormValues {
   label: string
   kind: ConditionKind
   minValue: number | null
+  description: string
 }
 
 interface CustomConditionModalProps {
@@ -17,6 +18,7 @@ interface CustomConditionModalProps {
 }
 
 const MAX_LABEL_LENGTH = 100
+const MAX_DESCRIPTION_LENGTH = 500
 
 /** 自由記述の条件の追加・編集（仕様 5.1）。ラベル・型（boolean／number）・最低値を入力する。 */
 export function CustomConditionModal({
@@ -35,6 +37,7 @@ export function CustomConditionModal({
       label: initial?.label ?? '',
       kind: initial?.kind ?? 'boolean',
       minValue: initial?.min_value ?? null,
+      description: initial?.description ?? '',
     })
   }, [open, initial, form])
 
@@ -50,6 +53,8 @@ export function CustomConditionModal({
       unit: isNumber ? '年' : null,
       source: 'custom',
       category: null,
+      // 空なら、補足説明なし（null）
+      description: values.description.trim() === '' ? null : values.description.trim(),
     })
   }
 
@@ -70,7 +75,7 @@ export function CustomConditionModal({
         form={form}
         layout="vertical"
         onFinish={submit}
-        initialValues={{ kind: 'boolean', minValue: null }}
+        initialValues={{ kind: 'boolean', minValue: null, description: '' }}
       >
         <Form.Item
           name="label"
@@ -96,6 +101,24 @@ export function CustomConditionModal({
               { label: '有無（保有しているか）', value: 'boolean' },
               { label: '年数（経験年数など）', value: 'number' },
             ]}
+          />
+        </Form.Item>
+        <Form.Item
+          name="description"
+          label="補足説明（任意）"
+          tooltip="何をこの条件として数えるかを書くと、判定のぶれが減ります。数えないものの例も書くと効果的です。"
+          rules={[
+            {
+              max: MAX_DESCRIPTION_LENGTH,
+              message: `${String(MAX_DESCRIPTION_LENGTH)} 文字以内で入力してください`,
+            },
+          ]}
+        >
+          <Input.TextArea
+            rows={3}
+            showCount
+            maxLength={MAX_DESCRIPTION_LENGTH}
+            placeholder="例: 耐震診断の業務で、診断報告書の作成までを担当した経験。調査の補助だけは含めない"
           />
         </Form.Item>
         {kind === 'number' ? (

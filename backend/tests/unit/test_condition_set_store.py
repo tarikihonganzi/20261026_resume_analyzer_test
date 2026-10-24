@@ -97,6 +97,7 @@ def test_file_format_follows_the_spec(tmp_path: Path) -> None:
         "unit",
         "source",
         "category",
+        "description",
     }
 
 

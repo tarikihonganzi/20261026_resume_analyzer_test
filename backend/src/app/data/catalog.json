@@ -6,273 +6,312 @@
       "label": "1級建築施工管理技士",
       "kind": "boolean",
       "unit": null,
-      "category": "資格"
+      "category": "資格",
+      "description": "国家資格「1級建築施工管理技士」の合格・登録の記載。「1級建築施工管理技士補」は含めない"
     },
     {
       "id": "qual-kenchiku-sekou-2",
       "label": "2級建築施工管理技士",
       "kind": "boolean",
       "unit": null,
-      "category": "資格"
+      "category": "資格",
+      "description": "国家資格「2級建築施工管理技士」（建築・躯体・仕上げのいずれかの種別）。1級を持っていても、記載がなければ「あり」にしない"
     },
     {
       "id": "qual-doboku-sekou-1",
       "label": "1級土木施工管理技士",
       "kind": "boolean",
       "unit": null,
-      "category": "資格"
+      "category": "資格",
+      "description": "国家資格「1級土木施工管理技士」の記載"
     },
     {
       "id": "qual-doboku-sekou-2",
       "label": "2級土木施工管理技士",
       "kind": "boolean",
       "unit": null,
-      "category": "資格"
+      "category": "資格",
+      "description": "国家資格「2級土木施工管理技士」（土木・鋼構造物塗装・薬液注入のいずれかの種別）"
     },
     {
       "id": "qual-denki-sekou-1",
       "label": "1級電気工事施工管理技士",
       "kind": "boolean",
       "unit": null,
-      "category": "資格"
+      "category": "資格",
+      "description": "国家資格の記載。「電気工事士」とは別の資格"
     },
     {
       "id": "qual-kan-sekou-1",
       "label": "1級管工事施工管理技士",
       "kind": "boolean",
       "unit": null,
-      "category": "資格"
+      "category": "資格",
+      "description": "国家資格の記載"
     },
     {
       "id": "qual-kenchikushi-1",
       "label": "1級建築士",
       "kind": "boolean",
       "unit": null,
-      "category": "資格"
+      "category": "資格",
+      "description": "国家資格「1級建築士」（免許登録）の記載"
     },
     {
       "id": "qual-kenchikushi-2",
       "label": "2級建築士",
       "kind": "boolean",
       "unit": null,
-      "category": "資格"
+      "category": "資格",
+      "description": "国家資格「2級建築士」の記載。1級を持っている場合は、2級の記載がなくても「あり」にしない"
     },
     {
       "id": "qual-setsubi",
       "label": "建築設備士",
       "kind": "boolean",
       "unit": null,
-      "category": "資格"
+      "category": "資格",
+      "description": "国家資格「建築設備士」の記載"
     },
     {
       "id": "qual-kanri-gijutsusha",
       "label": "監理技術者資格者証",
       "kind": "boolean",
       "unit": null,
-      "category": "資格"
+      "category": "資格",
+      "description": "「監理技術者資格者証」の交付を受けている記載。「監理技術者講習修了」だけの場合は含めない"
     },
     {
       "id": "qual-kikan-ginosha",
       "label": "登録基幹技能者",
       "kind": "boolean",
       "unit": null,
-      "category": "資格"
+      "category": "資格",
+      "description": "登録基幹技能者の講習修了・登録の記載（CCUS の能力評価の最上位に位置づけられる）"
     },
     {
       "id": "qual-denki-koji-2",
       "label": "第二種電気工事士",
       "kind": "boolean",
       "unit": null,
-      "category": "資格"
+      "category": "資格",
+      "description": "国家資格「第二種電気工事士」の記載。第一種の記載は別の資格"
     },
     {
       "id": "qual-takken",
       "label": "宅地建物取引士",
       "kind": "boolean",
       "unit": null,
-      "category": "資格"
+      "category": "資格",
+      "description": "資格者証の交付・登録の記載。「宅建」の略称も含む"
     },
     {
       "id": "qual-sekisan",
       "label": "建築積算士",
       "kind": "boolean",
       "unit": null,
-      "category": "資格"
+      "category": "資格",
+      "description": "「建築積算士」の資格の記載（「建築積算士補」は含めない）"
     },
     {
       "id": "qual-ashiba",
       "label": "足場の組立て等作業主任者",
       "kind": "boolean",
       "unit": null,
-      "category": "資格"
+      "category": "資格",
+      "description": "技能講習の修了の記載"
     },
     {
       "id": "qual-tamakake",
       "label": "玉掛け技能講習修了",
       "kind": "boolean",
       "unit": null,
-      "category": "資格"
+      "category": "資格",
+      "description": "技能講習の修了の記載。特別教育だけの場合は含めない"
     },
     {
       "id": "qual-shokucho",
       "label": "職長・安全衛生責任者教育修了",
       "kind": "boolean",
       "unit": null,
-      "category": "資格"
+      "category": "資格",
+      "description": "「職長・安全衛生責任者教育」の修了の記載"
     },
     {
       "id": "qual-driver",
       "label": "普通自動車運転免許",
       "kind": "boolean",
       "unit": null,
-      "category": "資格"
+      "category": "資格",
+      "description": "普通自動車の運転免許（AT 限定を含む）の記載。現場事務の求人で求められることがある"
     },
     {
       "id": "skill-autocad",
       "label": "AutoCAD の実務経験",
       "kind": "number",
       "unit": "年",
-      "category": "スキル・ツール"
+      "category": "スキル・ツール",
+      "description": "仕事で AutoCAD を使って図面を作成・修正した期間。学習・資格取得のための利用は含めない"
     },
     {
       "id": "skill-jwcad",
       "label": "Jw_cad の実務経験",
       "kind": "number",
       "unit": "年",
-      "category": "スキル・ツール"
+      "category": "スキル・ツール",
+      "description": "仕事で Jw_cad を使って図面を作成・修正した期間"
     },
     {
       "id": "skill-revit",
       "label": "Revit（BIM）の実務経験",
       "kind": "number",
       "unit": "年",
-      "category": "スキル・ツール"
+      "category": "スキル・ツール",
+      "description": "仕事で Revit を使ってモデルを作成した期間（意匠・構造・設備を問わない）。BIM の連携や、モデルの確認だけの期間は含めない"
     },
     {
       "id": "skill-archicad",
       "label": "ArchiCAD の実務経験",
       "kind": "number",
       "unit": "年",
-      "category": "スキル・ツール"
+      "category": "スキル・ツール",
+      "description": "仕事で ArchiCAD を使った期間"
     },
     {
       "id": "skill-shikozu",
       "label": "施工図作成",
       "kind": "boolean",
       "unit": null,
-      "category": "スキル・ツール"
+      "category": "スキル・ツール",
+      "description": "設計図を元に、現場で使う施工図（設計図とは別のもの）を作成・修正した記載。設計図の作成だけは含めない"
     },
     {
       "id": "skill-estimate",
       "label": "積算・見積作成",
       "kind": "boolean",
       "unit": null,
-      "category": "スキル・ツール"
+      "category": "スキル・ツール",
+      "description": "設計図書から数量を拾い、単価を当てて見積・実行予算を作成した記載"
     },
     {
       "id": "skill-structural",
       "label": "構造計算",
       "kind": "boolean",
       "unit": null,
-      "category": "スキル・ツール"
+      "category": "スキル・ツール",
+      "description": "構造計算（許容応力度計算など）を担当した記載。構造図の読み取りだけは含めない"
     },
     {
       "id": "exp-industry",
       "label": "建築業界での実務経験年数",
       "kind": "number",
       "unit": "年",
-      "category": "経験・実績"
+      "category": "経験・実績",
+      "description": "建築工事に関わる会社での、勤務期間の合計（営業・事務を含む）。休職・ブランクは除く"
     },
     {
       "id": "exp-genba-kantoku",
       "label": "現場監督（施工管理）の経験年数",
       "kind": "number",
       "unit": "年",
-      "category": "経験・実績"
+      "category": "経験・実績",
+      "description": "現場に配置され、四大管理（原価・工程・品質・安全）の業務を担当した期間の合計。事務・設計・営業の期間は含めない。期間が重なる場合は重複を除く"
     },
     {
       "id": "exp-genba-dairinin",
       "label": "現場代理人の経験",
       "kind": "boolean",
       "unit": null,
-      "category": "経験・実績"
+      "category": "経験・実績",
+      "description": "契約書上の現場代理人として、現場の運営を任された記載"
     },
     {
       "id": "exp-kanri-gijutsusha",
       "label": "監理技術者としての経験",
       "kind": "boolean",
       "unit": null,
-      "category": "経験・実績"
+      "category": "経験・実績",
+      "description": "監理技術者として工事に配置された記載（主任技術者としての配置は含めない）"
     },
     {
       "id": "exp-design",
       "label": "設計（意匠・構造・設備）の経験年数",
       "kind": "number",
       "unit": "年",
-      "category": "経験・実績"
+      "category": "経験・実績",
+      "description": "設計業務を担当した期間の合計。施工図の作成だけの期間は含めない"
     },
     {
       "id": "exp-schedule",
       "label": "工程管理",
       "kind": "boolean",
       "unit": null,
-      "category": "経験・実績"
+      "category": "経験・実績",
+      "description": "工程表の作成・更新、日々の進捗確認、遅れへの対応（人員・機材の調整）の記載。工程表を「見る」だけは含めない"
     },
     {
       "id": "exp-cost",
       "label": "原価管理",
       "kind": "boolean",
       "unit": null,
-      "category": "経験・実績"
+      "category": "経験・実績",
+      "description": "実行予算の作成、実際の原価（人件費・材料費・外注費）と予算の差の把握・対策の記載。見積作成だけは含めない"
     },
     {
       "id": "exp-quality",
       "label": "品質管理",
       "kind": "boolean",
       "unit": null,
-      "category": "経験・実績"
+      "category": "経験・実績",
+      "description": "施工が、設計図書・仕様書の品質を満たすように確認した記載。例: 各種検査（配筋・コンクリート）への立会い、試験・測定の記録、是正指示、品質管理計画の作成。「品質に気を付けた」だけは含めない"
     },
     {
       "id": "exp-safety",
       "label": "安全管理",
       "kind": "boolean",
       "unit": null,
-      "category": "経験・実績"
+      "category": "経験・実績",
+      "description": "安全パトロール、KY（危険予知）活動、安全衛生協議会の運営、新規入場者教育、災害防止の対策の記載。「安全に気を付けた」「安全第一で作業した」だけは含めない"
     },
     {
       "id": "exp-negotiation",
       "label": "発注者・設計者との折衝",
       "kind": "boolean",
       "unit": null,
-      "category": "経験・実績"
+      "category": "経験・実績",
+      "description": "発注者・設計者との打合せ・協議・承認取得の記載"
     },
     {
       "id": "exp-subcontractor",
       "label": "協力会社（下請）の管理",
       "kind": "boolean",
       "unit": null,
-      "category": "経験・実績"
+      "category": "経験・実績",
+      "description": "協力会社への指示・調整、作業の打合せ、出来高の確認の記載。契約・支払いだけは含めない"
     },
     {
       "id": "exp-management",
       "label": "部下・チームのマネジメント経験年数",
       "kind": "number",
       "unit": "年",
-      "category": "経験・実績"
+      "category": "経験・実績",
+      "description": "部下・チームの人数を明記した、またはリーダー・課長などの役職にあった期間の合計"
     },
     {
       "id": "exp-public-works",
       "label": "官公庁工事の経験",
       "kind": "boolean",
       "unit": null,
-      "category": "経験・実績"
+      "category": "経験・実績",
+      "description": "国・自治体などの発注する工事の経験の記載（電子納品・施工体制台帳の提出を含む）"
     },
     {
       "id": "exp-large-project",
       "label": "大規模案件（請負金額10億円以上）の経験",
       "kind": "boolean",
       "unit": null,
-      "category": "経験・実績"
+      "category": "経験・実績",
+      "description": "請負金額 10 億円以上の工事に従事した記載。金額が書かれていない場合は「あり」にしない"
     }
   ]
 }

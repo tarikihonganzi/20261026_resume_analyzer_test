@@ -24,6 +24,7 @@ const savedConditions: Condition[] = [
     unit: null,
     source: 'preset',
     category: '資格',
+    description: null,
   },
   {
     id: 's1',
@@ -34,6 +35,7 @@ const savedConditions: Condition[] = [
     unit: '年',
     source: 'preset',
     category: 'スキル・ツール',
+    description: null,
   },
   {
     id: 'custom-1',
@@ -44,6 +46,7 @@ const savedConditions: Condition[] = [
     unit: null,
     source: 'custom',
     category: null,
+    description: null,
   },
 ]
 

@@ -11,6 +11,8 @@ export interface ConditionItem {
   unit: string | null
   category: string
   source: 'preset' | 'custom'
+  /** 何をその条件として数えるか（補足説明。仕様 5.1）。なければ null。 */
+  description: string | null
 }
 
 export function toItems(
@@ -25,6 +27,7 @@ export function toItems(
       unit: item.unit,
       category: item.category,
       source: 'preset' as const,
+      description: item.description ?? null,
     })),
     ...customs.map((condition) => ({
       id: condition.id,
@@ -33,6 +36,7 @@ export function toItems(
       unit: condition.unit,
       category: CUSTOM_CATEGORY,
       source: 'custom' as const,
+      description: condition.description ?? null,
     })),
   ]
 }

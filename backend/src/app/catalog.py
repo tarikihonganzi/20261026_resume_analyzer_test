@@ -7,7 +7,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.domain.models import ConditionKind
+from app.domain.models import DESCRIPTION_MAX_LENGTH, ConditionKind
 
 
 class CatalogItem(BaseModel):
@@ -20,6 +20,8 @@ class CatalogItem(BaseModel):
     kind: ConditionKind
     unit: str | None
     category: str = Field(min_length=1)
+    # 何をこの条件として数えるか（仕様 5.1）。条件に選ぶと、そのまま `Condition.description` になる
+    description: str | None = Field(default=None, max_length=DESCRIPTION_MAX_LENGTH)
 
 
 class _CatalogFile(BaseModel):

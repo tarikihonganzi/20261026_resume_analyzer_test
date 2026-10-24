@@ -8,8 +8,15 @@ from pydantic import (
     ConfigDict,
     Field,
     StringConstraints,
+    field_validator,
     model_validator,
 )
+
+DESCRIPTION_MAX_LENGTH = 500
+# 前後の空白を除く。空なら、補足説明なし（None）として扱う
+Description = Annotated[
+    str, StringConstraints(strip_whitespace=True, max_length=DESCRIPTION_MAX_LENGTH)
+]
 
 ConditionKind = Literal["boolean", "number"]
 ConditionSource = Literal["preset", "custom"]
@@ -30,6 +37,14 @@ class Condition(BaseModel):
     unit: str | None
     source: ConditionSource
     category: str | None
+    # 何をこの条件として数えるかの、補足説明（任意）。LLM の判定の基準になる（仕様 5.1・13.1 #27）。
+    # 以前に保存したファイルにはないので、省略できる
+    description: Description | None = None
+
+    @field_validator("description", mode="after")
+    @classmethod
+    def _blank_description_is_none(cls, value: str | None) -> str | None:
+        return value or None
 
     @model_validator(mode="after")
     def _check_min_value_matches_kind(self) -> Self:
