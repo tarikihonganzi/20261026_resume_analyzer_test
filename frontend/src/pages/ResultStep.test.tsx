@@ -154,7 +154,7 @@ describe('③ 評価の進捗とエラー', () => {
     expect(await screen.findByText(/最終スコア/)).toBeInTheDocument()
   })
 
-  it('サーバーがエラーを返したら、原因を示し、「もう一度評価する」で新しい要求を送る', async () => {
+  it('サーバーがエラーを返したら、原因を示し、「再実行」で新しい要求を送る', async () => {
     const evaluation = controlEvaluation()
     await startAndWaitForRequest(evaluation)
 
@@ -164,7 +164,7 @@ describe('③ 評価の進捗とエラー', () => {
     expect(screen.getByText('AI が混み合っています。')).toBeInTheDocument()
     expect(screen.queryByText('API キーを確認してください')).not.toBeInTheDocument()
 
-    await userEvent.click(screen.getByRole('button', { name: 'もう一度評価する' }))
+    await userEvent.click(screen.getByRole('button', { name: '再実行' }))
 
     await waitFor(() => {
       expect(evaluation.requests).toHaveLength(2)
@@ -223,5 +223,52 @@ describe('③ 評価の進捗とエラー', () => {
     await startEvaluation()
 
     expect(await screen.findByText(/評価が途中で終わりました/)).toBeInTheDocument()
+  })
+})
+
+describe('③ 結果からの操作（受け入れ基準 13）', () => {
+  async function reachResult() {
+    const evaluation = controlEvaluation()
+    await startAndWaitForRequest(evaluation)
+    evaluation.send(0, 'result', result)
+    await screen.findByText('最終スコア')
+    return evaluation
+  }
+
+  it('「別の応募者を評価」で、条件を残したまま ② に戻り、職歴書は空になる', async () => {
+    await reachResult()
+
+    await userEvent.click(screen.getByRole('button', { name: '別の応募者を評価' }))
+
+    expect(await screen.findByText('評価する条件:')).toBeInTheDocument()
+    expect(screen.getByText('必須 1')).toBeInTheDocument()
+    expect(screen.queryByText('この職歴書を評価に使えます')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '評価する' })).toBeDisabled()
+    expect(screen.queryByText('最終スコア')).not.toBeInTheDocument()
+  })
+
+  it('「条件を変えて再評価」で ① に戻り、選んだ条件が残っている。職歴書も残り、再評価で、もう一度送る', async () => {
+    const evaluation = await reachResult()
+
+    await userEvent.click(screen.getByRole('button', { name: '条件を変えて再評価' }))
+
+    const row = await screen.findByRole('group', { name: '1級建築施工管理技士' })
+    expect(row.querySelector('.ant-segmented-item-selected')?.textContent).toBe('必須')
+    expect(screen.queryByText('最終スコア')).not.toBeInTheDocument()
+
+    await userEvent.click(
+      within(screen.getByRole('group', { name: '2級建築士' })).getByText('任意'),
+    )
+    await userEvent.click(screen.getByRole('button', { name: /次へ/ }))
+    expect(await screen.findByText('この職歴書を評価に使えます')).toBeInTheDocument()
+    await startEvaluation()
+
+    await waitFor(() => {
+      expect(evaluation.requests).toHaveLength(2)
+    })
+    const form = evaluation.requests[1]?.form
+    const conditions = JSON.parse(form?.get('conditions') as string) as { id: string }[]
+    expect(conditions.map((c) => c.id)).toEqual(['q1', 'q2'])
+    expect((form?.get('file') as File).name).toBe('田中.docx')
   })
 })

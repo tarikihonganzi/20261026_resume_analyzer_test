@@ -57,7 +57,7 @@ export function ResultStep() {
                 dispatch({ type: 'startEvaluation' })
               }}
             >
-              もう一度評価する
+              再実行
             </Button>,
             <Button
               key="conditions"
@@ -83,7 +83,28 @@ export function ResultStep() {
   }
 
   if (evaluation.status === 'done') {
-    return <ResultView result={evaluation.result} />
+    return (
+      <Flex vertical gap={16}>
+        <Flex justify="flex-end" gap={8} wrap>
+          <Button
+            onClick={() => {
+              dispatch({ type: 'reevaluate' })
+            }}
+          >
+            条件を変えて再評価
+          </Button>
+          <Button
+            type="primary"
+            onClick={() => {
+              dispatch({ type: 'newApplicant' })
+            }}
+          >
+            別の応募者を評価
+          </Button>
+        </Flex>
+        <ResultView result={evaluation.result} />
+      </Flex>
+    )
   }
 
   return null
