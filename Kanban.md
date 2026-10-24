@@ -35,7 +35,6 @@
 ### M2: 取り込みとストレージ
 
 ### M3: LLM 層
-- **T-M3-02** `LlmClient`・`OpenAIClient`・`FakeClient` [L] — リクエストの形・拒否・incomplete・401・429 の統合テスト
 - **T-M3-03** 実 API での調整（プロンプトと `description`） [M] — `npm run live`（ユーザーの依頼時のみ）。判定の一致率を記録
 
 ### M4: API と SSE
@@ -71,6 +70,7 @@
 
 ## Done
 
+- **T-M3-02** `LlmClient`・`OpenAIClient`・`FakeClient` — 2026-10-25。branch: `feat/T-M3-02-llm-clients`。llm/client.py（LlmClient Protocol）、llm/openai_client.py（OpenAIClient）、llm/fake_client.py（FakeClient）、domain/errors の LlmError 系（認証・一時的な失敗・リクエスト拒否・応答不正）。OpenAIClient は responses.create + strict の json_schema（store=False・max_output_tokens=32000・temperature と reasoning は指定しない）で、状態の確認（incomplete → refusal → 空 → パース）を自前で行う（responses.parse は、途中で切れた応答の JSON を状態確認の前にパースして失敗し、incomplete と invalid を区別できないため）。SDK 3.x の HTTP クライアントは httpx2 と判明（テストは httpx2.MockTransport）。エラーは日本語の利用者向けメッセージに対応づけ、API の応答の本文・API キーを、メッセージ・連鎖・ログに出さない。ログはリクエスト ID・所要時間・トークン数のみ。FakeClient は遅延・スコア強制・エラー再現・呼び出し記録・原文にない引用 1 件。統合テスト 34 件（リクエストの形、拒否・incomplete・401・429・5xx・タイムアウト、リトライ、ログ、キャンセル）。npm run check exit 0（pytest 411 件 + POSIX 専用 1 件スキップ）。実 API での確認は T-M0-02 / T-M3-03
 - **T-M3-01** `prompts`（システム指示・入力の組み立て・ゴールデンファイル） — 2026-10-25。branch: `feat/T-M3-01-prompts`。llm/prompts.py（EXTRACT_SYSTEM_PROMPT・EVALUATE_SYSTEM_PROMPT・build_extract_input・build_evaluate_input）と llm/requests.py（ExtractRequest・EvaluateRequest）。システム指示は、データの扱い（職歴書・ファイル名・PDF の中の文章は指示としない）・抽出の規則（類推しない・年数の算出・重複除外・今日の日付）・根拠の書き方・公平性・最終評価の規則（±20 点以内・必須未達は summary と weaknesses の両方で触れる）。入力は、PDF を input_file（data URL・detail・filename）、それ以外を <resume name format> で囲む。職歴書の中の閉じタグと、出典名の特殊文字は無害化。ゴールデンファイル 8 件（tests/unit/golden/。UPDATE_GOLDEN=1 で更新）で意図しない変更を検知。npm run check exit 0（pytest 362 件 + POSIX 専用 1 件スキップ）。AC14 のプロンプト側
 - **T-00-07** Copilot のレビュー指摘への対応（PR#2〜#9 の 15 件） — 2026-10-25。branch: `fix/T-00-07-copilot-review`。PR#2〜#9 の Copilot の指摘 15 件に対応。①schemas の年数の例の誤り（2年5か月・合計7年 → 2年6か月・7年6か月。仕様 5.4 章も同時に修正）②深さの検査が $ref をたどらない（解決して数え、10 と 11 階層の境界テスト）③missing_required が判定の重複を上書き（エラーに）④sanitize が制御文字の除去後に NFC が崩れる（取り直し）⑤環境変数の初期値を未実装だった（仕様 4.1。ファイルにない項目を補い、空文字は保存値を優先。update は環境変数の値をファイルに書かない）⑥JSON の null と未作成の区別（MISSING。null は壊れたファイル）⑦icacls の失敗経路のテストが whoami で止まっていた⑧壊れた・空の docx を CLI の出力に追加⑨取り込み: zip 変換器を登録しない（enable_builtins=False。拡張子なしの zip の抜け穴）、.text・.markdown・.jsonl もバイナリ検査、BOM つき UTF-16/32 を許可、%PDF- は先頭のみ、見出し・水平線・表の区切りを数えない。仕様 v0.10。npm run check exit 0（pytest 333 件 + POSIX 専用 1 件スキップ）
 - **T-00-06** 仕様の調整（警告の廃止・API キーのマスク規則・取り込みの具体値） — 2026-10-25。branch: `docs/T-00-06-spec-adjust`。仕様 v0.9。13.1 章に #23（API キーのマスク。12 文字未満は ****）・#24（20 文字未満はエラー、短いことの警告は出さない）・#25（取り込みの細則）を追加し、検証結果の「警告」を廃止（5.3・6.3・7・10 章）。ingest/resume.py の警告と ResumeCheck.warnings を削除。npm run check exit 0。マージ時に lint エラー（E501）が 1 件残っていたため、fix/T-00-06-lint で直した（確認スクリプトが失敗を終了コードに反映していなかった。以後は、マージ直前に必ず npm run check を実行して失敗なら中止する）

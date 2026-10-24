@@ -56,7 +56,7 @@
 | スキーマ | Pydantic 2.14.1 | |
 | ファイル変換 | `markitdown[docx,xlsx,xls,pptx]` 0.1.9 | PDF の extra は入れない（PDF は LLM に直接渡し、手元でのテキスト抽出は行わない。10 章参照） |
 | アップロード受信 | `python-multipart` | |
-| テスト | `pytest` 9.1.1、`pytest-asyncio`、`httpx`（ASGI テスト）、`respx` または `httpx.MockTransport` | |
+| テスト | `pytest` 9.1.1、`pytest-asyncio`、`httpx`（ASGI テスト）、`httpx2.MockTransport`（OpenAI SDK の HTTP の差し替え） | |
 | テスト用ファイル生成 | `python-docx`、`openpyxl`、`reportlab`（または `fpdf2`）、`Pillow` | 架空の職歴書を生成する。実在の個人情報は使わない |
 | Lint・整形 | `ruff` 0.17.2 | |
 | 型検査 | `pyright` | |
@@ -219,18 +219,19 @@ class LlmClient(Protocol):
 ### 5.2 LLM 呼び出し（OpenAI）
 
 ```python
-resp = await client.responses.parse(
+resp = await client.responses.create(
     model=settings.model,
     instructions=EXTRACT_SYSTEM,
     input=[{"role": "user", "content": [...]}],   # input_text と input_file
-    text_format=ExtractionResult,
+    text={"format": json_schema_format(ExtractionResult)},   # strict の JSON Schema
     store=False,
     max_output_tokens=MAX_OUTPUT_TOKENS,          # 推論の分を含めて十分に大きく
 )
 ```
 
 - PDF の項目: `{"type": "input_file", "filename": 出典名, "file_data": "data:application/pdf;base64,…", "detail": "high"}`。
-- 呼び出し後の確認順: ① `resp.status == "incomplete"` → エラー、② 出力に `refusal` → エラー、③ `resp.output_parsed is None` → エラー、④ 構造の検証（条件 ID の過不足など。仕様 5.4）。④で不整合なら 1 回だけ再実行。
+- `responses.parse` ではなく `create` を使う理由: `incomplete` の応答は JSON が途中で切れており、`parse` は状態を確認する前にパースして失敗する（「途中で切れた」と「構造が正しくない」を区別できない）。strict のスキーマは、公開 API の `openai.pydantic_function_tool` で作り、応答は自分で `model_validate_json` する（T-M3-02、2026-10-25）。なお、SDK 3.x の HTTP クライアントは `httpx2`（`httpx` ではない）なので、テストの差し替えも `httpx2.MockTransport` を使う。
+- 呼び出し後の確認順: ① `resp.status == "incomplete"` → エラー、② 出力に `refusal` → エラー、③ 出力のテキストが空 → エラー、④ スキーマに沿ってパース（失敗はエラー）、⑤ 構造の検証（条件 ID の過不足など。仕様 5.4。パイプライン側）。⑤で不整合なら 1 回だけ再実行。
 - `openai.AuthenticationError`（401）→ 「設定ページで API キーを確認」、`RateLimitError`・`APITimeoutError`・`APIConnectionError` → 再試行を促す、など利用者向けの文言に対応づける。
 - ログには、リクエスト ID（`_request_id`）、所要時間、トークン使用量だけを出す。**職歴書の内容は出さない。**
 
@@ -323,7 +324,7 @@ type FlowState = {
 | 統合 | API（ASGI） | `health`（200 と `{"status": "ok"}`）、`resumes/check`、条件セットの CRUD、設定の取得・更新・接続テスト（OpenAI をモック）、Host／Origin の拒否、条件 0 件で 422 |
 | 統合 | `pipeline` + `FakeClient` | 正常系のイベント順（`stage` → `stage` → `result`）、構造不整合で再実行、再実行後も不整合でエラー、LLM のエラーごとの `error` の内容 |
 | 統合 | SSE | 実際の HTTP で、`UploadFile` を読みながらストリームが流れること、**切断で LLM 呼び出しがキャンセルされること** |
-| 統合 | `OpenAIClient` | `httpx.MockTransport` などで HTTP を差し替え、リクエストの形（`input_file` の `data:` URL、`detail`、`filename`、`store=false`、`text_format`）と、拒否・`incomplete`・401・429 の扱いを確認 |
+| 統合 | `OpenAIClient` | `httpx2.MockTransport` で HTTP を差し替え、リクエストの形（`input_file` の `data:` URL、`detail`、`filename`、`store=false`、`text.format` の strict スキーマ）と、拒否・`incomplete`・401・429 の扱いを確認 |
 | 実 API | `-m live` | ① 接続スパイク（M0）、② 架空の職歴書（PDF・docx・xlsx・貼り付け・スキャン PDF）で、期待する判定が出るか（`has_skill`、`years` の許容範囲、根拠に出典名が入るか、引用が原文に存在するか）。結果は合否ではなく**一致率**で見る |
 
 ### 7.3 フロントエンド
