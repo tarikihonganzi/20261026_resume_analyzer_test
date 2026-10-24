@@ -40,7 +40,6 @@
 ### M4: API と SSE
 
 ### M5: フロント 基盤と ① 条件
-- **T-M5-02** 評価フローのリデューサー [M] — AC: 11, 13。遷移規則の単体テスト
 - **T-M5-03** 条件一覧（`ConditionRow`・カテゴリ・検索・選択中のみ） [L] — AC: 1
 - **T-M5-04** 要約パネルと自由記述のモーダル [M] — AC: 2
 - **T-M5-05** 条件セットの保存・読込・上書き・削除 [M] — AC: 8
@@ -63,6 +62,7 @@
 
 ## Done
 
+- **T-M5-02** 評価フローのリデューサー — 2026-10-25。branch: `feat/T-M5-02-flow-reducer`。state/flow.ts（リデューサー・セレクター）と state/flow-context.tsx。遷移規則を純粋関数に集約: ① の完了条件（1 件以上・number の最低値が入力済みで 0 以上。0 は有効）、未到達に飛べない・評価中は戻れない・失敗した ③ から戻ると ③ は無くなる、条件を変えると古い結果を捨てて ② への到達を見直す、遅れて届いた検証結果・評価イベントの無視、キャンセルで ② に戻る、「条件を変えて再評価」（職歴書は残す）、「別の応募者を評価」（職歴書だけ捨てる）、条件セットの読み込み。buildConditions（評価に送る条件。カタログ順 → 自由記述）、stepStatuses（Steps の状態）。単体テスト 53 件。npm run check exit 0（pytest 581 件・Vitest 70 件）。AC11・AC13 のリデューサー側
 - **T-M5-01** フロントの基盤（Ant Design 6・TanStack Query・日本語化・`AppShell`・`FlowSteps`） — 2026-10-25。branch: `feat/T-M5-01-foundation`。フロントの基盤。api/（types.ts: 生成された型の別名、client.ts: ApiError と fetch のラッパー、hooks.ts: TanStack Query）、AppShell（ヘッダー・設定への入口・API キー未設定のバナー）、FlowSteps（Steps。v6 の items[].content。完了済みのステップにだけ戻れる・評価中は移動不可）、ハッシュによる画面の切り替え、msw（v3。onUnhandledFrame: error）によるテストの基盤。TypeScript の別名・API 呼び出しのテスト 17 件。ブラウザで実際に開いて確認（playwright で撮影。バナー・ヘッダー）。npm run check exit 0（pytest 581 件・Vitest 17 件）
 - **T-M4-06** OpenAPI から TypeScript の型を生成（`npm run gen-types`） — 2026-10-25。branch: `feat/T-M4-06-gen-types`。npm run gen-types（backend の app.export_openapi → frontend/src/api/openapi.json → openapi-typescript → frontend/src/api/types.gen.ts）。FastAPI の OpenAPI は SSE のイベントの中身を含まず、413・422 を text/event-stream にしてしまうため、api/openapi.py で補正（EvaluationResult・StageData・StreamError と、StageEventData・ResultEventData・ErrorEventData を components に追加し、413・422 は JSON に。計画書のリスク R7 に対応）。openapi.json が古いとテストが失敗する（API を変えたら npm run gen-types）。openapi-typescript が TypeScript 5.x のみ対応のため、TypeScript を 6.0.3 から 5.9.3 に変更（typescript-eslint の対応範囲にも入る。計画書 1 章 #14）。npm run check exit 0（pytest 581 件 + POSIX 専用 1 件スキップ・Vitest 1 件）
 - **T-M4-07** デモモード（他の PC からのアクセス。APP_ALLOW_REMOTE=1 のときだけ開放） — 2026-10-25。branch: `feat/T-M4-07-demo-mode`。仕様 v0.11（10 章・13.1 章 #20・#26）。環境変数 APP_ALLOW_REMOTE=1（AppSettings.allow_remote）のときだけ、Host の制限を外す。Origin が自身のオリジンであることの確認は残す（他のサイトからの送信は防ぐ）。認証などの追加の保護はしない（ユーザーの指示）。既定は今までどおり。起動時に、全ネットワークに開放していることをログに警告。IPv6・LAN の IP・ホスト名の Host を受け付け、別のオリジンは 403 になることをテスト。0.0.0.0 での待ち受けと npm run start:demo は、フロントのビルドと同時に T-M8-04 で追加（その時点で、実機で他の PC から接続して確認）。npm run check exit 0（pytest 575 件 + POSIX 専用 1 件スキップ）
