@@ -17,7 +17,7 @@ const queryClient = new QueryClient({
 createRoot(root).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <ConfigProvider locale={jaJP}>
+      <ConfigProvider locale={jaJP} button={{ autoInsertSpace: false }}>
         <App />
       </ConfigProvider>
     </QueryClientProvider>

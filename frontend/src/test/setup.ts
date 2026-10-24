@@ -21,6 +21,14 @@ Object.defineProperty(window, 'matchMedia', {
   }),
 })
 
+// Ant Design の一部（Popconfirm など）は、jsdom にない ResizeObserver を使う
+class ResizeObserverStub {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+window.ResizeObserver = ResizeObserverStub
+
 // API は msw で差し替える。想定していないリクエストは、テストの失敗にする
 beforeAll(() => {
   server.listen({ onUnhandledFrame: 'error' })
