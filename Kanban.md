@@ -39,7 +39,6 @@
 
 ### M4: API と SSE
 - **T-M4-04** `POST /api/evaluations`（SSE）と切断・`UploadFile` の統合テスト [L] — 切断で LLM 呼び出しがキャンセルされることを確認
-- **T-M4-05** ローカル API の保護（Host・Origin） [S] — `/api/health` も Host の検査対象（仕様 13.1 #22）
 - **T-M4-06** OpenAPI から TypeScript の型を生成（`npm run gen-types`） [S] — SSE のイベント型が含まれるか確認
 
 ### M5: フロント 基盤と ① 条件
@@ -67,6 +66,7 @@
 
 ## Done
 
+- **T-M4-05** ローカル API の保護（Host・Origin） — 2026-10-25。branch: `feat/T-M4-05-local-security`。api/security.py（素の ASGI ミドルウェア。SSE を壊さないため BaseHTTPMiddleware は使わない）。Host は localhost・127.0.0.1（ポートは問わない）のみ許可し、それ以外は 400。IPv6・0.0.0.0・LAN の IP・サブドメインの偽装も拒否。GET・HEAD・OPTIONS 以外で Origin があれば、自分自身（スキーム + Host）と一致しないと 403（Origin なしは許可。ブラウザは POST に Origin を付ける）。開発時の Vite 経由（localhost:5173）も許可。CORS は有効にせず、cross-origin のプリフライトにも CORS ヘッダーが付かないことをテスト。/api/health を含む全パスが対象（仕様 13.1 #22・#20）。統合テスト 30 件。npm run check exit 0（pytest 526 件 + POSIX 専用 1 件スキップ）
 - **T-M4-03** 条件セット・設定・`resumes/check` の API — 2026-10-25。branch: `feat/T-M4-03-api`。GET /api/catalog、条件セットの CRUD（GET・POST 201・PUT・DELETE 204）、GET・PUT /api/settings（API キーはマスクのみ返す。空なら既存を残す。pdf_detail・request_timeout_sec は API から変えられない）、POST /api/settings/test（保存前の値で接続テスト。保存しない）、POST /api/resumes/check（概要だけを返し、ディスクに残さない）。エラーは {code, message, fields} に統一（413: サイズ超過、422: 入力・職歴書、404、500: ストレージ）。検証エラーは入力値を返さない。create_app(settings, environ, today, openai_factory) と Services で組み立て、評価のたびに設定を読み直して LLM クライアントを作る（計画書の「起動時に作って使い回す」から変更。設定変更の反映が単純になるため）。偽の LLM のモードの接続テストは、bad で始まるキーが失敗。統合テスト 41 件。npm run check exit 0（pytest 494 件 + POSIX 専用 1 件スキップ）。AC8・AC10・AC12 の API 側
 - **T-M4-02** `pipeline`（抽出 → 判定 → 最終評価 → 補正 → 照合） — 2026-10-25。branch: `feat/T-M4-02-pipeline`。app/pipeline.py（run。StageEvent・ResultEvent・ErrorEvent を返す非同期ジェネレーター）、domain/results.py（EvaluationResult など。7 章の result イベントの内容）、domain/judging.find_extraction_problems（抽出結果の検証）、ExtractionInconsistentError。流れは、抽出 → 検証（不整合は 1 回だけ再実行。進捗の段階は増やさない）→ 判定・マッチ度合い・必須未達（コード）→ 最終評価 → ±20 点の補正 → 引用の照合（出典名を与えた名前に置換。PDF は skipped）。LLM のエラーと不整合は ErrorEvent にして終了、条件 0 件と予期しない例外は送出、キャンセルは伝播。FakeClient で通す統合テスト 31 件。npm run check exit 0（pytest 452 件 + POSIX 専用 1 件スキップ）
 - **T-M4-01** `catalog.json`（仕様 11 章のプリセット） — 2026-10-25。branch: `feat/T-M4-01-catalog`。backend/src/app/data/catalog.json（仕様 11 章の 39 件。id は ASCII の slug）と app/catalog.py（CatalogItem・load_catalog）。仕様書 11 章の表（カテゴリ・ラベル・型・単位・順序）と catalog.json が一致することをテストで保証（スキーマの一致テストと同じ方式）。GET /api/catalog は T-M4-03 で追加。npm run check exit 0（pytest 421 件 + POSIX 専用 1 件スキップ）

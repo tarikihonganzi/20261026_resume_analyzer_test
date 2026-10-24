@@ -5,6 +5,7 @@ from fastapi import FastAPI
 
 from app.api import catalog, condition_sets, health, resumes, settings_api
 from app.api.errors import register_exception_handlers
+from app.api.security import LocalOnlyMiddleware
 from app.domain.models import Config
 from app.llm.openai_client import OpenAIClient
 from app.services import Services
@@ -31,6 +32,7 @@ def create_app(
         openai_factory=openai_factory,
     )
     register_exception_handlers(app)
+    app.add_middleware(LocalOnlyMiddleware)
     for router in (
         health.router,
         catalog.router,
