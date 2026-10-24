@@ -1,0 +1,598 @@
+import { describe, expect, it } from 'vitest'
+import type { CatalogItem, Condition, EvaluationResult, ResumeCheck } from '../api/types'
+import {
+  buildConditions,
+  canEvaluate,
+  conditionCounts,
+  initialState,
+  isConditionsComplete,
+  reducer,
+  stepStatuses,
+  type Action,
+  type FlowState,
+} from './flow'
+
+const catalog: CatalogItem[] = [
+  { id: 'qual-1', label: '1級建築施工管理技士', kind: 'boolean', unit: null, category: '資格' },
+  { id: 'qual-2', label: '2級建築士', kind: 'boolean', unit: null, category: '資格' },
+  { id: 'skill-revit', label: 'Revit', kind: 'number', unit: '年', category: 'スキル・ツール' },
+]
+
+const custom: Condition = {
+  id: 'custom-1',
+  label: '耐震診断の経験',
+  kind: 'boolean',
+  required: false,
+  min_value: null,
+  unit: null,
+  source: 'custom',
+  category: '自由記述',
+}
+
+const check: ResumeCheck = { format: 'docx', source_name: '田中.docx', char_count: 300 }
+const result = { score: 80 } as EvaluationResult
+
+function run(actions: Action[], from: FlowState = initialState): FlowState {
+  return actions.reduce(reducer, from)
+}
+
+const select = (id: string, kind: 'boolean' | 'number', mode: 'optional' | 'required'): Action => ({
+  type: 'setMode',
+  id,
+  kind,
+  mode,
+})
+
+/** ① を完了して、② にいる状態。 */
+const atResume = () => run([select('qual-1', 'boolean', 'required'), { type: 'next' }])
+
+/** ② で職歴書の検証が成功した状態。 */
+const withCheckedResume = () =>
+  run(
+    [
+      { type: 'resumeSelected', source: { kind: 'text', text: '本文' }, name: '貼り付けテキスト' },
+      { type: 'resumeChecked', check },
+    ],
+    atResume(),
+  )
+
+describe('初期状態', () => {
+  it('① にいて、何も選ばれていない', () => {
+    expect(initialState.step).toBe(0)
+    expect(conditionCounts(initialState)).toEqual({ required: 0, optional: 0 })
+    expect(initialState.resume).toBeNull()
+    expect(initialState.evaluation.status).toBe('idle')
+  })
+})
+
+describe('条件の選択', () => {
+  it('「使わない・任意・必須」を切り替えられる', () => {
+    const state = run([
+      select('qual-1', 'boolean', 'required'),
+      select('qual-2', 'boolean', 'optional'),
+    ])
+
+    expect(conditionCounts(state)).toEqual({ required: 1, optional: 1 })
+  })
+
+  it('「使わない」に戻すと、数えない', () => {
+    const state = run([
+      select('qual-1', 'boolean', 'required'),
+      { type: 'setMode', id: 'qual-1', kind: 'boolean', mode: 'off' },
+    ])
+
+    expect(conditionCounts(state)).toEqual({ required: 0, optional: 0 })
+  })
+
+  it('最低値を設定できる。小数も、0 も入る', () => {
+    const state = run([
+      select('skill-revit', 'number', 'optional'),
+      { type: 'setMinValue', id: 'skill-revit', minValue: 2.5 },
+    ])
+
+    expect(state.selections['skill-revit']?.minValue).toBe(2.5)
+    expect(
+      reducer(state, { type: 'setMinValue', id: 'skill-revit', minValue: 0 }).selections[
+        'skill-revit'
+      ]?.minValue,
+    ).toBe(0)
+  })
+
+  it('選んでいない条件の最低値は、変えても何も起きない', () => {
+    expect(reducer(initialState, { type: 'setMinValue', id: 'x', minValue: 1 })).toBe(initialState)
+  })
+})
+
+describe('① を完了できる条件（仕様 6.2）', () => {
+  it('1 件も選ばれていなければ、完了できない', () => {
+    expect(isConditionsComplete(initialState)).toBe(false)
+    expect(reducer(initialState, { type: 'next' })).toBe(initialState)
+  })
+
+  it('boolean の条件が 1 件あれば、完了できる', () => {
+    expect(isConditionsComplete(run([select('qual-1', 'boolean', 'optional')]))).toBe(true)
+  })
+
+  it('number の条件は、最低値が入力済みのときだけ完了できる', () => {
+    const withoutMin = run([select('skill-revit', 'number', 'required')])
+    const withMin = reducer(withoutMin, { type: 'setMinValue', id: 'skill-revit', minValue: 3 })
+
+    expect(isConditionsComplete(withoutMin)).toBe(false)
+    expect(isConditionsComplete(withMin)).toBe(true)
+  })
+
+  it('最低値が 0 でも、入力済みとして扱う', () => {
+    const state = run([
+      select('skill-revit', 'number', 'optional'),
+      { type: 'setMinValue', id: 'skill-revit', minValue: 0 },
+    ])
+
+    expect(isConditionsComplete(state)).toBe(true)
+  })
+
+  it('「使わない」の number 条件の、未入力の最低値は、邪魔をしない', () => {
+    const state = run([
+      select('skill-revit', 'number', 'optional'),
+      { type: 'setMode', id: 'skill-revit', kind: 'number', mode: 'off' },
+      select('qual-1', 'boolean', 'optional'),
+    ])
+
+    expect(isConditionsComplete(state)).toBe(true)
+  })
+
+  it('負の最低値は、入力済みとして認めない', () => {
+    const state = run([
+      select('skill-revit', 'number', 'optional'),
+      { type: 'setMinValue', id: 'skill-revit', minValue: -1 },
+    ])
+
+    expect(isConditionsComplete(state)).toBe(false)
+  })
+
+  it('完了すると ② に進み、① に戻れる', () => {
+    const state = atResume()
+
+    expect(state.step).toBe(1)
+    expect(state.furthest).toBe(1)
+  })
+})
+
+describe('自由記述の条件', () => {
+  it('追加すると、「任意」で選ばれた状態になる', () => {
+    const state = reducer(initialState, { type: 'addCustom', condition: custom })
+
+    expect(conditionCounts(state)).toEqual({ required: 0, optional: 1 })
+    expect(state.customConditions).toEqual([custom])
+  })
+
+  it('編集できる。選択の状態（必須など）は保たれる', () => {
+    const added = run([
+      { type: 'addCustom', condition: custom },
+      { type: 'setMode', id: custom.id, kind: 'boolean', mode: 'required' },
+    ])
+
+    const edited = reducer(added, {
+      type: 'updateCustom',
+      condition: { ...custom, label: '耐震診断・改修の経験' },
+    })
+
+    expect(edited.customConditions[0]?.label).toBe('耐震診断・改修の経験')
+    expect(conditionCounts(edited)).toEqual({ required: 1, optional: 0 })
+  })
+
+  it('型を number に変えると、最低値の入力が必要になる', () => {
+    const added = reducer(initialState, { type: 'addCustom', condition: custom })
+
+    const edited = reducer(added, {
+      type: 'updateCustom',
+      condition: { ...custom, kind: 'number', min_value: null, unit: '年' },
+    })
+
+    expect(isConditionsComplete(edited)).toBe(false)
+  })
+
+  it('削除すると、選択からも消える', () => {
+    const added = reducer(initialState, { type: 'addCustom', condition: custom })
+
+    const removed = reducer(added, { type: 'removeCustom', id: custom.id })
+
+    expect(removed.customConditions).toEqual([])
+    expect(removed.selections[custom.id]).toBeUndefined()
+    expect(conditionCounts(removed)).toEqual({ required: 0, optional: 0 })
+  })
+})
+
+describe('buildConditions（評価に送る条件）', () => {
+  it('選ばれたものだけを、プリセット → 自由記述の順で、必須・最低値つきで返す', () => {
+    const state = run([
+      select('skill-revit', 'number', 'optional'),
+      { type: 'setMinValue', id: 'skill-revit', minValue: 2.5 },
+      select('qual-1', 'boolean', 'required'),
+      { type: 'addCustom', condition: custom },
+    ])
+
+    const conditions = buildConditions(catalog, state)
+
+    expect(conditions.map((c) => c.id)).toEqual(['qual-1', 'skill-revit', 'custom-1'])
+    expect(conditions[0]).toMatchObject({ required: true, min_value: null, source: 'preset' })
+    expect(conditions[1]).toMatchObject({ required: false, min_value: 2.5, unit: '年' })
+    expect(conditions[2]).toMatchObject({ required: false, source: 'custom' })
+  })
+
+  it('boolean の条件には、最低値を付けない', () => {
+    const state = run([select('qual-1', 'boolean', 'optional')])
+
+    expect(buildConditions(catalog, state)[0]?.min_value).toBeNull()
+  })
+
+  it('カタログにない id の選択は、送らない', () => {
+    const state = run([select('unknown', 'boolean', 'optional')])
+
+    expect(buildConditions(catalog, state)).toEqual([])
+  })
+})
+
+describe('ステップの移動（仕様 6.2・受け入れ基準 11）', () => {
+  it('未到達のステップへは飛べない', () => {
+    expect(reducer(initialState, { type: 'goTo', step: 2 })).toBe(initialState)
+    expect(reducer(initialState, { type: 'goTo', step: 1 })).toBe(initialState)
+  })
+
+  it('完了済みのステップには戻れて、入力が保たれる', () => {
+    const state = reducer(withCheckedResume(), { type: 'goTo', step: 0 })
+
+    expect(state.step).toBe(0)
+    expect(conditionCounts(state)).toEqual({ required: 1, optional: 0 })
+    expect(state.resume?.check.status).toBe('ok')
+  })
+
+  it('戻ったあと、到達済みのステップへは進める', () => {
+    const state = run(
+      [
+        { type: 'goTo', step: 0 },
+        { type: 'goTo', step: 1 },
+      ],
+      withCheckedResume(),
+    )
+
+    expect(state.step).toBe(1)
+  })
+
+  it('現在のステップへの移動は、何も起こさない', () => {
+    const state = atResume()
+
+    expect(reducer(state, { type: 'goTo', step: 1 })).toBe(state)
+  })
+
+  it('「戻る」は、ひとつ前のステップへ', () => {
+    expect(reducer(atResume(), { type: 'back' }).step).toBe(0)
+    expect(reducer(initialState, { type: 'back' })).toBe(initialState)
+  })
+})
+
+describe('② 職歴書', () => {
+  it('選ぶと、検証中になる。検証に成功すると、評価できる', () => {
+    const selected = reducer(atResume(), {
+      type: 'resumeSelected',
+      source: { kind: 'text', text: '本文' },
+      name: '貼り付けテキスト',
+    })
+    expect(selected.resume?.check.status).toBe('checking')
+    expect(canEvaluate(selected)).toBe(false)
+
+    expect(canEvaluate(reducer(selected, { type: 'resumeChecked', check }))).toBe(true)
+  })
+
+  it('検証に失敗すると、評価できない。別のファイルを選び直せる', () => {
+    const failed = run(
+      [
+        {
+          type: 'resumeSelected',
+          source: { kind: 'file', file: new File(['x'], 'a.bin') },
+          name: 'a.bin',
+        },
+        {
+          type: 'resumeCheckFailed',
+          error: { code: 'unsupported_format', message: '読み取れません' },
+        },
+      ],
+      atResume(),
+    )
+
+    expect(failed.resume?.check).toEqual({
+      status: 'error',
+      error: { code: 'unsupported_format', message: '読み取れません' },
+    })
+    expect(canEvaluate(failed)).toBe(false)
+    expect(failed.step).toBe(1)
+    expect(conditionCounts(failed)).toEqual({ required: 1, optional: 0 })
+
+    const retried = reducer(failed, {
+      type: 'resumeSelected',
+      source: { kind: 'text', text: 'ok' },
+      name: '貼り付けテキスト',
+    })
+    expect(retried.resume?.check.status).toBe('checking')
+  })
+
+  it('古い検証結果は、新しく選んだ職歴書に影響しない', () => {
+    const state = run(
+      [
+        { type: 'resumeSelected', source: { kind: 'text', text: 'A' }, name: 'A' },
+        { type: 'resumeSelected', source: { kind: 'text', text: 'B' }, name: 'B' },
+        { type: 'resumeChecked', check: { ...check, source_name: 'A' }, forName: 'A' },
+      ],
+      atResume(),
+    )
+
+    expect(state.resume?.name).toBe('B')
+    expect(state.resume?.check.status).toBe('checking')
+  })
+
+  it('取り除ける', () => {
+    expect(reducer(withCheckedResume(), { type: 'clearResume' }).resume).toBeNull()
+  })
+
+  it('職歴書がないと、評価を始められない', () => {
+    expect(reducer(atResume(), { type: 'startEvaluation' })).toEqual(atResume())
+  })
+})
+
+describe('③ 評価', () => {
+  const running = () => reducer(withCheckedResume(), { type: 'startEvaluation' })
+
+  it('始めると、③ に進み、「抽出中」から始まる', () => {
+    const state = running()
+
+    expect(state.step).toBe(2)
+    expect(state.evaluation).toMatchObject({ status: 'running', stage: 'extracting' })
+  })
+
+  it('進捗は、抽出中 → 最終評価中', () => {
+    const state = reducer(running(), { type: 'stageChanged', stage: 'scoring' })
+
+    expect(state.evaluation).toMatchObject({ status: 'running', stage: 'scoring' })
+  })
+
+  it('評価中は、ほかのステップへ戻れない', () => {
+    const state = running()
+
+    expect(reducer(state, { type: 'goTo', step: 0 })).toBe(state)
+    expect(reducer(state, { type: 'goTo', step: 1 })).toBe(state)
+    expect(reducer(state, { type: 'back' })).toBe(state)
+  })
+
+  it('成功すると、結果を持つ', () => {
+    const state = reducer(running(), { type: 'evaluationSucceeded', result })
+
+    expect(state.evaluation).toEqual({ status: 'done', result })
+    expect(stepStatuses(state)[2]).toBe('finish')
+  })
+
+  it('失敗すると、エラーを持ち、③ がエラー状態になる。条件・職歴書は残る', () => {
+    const error = { code: 'llm_unavailable', message: '混み合っています' }
+
+    const state = reducer(running(), { type: 'evaluationFailed', error })
+
+    expect(state.evaluation).toEqual({ status: 'error', error })
+    expect(stepStatuses(state)[2]).toBe('error')
+    expect(state.resume?.check.status).toBe('ok')
+    expect(conditionCounts(state)).toEqual({ required: 1, optional: 0 })
+  })
+
+  it('失敗したあとは、「再実行」で、もう一度始められる', () => {
+    const failed = reducer(running(), {
+      type: 'evaluationFailed',
+      error: { code: 'x', message: 'y' },
+    })
+
+    const again = reducer(failed, { type: 'startEvaluation' })
+
+    expect(again.evaluation).toMatchObject({ status: 'running', stage: 'extracting' })
+  })
+
+  it('評価中の二重の開始は、無視する', () => {
+    const state = running()
+
+    expect(reducer(state, { type: 'startEvaluation' })).toBe(state)
+  })
+
+  it('失敗後は、条件に戻れる（仕様 6.2「条件に戻る」）', () => {
+    const failed = reducer(running(), {
+      type: 'evaluationFailed',
+      error: { code: 'x', message: 'y' },
+    })
+
+    const state = reducer(failed, { type: 'goTo', step: 0 })
+
+    expect(state.step).toBe(0)
+    expect(state.evaluation.status).toBe('idle')
+  })
+
+  it('キャンセルすると、② に戻り、職歴書と条件は残る', () => {
+    const state = reducer(running(), { type: 'cancelEvaluation' })
+
+    expect(state.step).toBe(1)
+    expect(state.evaluation.status).toBe('idle')
+    expect(state.resume?.check.status).toBe('ok')
+    expect(canEvaluate(state)).toBe(true)
+  })
+
+  it('評価の終了後に遅れて届いたイベントは、無視する', () => {
+    const done = reducer(running(), { type: 'evaluationSucceeded', result })
+
+    expect(reducer(done, { type: 'stageChanged', stage: 'extracting' })).toBe(done)
+    expect(reducer(done, { type: 'evaluationFailed', error: { code: 'x', message: 'y' } })).toBe(
+      done,
+    )
+  })
+
+  it('キャンセル後に届いた結果は、無視する', () => {
+    const cancelled = reducer(running(), { type: 'cancelEvaluation' })
+
+    expect(reducer(cancelled, { type: 'evaluationSucceeded', result })).toBe(cancelled)
+  })
+})
+
+describe('結果画面からの操作（受け入れ基準 13）', () => {
+  const done = () =>
+    run([{ type: 'startEvaluation' }, { type: 'evaluationSucceeded', result }], withCheckedResume())
+
+  it('「条件を変えて再評価」は、① に戻る。職歴書は残る', () => {
+    const state = reducer(done(), { type: 'reevaluate' })
+
+    expect(state.step).toBe(0)
+    expect(state.evaluation.status).toBe('idle')
+    expect(state.resume?.check.status).toBe('ok')
+    expect(conditionCounts(state)).toEqual({ required: 1, optional: 0 })
+  })
+
+  it('「条件を変えて再評価」のあと、条件を変えて ②→評価 に進める', () => {
+    const state = run(
+      [
+        { type: 'reevaluate' },
+        select('qual-2', 'boolean', 'optional'),
+        { type: 'next' },
+        { type: 'startEvaluation' },
+      ],
+      done(),
+    )
+
+    expect(state.evaluation.status).toBe('running')
+    expect(conditionCounts(state)).toEqual({ required: 1, optional: 1 })
+  })
+
+  it('「別の応募者を評価」は、職歴書だけを捨てて、条件を残して ② に戻る', () => {
+    const state = reducer(done(), { type: 'newApplicant' })
+
+    expect(state.step).toBe(1)
+    expect(state.resume).toBeNull()
+    expect(state.evaluation.status).toBe('idle')
+    expect(conditionCounts(state)).toEqual({ required: 1, optional: 0 })
+    expect(state.furthest).toBe(1)
+  })
+
+  it('「別の応募者を評価」のあと、新しい職歴書を置いて、すぐ評価できる', () => {
+    const state = run(
+      [
+        { type: 'newApplicant' },
+        {
+          type: 'resumeSelected',
+          source: { kind: 'text', text: '別の人' },
+          name: '貼り付けテキスト',
+        },
+        { type: 'resumeChecked', check },
+        { type: 'startEvaluation' },
+      ],
+      done(),
+    )
+
+    expect(state.evaluation).toMatchObject({ status: 'running' })
+  })
+})
+
+describe('条件を変えたときの、後ろのステップの扱い', () => {
+  it('結果が出たあとに条件を変えると、結果は古くなるので消える', () => {
+    const done = run(
+      [{ type: 'startEvaluation' }, { type: 'evaluationSucceeded', result }],
+      withCheckedResume(),
+    )
+
+    const edited = run([{ type: 'goTo', step: 0 }, select('qual-2', 'boolean', 'optional')], done)
+
+    expect(edited.evaluation.status).toBe('idle')
+    expect(edited.furthest).toBe(1)
+    expect(edited.resume?.check.status).toBe('ok')
+  })
+
+  it('条件が不完全になると、② へは進めない', () => {
+    const state = run(
+      [
+        { type: 'goTo', step: 0 },
+        { type: 'setMode', id: 'qual-1', kind: 'boolean', mode: 'off' },
+      ],
+      withCheckedResume(),
+    )
+
+    expect(state.furthest).toBe(0)
+    expect(reducer(state, { type: 'goTo', step: 1 })).toBe(state)
+  })
+})
+
+describe('保存済みの条件セットの読み込み（受け入れ基準 8）', () => {
+  it('選択と自由記述を、読み込んだ内容に置き換える', () => {
+    const before = run([
+      select('qual-1', 'boolean', 'required'),
+      { type: 'addCustom', condition: custom },
+    ])
+    const loaded: Condition[] = [
+      {
+        id: 'skill-revit',
+        label: 'Revit',
+        kind: 'number',
+        required: true,
+        min_value: 2,
+        unit: '年',
+        source: 'preset',
+        category: 'スキル・ツール',
+      },
+      { ...custom, id: 'custom-2', label: '別の自由記述', required: true },
+    ]
+
+    const state = reducer(before, { type: 'loadConditions', conditions: loaded })
+
+    expect(conditionCounts(state)).toEqual({ required: 2, optional: 0 })
+    expect(state.selections['qual-1']).toBeUndefined()
+    expect(state.customConditions.map((c) => c.id)).toEqual(['custom-2'])
+    expect(buildConditions(catalog, state).map((c) => [c.id, c.min_value])).toEqual([
+      ['skill-revit', 2],
+      ['custom-2', null],
+    ])
+  })
+
+  it('読み込みのあと、後ろのステップは、条件が完了していれば保たれる', () => {
+    const state = reducer(withCheckedResume(), {
+      type: 'loadConditions',
+      conditions: [{ ...custom, required: false }],
+    })
+
+    expect(state.evaluation.status).toBe('idle')
+    expect(isConditionsComplete(state)).toBe(true)
+  })
+})
+
+describe('Steps の状態と要約（受け入れ基準 11）', () => {
+  it('① にいるとき: 進行中・未着手・未着手', () => {
+    expect(stepStatuses(initialState)).toEqual(['process', 'wait', 'wait'])
+  })
+
+  it('② にいるとき: 完了・進行中・未着手', () => {
+    expect(stepStatuses(atResume())).toEqual(['finish', 'process', 'wait'])
+  })
+
+  it('② の検証が失敗したら、② がエラー', () => {
+    const failed = run(
+      [
+        { type: 'resumeSelected', source: { kind: 'text', text: 'x' }, name: 'x' },
+        { type: 'resumeCheckFailed', error: { code: 'x', message: 'y' } },
+      ],
+      atResume(),
+    )
+
+    expect(stepStatuses(failed)[1]).toBe('error')
+  })
+
+  it('評価中は ③ が進行中', () => {
+    const state = reducer(withCheckedResume(), { type: 'startEvaluation' })
+
+    expect(stepStatuses(state)).toEqual(['finish', 'finish', 'process'])
+  })
+
+  it('① に戻っても、検証が済んだ ② は完了のまま', () => {
+    expect(stepStatuses(reducer(withCheckedResume(), { type: 'goTo', step: 0 }))).toEqual([
+      'process',
+      'finish',
+      'wait',
+    ])
+  })
+})
