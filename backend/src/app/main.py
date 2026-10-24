@@ -6,6 +6,7 @@ from fastapi import FastAPI
 
 from app.api import catalog, condition_sets, evaluations, health, resumes, settings_api
 from app.api.errors import register_exception_handlers
+from app.api.openapi import install_openapi
 from app.api.security import LocalOnlyMiddleware
 from app.domain.models import Config
 from app.llm.client import ClosableLlmClient
@@ -38,6 +39,7 @@ def create_app(
         client_factory=client_factory,
     )
     register_exception_handlers(app)
+    install_openapi(app)
     app.add_middleware(LocalOnlyMiddleware, allow_remote=settings.allow_remote)
     if settings.allow_remote:
         logger.warning(

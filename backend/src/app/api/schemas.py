@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
 from app.catalog import CatalogItem
 from app.domain.models import Condition, ConditionSet, Config, ConfigUpdate
+from app.domain.results import EvaluationResult
 
 
 class ErrorResponse(BaseModel):
@@ -94,3 +95,20 @@ class ConnectionTestRequest(BaseModel):
 class ConnectionTestResponse(BaseModel):
     ok: bool
     message: str
+
+
+class StageEventData(BaseModel):
+    """SSE の 1 件のイベント（`stage`）。フロントの型の元になる（OpenAPI に含める）。"""
+
+    event: Literal["stage"]
+    data: StageData
+
+
+class ResultEventData(BaseModel):
+    event: Literal["result"]
+    data: EvaluationResult
+
+
+class ErrorEventData(BaseModel):
+    event: Literal["error"]
+    data: StreamError

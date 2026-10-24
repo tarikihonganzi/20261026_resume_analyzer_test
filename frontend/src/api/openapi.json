@@ -1,0 +1,1257 @@
+{
+  "components": {
+    "schemas": {
+      "Body_check_resume_api_resumes_check_post": {
+        "properties": {
+          "file": {
+            "anyOf": [
+              {
+                "contentMediaType": "application/octet-stream",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File"
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
+          }
+        },
+        "title": "Body_check_resume_api_resumes_check_post",
+        "type": "object"
+      },
+      "Body_evaluate_api_evaluations_post": {
+        "properties": {
+          "conditions": {
+            "title": "Conditions",
+            "type": "string"
+          },
+          "file": {
+            "anyOf": [
+              {
+                "contentMediaType": "application/octet-stream",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File"
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
+          }
+        },
+        "required": [
+          "conditions"
+        ],
+        "title": "Body_evaluate_api_evaluations_post",
+        "type": "object"
+      },
+      "CatalogItem": {
+        "additionalProperties": false,
+        "description": "プリセットの 1 件。必須かどうか・最低値は、利用者が条件を選ぶときに決めるので持たない。",
+        "properties": {
+          "category": {
+            "minLength": 1,
+            "title": "Category",
+            "type": "string"
+          },
+          "id": {
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "boolean",
+              "number"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "label": {
+            "minLength": 1,
+            "title": "Label",
+            "type": "string"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "kind",
+          "unit",
+          "category"
+        ],
+        "title": "CatalogItem",
+        "type": "object"
+      },
+      "CatalogResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CatalogItem"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "CatalogResponse",
+        "type": "object"
+      },
+      "Condition": {
+        "additionalProperties": false,
+        "description": "評価の条件（仕様 5.1、8.1）。`data/condition_sets.json` の要素と同じ形。",
+        "properties": {
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "id": {
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "boolean",
+              "number"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "label": {
+            "minLength": 1,
+            "title": "Label",
+            "type": "string"
+          },
+          "min_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Value"
+          },
+          "required": {
+            "title": "Required",
+            "type": "boolean"
+          },
+          "source": {
+            "enum": [
+              "preset",
+              "custom"
+            ],
+            "title": "Source",
+            "type": "string"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "kind",
+          "required",
+          "min_value",
+          "unit",
+          "source",
+          "category"
+        ],
+        "title": "Condition",
+        "type": "object"
+      },
+      "ConditionSet": {
+        "additionalProperties": false,
+        "description": "保存された条件セット（仕様 5.2、8.1）。",
+        "properties": {
+          "conditions": {
+            "items": {
+              "$ref": "#/components/schemas/Condition"
+            },
+            "title": "Conditions",
+            "type": "array"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "conditions",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "ConditionSet",
+        "type": "object"
+      },
+      "ConditionSetInput": {
+        "additionalProperties": false,
+        "description": "条件セットの保存・上書きの入力。名前の検査は、保存時（`ConditionSet`）に行う。",
+        "properties": {
+          "conditions": {
+            "items": {
+              "$ref": "#/components/schemas/Condition"
+            },
+            "title": "Conditions",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "conditions"
+        ],
+        "title": "ConditionSetInput",
+        "type": "object"
+      },
+      "ConditionSetsResponse": {
+        "properties": {
+          "sets": {
+            "items": {
+              "$ref": "#/components/schemas/ConditionSet"
+            },
+            "title": "Sets",
+            "type": "array"
+          }
+        },
+        "required": [
+          "sets"
+        ],
+        "title": "ConditionSetsResponse",
+        "type": "object"
+      },
+      "ConnectionTestRequest": {
+        "additionalProperties": false,
+        "description": "接続テスト。保存前の値を使う。空・未指定の項目は、保存済みの値を使う。",
+        "properties": {
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "openai_api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Openai Api Key"
+          },
+          "openai_base_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Openai Base Url"
+          }
+        },
+        "title": "ConnectionTestRequest",
+        "type": "object"
+      },
+      "ConnectionTestResponse": {
+        "properties": {
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "ok": {
+            "title": "Ok",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ok",
+          "message"
+        ],
+        "title": "ConnectionTestResponse",
+        "type": "object"
+      },
+      "ErrorEventData": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/StreamError"
+          },
+          "event": {
+            "const": "error",
+            "title": "Event",
+            "type": "string"
+          }
+        },
+        "required": [
+          "event",
+          "data"
+        ],
+        "title": "ErrorEventData",
+        "type": "object"
+      },
+      "ErrorResponse": {
+        "description": "HTTP エラー、および SSE の `error` イベントの内容。`message` は、表示できる日本語。",
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "fields": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fields"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "ErrorResponse",
+        "type": "object"
+      },
+      "EvaluationPoint": {
+        "description": "最終評価の 1 項目（概要・良かった点・懸念点）。`text` は Markdown。",
+        "properties": {
+          "quotes": {
+            "items": {
+              "$ref": "#/components/schemas/VerifiedQuote"
+            },
+            "title": "Quotes",
+            "type": "array"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text",
+          "reason",
+          "quotes"
+        ],
+        "title": "EvaluationPoint",
+        "type": "object"
+      },
+      "EvaluationResult": {
+        "description": "評価の結果。`score` は補正後で、`original_score` が LLM の元のスコア。",
+        "properties": {
+          "clipped": {
+            "title": "Clipped",
+            "type": "boolean"
+          },
+          "conditions": {
+            "items": {
+              "$ref": "#/components/schemas/JudgedCondition"
+            },
+            "title": "Conditions",
+            "type": "array"
+          },
+          "match_rate": {
+            "title": "Match Rate",
+            "type": "integer"
+          },
+          "missing_required": {
+            "items": {
+              "$ref": "#/components/schemas/MissingRequired"
+            },
+            "title": "Missing Required",
+            "type": "array"
+          },
+          "original_score": {
+            "title": "Original Score",
+            "type": "integer"
+          },
+          "score": {
+            "title": "Score",
+            "type": "integer"
+          },
+          "strengths": {
+            "items": {
+              "$ref": "#/components/schemas/EvaluationPoint"
+            },
+            "title": "Strengths",
+            "type": "array"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/EvaluationPoint"
+          },
+          "weaknesses": {
+            "items": {
+              "$ref": "#/components/schemas/EvaluationPoint"
+            },
+            "title": "Weaknesses",
+            "type": "array"
+          }
+        },
+        "required": [
+          "score",
+          "original_score",
+          "clipped",
+          "match_rate",
+          "missing_required",
+          "conditions",
+          "summary",
+          "strengths",
+          "weaknesses"
+        ],
+        "title": "EvaluationResult",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "JudgedCondition": {
+        "description": "条件ごとの判定。抽出した値と、その根拠を含む。",
+        "properties": {
+          "condition": {
+            "$ref": "#/components/schemas/Condition"
+          },
+          "has_skill": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Has Skill"
+          },
+          "quotes": {
+            "items": {
+              "$ref": "#/components/schemas/VerifiedQuote"
+            },
+            "title": "Quotes",
+            "type": "array"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "achieved",
+              "unmet",
+              "unknown"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "years": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Years"
+          }
+        },
+        "required": [
+          "condition",
+          "status",
+          "has_skill",
+          "years",
+          "reason",
+          "quotes"
+        ],
+        "title": "JudgedCondition",
+        "type": "object"
+      },
+      "MissingRequired": {
+        "description": "達成していない必須条件。`unknown` は、職歴書から判断できなかったもの。",
+        "properties": {
+          "condition_id": {
+            "title": "Condition Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "unmet",
+              "unknown"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "condition_id",
+          "label",
+          "status"
+        ],
+        "title": "MissingRequired",
+        "type": "object"
+      },
+      "ResultEventData": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/EvaluationResult"
+          },
+          "event": {
+            "const": "result",
+            "title": "Event",
+            "type": "string"
+          }
+        },
+        "required": [
+          "event",
+          "data"
+        ],
+        "title": "ResultEventData",
+        "type": "object"
+      },
+      "ResumeCheck": {
+        "description": "`/api/resumes/check` の応答。内容は含めず、概要だけを返す（仕様 7）。",
+        "properties": {
+          "char_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Char Count"
+          },
+          "format": {
+            "title": "Format",
+            "type": "string"
+          },
+          "source_name": {
+            "title": "Source Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "format",
+          "source_name",
+          "char_count"
+        ],
+        "title": "ResumeCheck",
+        "type": "object"
+      },
+      "SettingsUpdate": {
+        "additionalProperties": false,
+        "description": "設定ページからの更新。指定した項目だけを変える。API キーは、変更するときだけ送る。\n\n`pdf_detail` と `request_timeout_sec` は、設定ページに出さない（ファイルを直接編集する）。",
+        "properties": {
+          "max_file_size_mb": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max File Size Mb"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "openai_api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Openai Api Key"
+          },
+          "openai_base_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Openai Base Url"
+          }
+        },
+        "title": "SettingsUpdate",
+        "type": "object"
+      },
+      "SettingsView": {
+        "description": "設定ページに出す項目。API キーは、全文を返さずマスクした値だけ（仕様 10）。",
+        "properties": {
+          "max_file_size_mb": {
+            "title": "Max File Size Mb",
+            "type": "integer"
+          },
+          "model": {
+            "title": "Model",
+            "type": "string"
+          },
+          "openai_api_key_masked": {
+            "title": "Openai Api Key Masked",
+            "type": "string"
+          },
+          "openai_base_url": {
+            "title": "Openai Base Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "openai_api_key_masked",
+          "openai_base_url",
+          "model",
+          "max_file_size_mb"
+        ],
+        "title": "SettingsView",
+        "type": "object"
+      },
+      "StageData": {
+        "description": "SSE の `stage` イベント。画面の進捗表示に使う。",
+        "properties": {
+          "stage": {
+            "enum": [
+              "extracting",
+              "scoring"
+            ],
+            "title": "Stage",
+            "type": "string"
+          }
+        },
+        "required": [
+          "stage"
+        ],
+        "title": "StageData",
+        "type": "object"
+      },
+      "StageEventData": {
+        "description": "SSE の 1 件のイベント（`stage`）。フロントの型の元になる（OpenAPI に含める）。",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/StageData"
+          },
+          "event": {
+            "const": "stage",
+            "title": "Event",
+            "type": "string"
+          }
+        },
+        "required": [
+          "event",
+          "data"
+        ],
+        "title": "StageEventData",
+        "type": "object"
+      },
+      "StreamError": {
+        "description": "SSE の `error` イベント。ストリームが始まったあとの失敗（LLM のエラーなど）。",
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "StreamError",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      },
+      "VerifiedQuote": {
+        "description": "根拠の引用と、原文との照合の結果（仕様 5.4 共通ルール）。",
+        "properties": {
+          "location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location"
+          },
+          "source_name": {
+            "title": "Source Name",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "verified": {
+            "enum": [
+              "match",
+              "not_found",
+              "skipped"
+            ],
+            "title": "Verified",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_name",
+          "location",
+          "text",
+          "verified"
+        ],
+        "title": "VerifiedQuote",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "title": "職歴書マッチング評価",
+    "version": "0.1.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/catalog": {
+      "get": {
+        "description": "プリセット条件の一覧（仕様 11 章）。",
+        "operationId": "get_catalog_api_catalog_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Catalog"
+      }
+    },
+    "/api/condition-sets": {
+      "get": {
+        "operationId": "list_condition_sets_api_condition_sets_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConditionSetsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Condition Sets"
+      },
+      "post": {
+        "operationId": "create_condition_set_api_condition_sets_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConditionSetInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConditionSet"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Condition Set"
+      }
+    },
+    "/api/condition-sets/{set_id}": {
+      "delete": {
+        "operationId": "delete_condition_set_api_condition_sets__set_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "set_id",
+            "required": true,
+            "schema": {
+              "title": "Set Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Condition Set"
+      },
+      "put": {
+        "operationId": "update_condition_set_api_condition_sets__set_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "set_id",
+            "required": true,
+            "schema": {
+              "title": "Set Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConditionSetInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConditionSet"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Condition Set"
+      }
+    },
+    "/api/evaluations": {
+      "post": {
+        "description": "イベント: `stage`（StageData）→ `stage` → `result`（EvaluationResult）、または `error`。",
+        "operationId": "evaluate_api_evaluations_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_evaluate_api_evaluations_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "text/event-stream": {
+                "itemSchema": {
+                  "properties": {
+                    "data": {
+                      "type": "string"
+                    },
+                    "event": {
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "retry": {
+                      "minimum": 0,
+                      "type": "integer"
+                    }
+                  },
+                  "type": "object"
+                },
+                "x-event-schemas": [
+                  {
+                    "$ref": "#/components/schemas/StageEventData"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ResultEventData"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ErrorEventData"
+                  }
+                ]
+              }
+            },
+            "description": "Successful Response"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "ファイルサイズが上限を超えた"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "入力（条件・職歴書）が正しくない"
+          }
+        },
+        "summary": "Evaluate"
+      }
+    },
+    "/api/health": {
+      "get": {
+        "operationId": "health_api_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Health Api Health Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Health"
+      }
+    },
+    "/api/resumes/check": {
+      "post": {
+        "description": "職歴書を、評価を始める前に検証する（形式・サイズ・変換できるか・空でないか）。\n\n結果（形式・ファイル名・文字数）だけを返す。内容は、サーバーに残さない。",
+        "operationId": "check_resume_api_resumes_check_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_check_resume_api_resumes_check_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResumeCheck"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Check Resume"
+      }
+    },
+    "/api/settings": {
+      "get": {
+        "operationId": "get_settings_api_settings_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Settings"
+      },
+      "put": {
+        "description": "指定された項目だけを更新する。次の評価から反映される（評価のたびに設定を読み直す）。",
+        "operationId": "update_settings_api_settings_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettingsUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Settings"
+      }
+    },
+    "/api/settings/test": {
+      "post": {
+        "description": "保存前の値で、軽量なリクエストを 1 回送る。空・未指定の項目は、保存済みの値を使う。",
+        "operationId": "test_connection_api_settings_test_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConnectionTestRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectionTestResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Test Connection"
+      }
+    }
+  }
+}
