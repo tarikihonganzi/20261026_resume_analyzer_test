@@ -3,6 +3,8 @@
 例外のメッセージに、API キーや職歴書の内容を入れない。
 """
 
+from typing import ClassVar
+
 
 class DomainError(Exception):
     """ドメインの規則に反したときの基底クラス。"""
@@ -72,3 +74,68 @@ class EmptyResumeError(ResumeError):
     """テキストが得られない、または極端に短いとき。"""
 
     code = "empty_text"
+
+
+class LlmError(DomainError):
+    """LLM（OpenAI の API）の呼び出しに失敗したとき。メッセージは、利用者に表示できる日本語。
+
+    API キーや、API の応答の本文、職歴書の内容を、メッセージに入れない。
+    """
+
+    code = "llm_error"
+
+
+class LlmAuthError(LlmError):
+    """API キーが未設定、または認証に失敗したとき。設定ページへ誘導する。"""
+
+    code = "llm_auth"
+
+    def __init__(self, message: str | None = None) -> None:
+        super().__init__(
+            message
+            or "API キーが正しくないか、権限がありません。設定ページで API キーを確認してください。"
+        )
+
+
+class LlmUnavailableError(LlmError):
+    """一時的に呼び出せないとき（タイムアウト、レート制限、接続失敗、サーバーの障害）。再試行を促す。"""
+
+    code = "llm_unavailable"
+
+    _MESSAGES: ClassVar[dict[str, str]] = {
+        "timeout": "AI サービスの応答に時間がかかりすぎました。もう一度お試しください。",
+        "rate_limit": "AI サービスが混み合っています。しばらく待ってから、もう一度お試しください。",
+        "connection": "AI サービスに接続できませんでした。ネットワークとベース URL を確認して、"
+        "もう一度お試しください。",
+        "server": "AI サービスで一時的な障害が起きています。"
+        "しばらく待ってから、もう一度お試しください。",
+    }
+
+    def __init__(self, kind: str) -> None:
+        super().__init__(self._MESSAGES.get(kind, self._MESSAGES["server"]))
+        self.kind = kind
+
+
+class LlmRequestError(LlmError):
+    """リクエストが受け付けられなかったとき（モデル名・ベース URL の誤りなど）。"""
+
+    code = "llm_request"
+
+    def __init__(self) -> None:
+        super().__init__(
+            "AI サービスがリクエストを受け付けませんでした。"
+            "設定ページでモデル名とベース URL を確認してください。"
+        )
+
+
+class LlmResponseError(LlmError):
+    """応答を利用できないとき（途中で切れた、拒否された、構造が正しくない）。再実行を促す。
+
+    `reason` は、ログに出してよい分類（incomplete・refusal・empty・invalid）。
+    """
+
+    code = "llm_response"
+
+    def __init__(self, reason: str) -> None:
+        super().__init__("AI の応答を利用できませんでした。もう一度お試しください。")
+        self.reason = reason

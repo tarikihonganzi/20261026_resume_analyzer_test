@@ -15,15 +15,15 @@ paths:
 
 ## LLM の出力スキーマ（`llm/schemas.py`）
 
-- Pydantic のモデルを `text_format` に渡す。**全フィールドを必須にし、省略可能にしたい場合は `X | None`（`null` との union）にする**（OpenAI の strict の規則）。
+- Pydantic のモデルから strict の JSON Schema を作り、`text.format` に渡す（`llm/openai_client.py`）。**全フィールドを必須にし、省略可能にしたい場合は `X | None`（`null` との union）にする**（OpenAI の strict の規則）。
 - 使ってよい制約: `ge`／`le`（数値）、`min_length`／`max_length`（配列）。文字列の `min_length` は対応が不明なので使わない。
 - 各フィールドの `description` は日本語で丁寧に書く。**仕様書 5.4 章の文言と一致させ、変更するときは両方を更新する。**
 - スキーマを変えたら、スキーマの検査テスト（`tests/unit/test_schemas.py`）とプロンプトのゴールデンファイルを更新する。
 
 ## OpenAI の呼び出し（`llm/openai_client.py`）
 
-- `AsyncOpenAI` を使い、`responses.parse(..., text_format=..., store=False, max_output_tokens=...)` で呼ぶ。タイムアウトは設定の `request_timeout_sec`。
-- レスポンスの確認順: `status == "incomplete"` → `refusal` → `output_parsed is None` → 構造の検証。どれもエラーとして扱う。
+- `AsyncOpenAI` を使い、`responses.create(..., text={"format": ...}, store=False, max_output_tokens=...)` で呼ぶ（`parse` は、途中で切れた応答を区別できないので使わない。計画書 5.2）。HTTP の差し替えは `httpx2`（SDK 3.x の HTTP クライアント）。タイムアウトは設定の `request_timeout_sec`。
+- レスポンスの確認順: `status == "incomplete"` → `refusal` → 出力のテキストが空 → スキーマに沿ったパース → 構造の検証。どれもエラーとして扱う。
 - 設定（API キー・ベース URL・モデル名）が変わったら、クライアントを作り直す。
 - 出典名（元のファイル名）は `domain/source_name.py` で整形してからプロンプトに入れる。
 

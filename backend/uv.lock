@@ -891,6 +891,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "fastapi" },
+    { name = "httpx2" },
     { name = "markitdown", extra = ["docx", "pptx", "xls", "xlsx"] },
     { name = "openai" },
     { name = "pydantic" },
@@ -915,6 +916,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "fastapi", specifier = ">=0.162.0" },
+    { name = "httpx2", specifier = ">=2.16.0" },
     { name = "markitdown", extras = ["docx", "pptx", "xls", "xlsx"], specifier = ">=0.1.9" },
     { name = "openai", specifier = ">=3.37.0" },
     { name = "pydantic", specifier = ">=2.14.1" },
