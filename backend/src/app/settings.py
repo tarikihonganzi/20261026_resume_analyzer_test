@@ -22,6 +22,8 @@ class AppSettings:
     fake_delay_sec: float = 0.0
     # デモモード。他の PC からのアクセスを許す（Host の検査を外す。仕様 13.1 #26）
     allow_remote: bool = False
+    # ビルドしたフロント（frontend/dist）。あれば、同じオリジンで配信する。なければ API だけ
+    static_dir: Path | None = None
 
     @classmethod
     def from_env(cls, environ: Mapping[str, str] | None = None) -> AppSettings:
@@ -37,4 +39,7 @@ class AppSettings:
             fake_delay_sec=float(env.get("APP_FAKE_DELAY_SEC", "0")),
             # 公開範囲を変える設定なので、仕様どおり 1 のときだけ有効にする（true・yes などは無効）
             allow_remote=env.get("APP_ALLOW_REMOTE", "").strip() == "1",
+            static_dir=Path(env["APP_STATIC_DIR"])
+            if "APP_STATIC_DIR" in env
+            else _REPOSITORY_ROOT / "frontend" / "dist",
         )
