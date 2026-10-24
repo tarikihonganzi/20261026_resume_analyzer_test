@@ -29,7 +29,8 @@ from app.domain.errors import (
 from app.domain.quotes import normalize
 from app.domain.source_name import PASTED_TEXT_NAME, sanitize
 
-# 変換結果が、空白と Markdown の記号を除いてこの文字数に満たなければ「極端に短い」とする（仕様 13.1 #24）
+# 変換結果が、空白と Markdown の記号を除いてこの文字数に満たなければ「極端に短い」
+# とする（仕様 13.1 #24）
 MIN_TEXT_CHARS = 20
 
 _PDF_HEADER = b"%PDF-"
