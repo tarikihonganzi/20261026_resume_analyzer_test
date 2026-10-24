@@ -34,7 +34,6 @@
 
 ### M2: 取り込みとストレージ
 - **T-M2-02** `ingest/resume`（種別判定・サイズ・MarkItDown・空チェック） [M] — AC: 3, 12。`convert_stream` をスレッドプールで実行
-- **T-M2-03** 架空の職歴書の生成スクリプト [M] — docx・xlsx・pptx・テキスト・デジタル PDF・スキャン PDF。実在の個人情報は使わない
 
 ### M3: LLM 層
 - **T-M3-01** `prompts`（システム指示・入力の組み立て・ゴールデンファイル） [M] — AC: 14
@@ -74,6 +73,7 @@
 
 ## Done
 
+- **T-M2-03** 架空の職歴書の生成スクリプト — 2026-10-25。branch: `feat/T-M2-03-fixtures`。backend/tests/fixtures/resume_factory.py。架空の職歴書（氏名・会社名に「架空」「サンプル」を含む）を、テキスト（通常・指示文入り）・docx・xlsx・pptx・デジタル PDF（通常・指示文入り。MS ゴシックを埋め込み）・スキャン PDF（画像のみ。日本語フォントがあるときだけ）で生成。壊れた docx・空の docx も用意。CLI は backend/tests/fixtures/out/（Git 管理外）に書き出す。スキャン PDF の元画像を PNG にして、日本語が正しく描画されることを目視確認。EXPECTED に実 API の確認用の期待値（現場監督 8.25 年・Revit 3 年など）。npm run check exit 0（pytest 240 件 + POSIX 専用 1 件スキップ）
 - **T-M2-01** `json_store`・`config_store`・`condition_set_store` — 2026-10-25。branch: `feat/T-M2-01-storage`。storage/permissions（icacls で現在のユーザーのみ・POSIX は 0600）、json_store（一時ファイル → fsync → os.replace、PermissionError を 0.05 秒 × 10 回リトライ、ACL は中身を書く前に一時ファイルへ）、config_store（既定値・API キーは空なら既存を残す・mask_api_key）、condition_set_store（作成・上書き・削除・一覧、id と作成日時を維持、壊れたファイルは上書きしない）。Config・ConfigUpdate・ConditionSet を domain/models.py に追加。確認: Windows の実機で ACL が現在のユーザー 1 件のみ・継承なしで、os.replace 後も維持されること。他プロセスが開いたファイルへの書き込みがリトライで成功すること。npm run check exit 0（pytest 226 件 + POSIX 専用 1 件スキップ）。AC8（再起動後も読み込める）・AC10 のうちストレージ側。仕様との差: 12 文字未満のキーは末尾 4 文字も隠す（計画書 1 章 #16）
 - **T-M1-05** `source_name`（出典名の整形） — 2026-10-25。branch: `feat/T-M1-05-source-name`。domain/source_name.py（sanitize）。/ と \ の両方でディレクトリ部分を除去 → NFC → 制御文字（Cc・Cf・Zl・Zp。ゼロ幅文字と右から左への上書きを含む）を除去 → 前後の空白を除去 → 200 文字に切り詰め。仕様に定めがない点: 結果が空なら「名称未設定」にする。npm run check exit 0（pytest 149 件）
 - **T-M1-04** `quotes`（正規化・原文照合） — 2026-10-25。branch: `feat/T-M1-04-quotes`。domain/quotes.py（normalize・verify）。NFKC → 空白除去 → Markdown 記号（| * # ` >）除去で、全角半角・濁点の分解形・改行・表の区切り・強調の違いを吸収。source_text=None は skipped、見つからない・言い換え・「…」でつないだ引用は not_found。仕様に定めがない点: 空の引用（正規化後）は not_found、大文字小文字は区別する。npm run check exit 0（pytest 123 件）。AC15 のコード側（表示は T-M6-03）

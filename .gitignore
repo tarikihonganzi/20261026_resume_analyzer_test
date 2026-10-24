@@ -28,3 +28,6 @@ test-results/
 .DS_Store
 .idea/
 *.swp
+
+# テストフィクスチャの生成物（tests/fixtures/resume_factory.py の CLI が作る）
+backend/tests/fixtures/out/
