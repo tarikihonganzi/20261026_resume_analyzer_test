@@ -1,0 +1,84 @@
+import os
+import subprocess
+import sys
+from collections.abc import Callable
+from pathlib import Path
+from typing import Any
+
+import pytest
+
+from app.domain.errors import StorageError
+from app.storage import permissions
+from app.storage.permissions import restrict_to_owner
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows の ACL")
+def test_windows_acl_is_limited_to_the_current_user(
+    tmp_path: Path, assert_owner_only: Callable[[Path], None]
+) -> None:
+    target = tmp_path / "config.json"
+    target.write_text("{}", encoding="utf-8")
+
+    restrict_to_owner(target)
+
+    assert_owner_only(target)
+    # 制限したあとも、自分は読み書きできる
+    target.write_text('{"a": 1}', encoding="utf-8")
+    assert target.read_text(encoding="utf-8") == '{"a": 1}'
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows の ACL")
+def test_windows_acl_survives_replacing_another_file(
+    tmp_path: Path, assert_owner_only: Callable[[Path], None]
+) -> None:
+    # 一時ファイルに設定した ACL が、os.replace のあとも置き換え先に残る（原子的な書き込みの前提）
+    temp = tmp_path / "temp.json"
+    destination = tmp_path / "config.json"
+    destination.write_text("old", encoding="utf-8")
+    temp.write_text("new", encoding="utf-8")
+    restrict_to_owner(temp)
+
+    os.replace(temp, destination)
+
+    assert destination.read_text(encoding="utf-8") == "new"
+    assert_owner_only(destination)
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows の ACL")
+def test_windows_failure_of_icacls_is_an_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    target = tmp_path / "config.json"
+    target.write_text("{}", encoding="utf-8")
+
+    def failing_run(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess(args, 5, stdout="", stderr="アクセスが拒否されました")
+
+    monkeypatch.setattr(permissions.subprocess, "run", failing_run)
+    permissions.current_user_sid.cache_clear()
+
+    with pytest.raises(StorageError):
+        restrict_to_owner(target)
+
+
+def test_non_windows_uses_the_posix_mode(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    target = tmp_path / "config.json"
+    target.write_text("{}", encoding="utf-8")
+    calls: list[Path] = []
+    monkeypatch.setattr(permissions, "_is_windows", lambda: False)
+    monkeypatch.setattr(permissions, "_restrict_posix", calls.append)
+
+    restrict_to_owner(target)
+
+    assert calls == [target]
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX のファイルモード")
+def test_posix_mode_is_0600(tmp_path: Path) -> None:
+    target = tmp_path / "config.json"
+    target.write_text("{}", encoding="utf-8")
+    target.chmod(0o644)
+
+    restrict_to_owner(target)
+
+    assert target.stat().st_mode & 0o777 == 0o600
