@@ -100,3 +100,35 @@ def missing_required(
         if status != "achieved":
             missing.append(condition)
     return missing
+
+
+def find_extraction_problems(
+    conditions: Sequence[Condition], extractions: Sequence[Extracted]
+) -> list[str]:
+    """抽出結果の不整合を、条件の id を含めずに、分類した説明で返す。空なら整合している。
+
+    仕様 5.4 ステップ 1: 全条件分がそろっていない、`condition_id` が一致しない、`kind` に対して
+    使うフィールドが誤っている（boolean に years、number に has_skill）。抽出できなかった
+    （null）ことは不整合ではなく「不明」。並び順は問わない。
+    """
+    problems: list[str] = []
+    expected = {c.id: c for c in conditions}
+
+    seen: set[str] = set()
+    for extracted in extractions:
+        if extracted.condition_id in seen:
+            problems.append("同じ条件の抽出結果が重複している")
+        seen.add(extracted.condition_id)
+        condition = expected.get(extracted.condition_id)
+        if condition is None:
+            problems.append("条件にない抽出結果がある")
+        elif condition.kind == "boolean" and extracted.years is not None:
+            problems.append("boolean の条件に years がある")
+        elif condition.kind == "number" and extracted.has_skill is not None:
+            problems.append("number の条件に has_skill がある")
+        elif condition.kind == "number" and extracted.years is not None and extracted.years < 0:
+            problems.append("years が負の値")
+
+    if missing := expected.keys() - seen:
+        problems.append(f"{len(missing)} 件の条件の抽出結果がない")
+    return problems
