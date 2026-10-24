@@ -38,7 +38,6 @@
 - **T-M3-03** 実 API での調整（プロンプトと `description`） [M] — `npm run live`（ユーザーの依頼時のみ）。判定の一致率を記録
 
 ### M4: API と SSE
-- **T-M4-02** `pipeline`（抽出 → 判定 → 最終評価 → 補正 → 照合） [M]
 - **T-M4-03** 条件セット・設定・`resumes/check` の API [M] — AC: 8, 10, 12
 - **T-M4-04** `POST /api/evaluations`（SSE）と切断・`UploadFile` の統合テスト [L] — 切断で LLM 呼び出しがキャンセルされることを確認
 - **T-M4-05** ローカル API の保護（Host・Origin） [S] — `/api/health` も Host の検査対象（仕様 13.1 #22）
@@ -69,6 +68,7 @@
 
 ## Done
 
+- **T-M4-02** `pipeline`（抽出 → 判定 → 最終評価 → 補正 → 照合） — 2026-10-25。branch: `feat/T-M4-02-pipeline`。app/pipeline.py（run。StageEvent・ResultEvent・ErrorEvent を返す非同期ジェネレーター）、domain/results.py（EvaluationResult など。7 章の result イベントの内容）、domain/judging.find_extraction_problems（抽出結果の検証）、ExtractionInconsistentError。流れは、抽出 → 検証（不整合は 1 回だけ再実行。進捗の段階は増やさない）→ 判定・マッチ度合い・必須未達（コード）→ 最終評価 → ±20 点の補正 → 引用の照合（出典名を与えた名前に置換。PDF は skipped）。LLM のエラーと不整合は ErrorEvent にして終了、条件 0 件と予期しない例外は送出、キャンセルは伝播。FakeClient で通す統合テスト 31 件。npm run check exit 0（pytest 452 件 + POSIX 専用 1 件スキップ）
 - **T-M4-01** `catalog.json`（仕様 11 章のプリセット） — 2026-10-25。branch: `feat/T-M4-01-catalog`。backend/src/app/data/catalog.json（仕様 11 章の 39 件。id は ASCII の slug）と app/catalog.py（CatalogItem・load_catalog）。仕様書 11 章の表（カテゴリ・ラベル・型・単位・順序）と catalog.json が一致することをテストで保証（スキーマの一致テストと同じ方式）。GET /api/catalog は T-M4-03 で追加。npm run check exit 0（pytest 421 件 + POSIX 専用 1 件スキップ）
 - **T-M3-02** `LlmClient`・`OpenAIClient`・`FakeClient` — 2026-10-25。branch: `feat/T-M3-02-llm-clients`。llm/client.py（LlmClient Protocol）、llm/openai_client.py（OpenAIClient）、llm/fake_client.py（FakeClient）、domain/errors の LlmError 系（認証・一時的な失敗・リクエスト拒否・応答不正）。OpenAIClient は responses.create + strict の json_schema（store=False・max_output_tokens=32000・temperature と reasoning は指定しない）で、状態の確認（incomplete → refusal → 空 → パース）を自前で行う（responses.parse は、途中で切れた応答の JSON を状態確認の前にパースして失敗し、incomplete と invalid を区別できないため）。SDK 3.x の HTTP クライアントは httpx2 と判明（テストは httpx2.MockTransport）。エラーは日本語の利用者向けメッセージに対応づけ、API の応答の本文・API キーを、メッセージ・連鎖・ログに出さない。ログはリクエスト ID・所要時間・トークン数のみ。FakeClient は遅延・スコア強制・エラー再現・呼び出し記録・原文にない引用 1 件。統合テスト 34 件（リクエストの形、拒否・incomplete・401・429・5xx・タイムアウト、リトライ、ログ、キャンセル）。npm run check exit 0（pytest 411 件 + POSIX 専用 1 件スキップ）。実 API での確認は T-M0-02 / T-M3-03
 - **T-M3-01** `prompts`（システム指示・入力の組み立て・ゴールデンファイル） — 2026-10-25。branch: `feat/T-M3-01-prompts`。llm/prompts.py（EXTRACT_SYSTEM_PROMPT・EVALUATE_SYSTEM_PROMPT・build_extract_input・build_evaluate_input）と llm/requests.py（ExtractRequest・EvaluateRequest）。システム指示は、データの扱い（職歴書・ファイル名・PDF の中の文章は指示としない）・抽出の規則（類推しない・年数の算出・重複除外・今日の日付）・根拠の書き方・公平性・最終評価の規則（±20 点以内・必須未達は summary と weaknesses の両方で触れる）。入力は、PDF を input_file（data URL・detail・filename）、それ以外を <resume name format> で囲む。職歴書の中の閉じタグと、出典名の特殊文字は無害化。ゴールデンファイル 8 件（tests/unit/golden/。UPDATE_GOLDEN=1 で更新）で意図しない変更を検知。npm run check exit 0（pytest 362 件 + POSIX 専用 1 件スキップ）。AC14 のプロンプト側

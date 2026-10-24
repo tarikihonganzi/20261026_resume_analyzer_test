@@ -3,7 +3,7 @@ from dataclasses import dataclass
 import pytest
 
 from app.domain.errors import ConditionMismatchError, NoConditionsError
-from app.domain.judging import judge, match_rate, missing_required
+from app.domain.judging import find_extraction_problems, judge, match_rate, missing_required
 from app.domain.models import Condition, Judgement, JudgementStatus
 from app.llm.schemas import ConditionExtraction
 
@@ -245,3 +245,60 @@ def test_missing_required_with_duplicate_judgements_is_an_error() -> None:
 def test_missing_required_with_a_missing_judgement_is_an_error() -> None:
     with pytest.raises(ConditionMismatchError):
         missing_required([boolean("a", required=True)], [])
+
+
+# --- find_extraction_problems（仕様 5.4 ステップ 1 の検証） ---
+
+
+def test_consistent_extraction_has_no_problems() -> None:
+    conditions = [boolean("a"), number("b", 3)]
+    extractions = [Extracted("a", has_skill=True), Extracted("b", years=2.0)]
+
+    assert find_extraction_problems(conditions, extractions) == []
+
+
+def test_unknown_values_are_not_problems() -> None:
+    # 判断できなかった（has_skill・years が null）のは、不整合ではなく「不明」
+    conditions = [boolean("a"), number("b", 3)]
+    extractions = [Extracted("a", has_skill=None), Extracted("b", years=None)]
+
+    assert find_extraction_problems(conditions, extractions) == []
+
+
+def test_extraction_order_does_not_matter() -> None:
+    conditions = [boolean("a"), boolean("b")]
+    extractions = [Extracted("b", has_skill=True), Extracted("a", has_skill=False)]
+
+    assert find_extraction_problems(conditions, extractions) == []
+
+
+def test_missing_extraction_is_a_problem() -> None:
+    problems = find_extraction_problems(
+        [boolean("a"), boolean("b")], [Extracted("a", has_skill=True)]
+    )
+
+    assert len(problems) == 1
+
+
+def test_extra_extraction_is_a_problem() -> None:
+    extractions = [Extracted("a", has_skill=True), Extracted("zzz", has_skill=True)]
+
+    assert find_extraction_problems([boolean("a")], extractions)
+
+
+def test_duplicate_extraction_is_a_problem() -> None:
+    extractions = [Extracted("a", has_skill=True), Extracted("a", has_skill=False)]
+
+    assert find_extraction_problems([boolean("a")], extractions)
+
+
+def test_boolean_condition_with_years_is_a_problem() -> None:
+    assert find_extraction_problems([boolean("a")], [Extracted("a", has_skill=True, years=3.0)])
+
+
+def test_number_condition_with_has_skill_is_a_problem() -> None:
+    assert find_extraction_problems([number("a", 3)], [Extracted("a", has_skill=True, years=3.0)])
+
+
+def test_negative_years_is_a_problem() -> None:
+    assert find_extraction_problems([number("a", 3)], [Extracted("a", years=-1.0)])

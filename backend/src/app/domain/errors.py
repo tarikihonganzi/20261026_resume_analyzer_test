@@ -139,3 +139,12 @@ class LlmResponseError(LlmError):
     def __init__(self, reason: str) -> None:
         super().__init__("AI の応答を利用できませんでした。もう一度お試しください。")
         self.reason = reason
+
+
+class ExtractionInconsistentError(DomainError):
+    """LLM の抽出結果が、再実行しても条件と食い違っていたとき（仕様 5.4 ステップ 1、5.6）。"""
+
+    code = "extraction_inconsistent"
+
+    def __init__(self) -> None:
+        super().__init__("AI の抽出結果に不整合がありました。もう一度実行してください。")
