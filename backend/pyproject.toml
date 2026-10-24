@@ -1,0 +1,20 @@
+[project]
+name = "resume-matching-backend"
+version = "0.1.0"
+description = "職歴書マッチング評価アプリのバックエンド"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "fastapi>=0.162.0",
+    "markitdown[docx,pptx,xls,xlsx]>=0.1.9",
+    "openai>=3.37.0",
+    "pydantic>=2.14.1",
+    "python-multipart>=0.0.32",
+    "uvicorn[standard]>=0.54.0",
+]
+
+[build-system]
+requires = ["uv_build>=0.13.5,<0.14.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "app"
