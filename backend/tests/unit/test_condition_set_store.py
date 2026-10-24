@@ -199,6 +199,7 @@ def test_default_clock_gives_timezone_aware_timestamps(tmp_path: Path) -> None:
         '{"version": 1}',
         '{"version": 1, "sets": [{"id": "x"}]}',
         '{"version": 1, "sets": "x"}',
+        "null",
     ],
 )
 def test_corrupted_or_unsupported_file_is_an_error(tmp_path: Path, content: str) -> None:

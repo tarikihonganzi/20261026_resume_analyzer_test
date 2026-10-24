@@ -54,11 +54,30 @@ def test_windows_failure_of_icacls_is_an_error(
     def failing_run(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess[str]:
         return subprocess.CompletedProcess(args, 5, stdout="", stderr="アクセスが拒否されました")
 
+    # SID の取得は成功させ、icacls が失敗する経路を確かめる
+    monkeypatch.setattr(permissions, "current_user_sid", lambda: "S-1-5-21-1-2-3-1001")
+    monkeypatch.setattr(permissions.subprocess, "run", failing_run)
+
+    with pytest.raises(StorageError):
+        restrict_to_owner(target)
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows の ACL")
+def test_windows_failure_to_find_the_user_is_an_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    target = tmp_path / "config.json"
+    target.write_text("{}", encoding="utf-8")
+
+    def failing_run(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess(args, 1, stdout="", stderr="")
+
     monkeypatch.setattr(permissions.subprocess, "run", failing_run)
     permissions.current_user_sid.cache_clear()
 
     with pytest.raises(StorageError):
         restrict_to_owner(target)
+    permissions.current_user_sid.cache_clear()
 
 
 def test_non_windows_uses_the_posix_mode(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

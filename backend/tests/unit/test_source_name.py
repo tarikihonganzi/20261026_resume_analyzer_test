@@ -49,6 +49,14 @@ def test_control_characters_are_removed(raw: str, expected: str) -> None:
     assert sanitize(raw) == expected
 
 
+def test_removing_a_control_character_between_combining_characters_keeps_nfc() -> None:
+    # カ + ゼロ幅スペース + 濁点 の、ゼロ幅スペースを除くと、カ + 濁点（分解形）になる
+    result = sanitize("カ​゙.pdf")
+
+    assert result == "ガ.pdf"
+    assert sanitize(result) == result  # 何度整形しても変わらない
+
+
 def test_surrounding_whitespace_is_trimmed_but_inner_spaces_are_kept() -> None:
     assert sanitize("  田中 太郎 職務経歴書.pdf \u3000") == "田中 太郎 職務経歴書.pdf"
 

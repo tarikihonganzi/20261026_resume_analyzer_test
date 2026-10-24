@@ -101,11 +101,51 @@ def test_only_supported_keywords_are_used(model: type[BaseModel]) -> None:
     assert used <= SUPPORTED_KEYWORDS, used - SUPPORTED_KEYWORDS
 
 
+def max_object_depth(schema: dict[str, Any]) -> int:
+    """`$ref` を使われている位置で解決し、オブジェクトの入れ子の深さ（ルートが 1）を数える。"""
+    definitions: dict[str, dict[str, Any]] = schema.get("$defs") or {}
+
+    def depth_of(node: dict[str, Any], depth: int) -> int:
+        if "$ref" in node:
+            return depth_of(definitions[node["$ref"].rsplit("/", 1)[-1]], depth)
+        own = depth + 1 if node.get("type") == "object" else depth
+        children: list[dict[str, Any]] = []
+        properties: dict[str, dict[str, Any]] = node.get("properties") or {}
+        children.extend(properties.values())
+        if "items" in node:
+            children.append(node["items"])
+        any_of: list[dict[str, Any]] = node.get("anyOf") or []
+        children.extend(any_of)
+        return max([own, *(depth_of(child, own) for child in children)])
+
+    return depth_of({key: value for key, value in schema.items() if key != "$defs"}, 0)
+
+
+def chained_schema(levels: int) -> dict[str, Any]:
+    """`levels` 階層のオブジェクトを、`$ref` でつないだスキーマ。"""
+    definitions: dict[str, Any] = {}
+    for level in range(2, levels + 1):
+        child: dict[str, Any] = (
+            {"type": "object", "properties": {"next": {"$ref": f"#/$defs/L{level + 1}"}}}
+            if level < levels
+            else {"type": "object", "properties": {}}
+        )
+        definitions[f"L{level}"] = child
+    root: dict[str, Any] = {"type": "object", "properties": {"next": {"$ref": "#/$defs/L2"}}}
+    if levels == 1:
+        root = {"type": "object", "properties": {}}
+    return {**root, "$defs": definitions}
+
+
+@pytest.mark.parametrize("levels", [1, 2, 10, 11, 12])
+def test_depth_counter_follows_references(levels: int) -> None:
+    # `$defs` をルートの直下として数えると、参照でつないだ深いスキーマが浅く見えてしまう
+    assert max_object_depth(chained_schema(levels)) == levels
+
+
 @pytest.mark.parametrize("model", ROOT_MODELS, ids=lambda m: m.__name__)
 def test_nesting_depth_is_within_the_limit(model: type[BaseModel]) -> None:
-    schema = strict_schema(model)
-
-    assert max(depth for _, depth in walk(schema)) <= MAX_DEPTH
+    assert max_object_depth(strict_schema(model)) <= MAX_DEPTH
 
 
 @pytest.mark.parametrize("model", SCHEMA_MODELS, ids=lambda m: m.__name__)

@@ -275,6 +275,8 @@ def all_fixtures() -> list[Fixture]:
         ("resume.pptx", make_pptx),
         ("resume_digital.pdf", make_pdf_digital),
         ("resume_digital_injection.pdf", lambda: make_pdf_digital(injection=True)),
+        ("broken.docx", make_broken_docx),
+        ("empty.docx", make_empty_docx),
     ]
     if find_japanese_font() is not None:
         makers.append(("resume_scanned.pdf", make_pdf_scanned))

@@ -12,6 +12,7 @@ from app.domain.errors import (
     EmptyResumeError,
     FileTooLargeError,
     InvalidResumeInputError,
+    ResumeError,
     UnsupportedFormatError,
 )
 from app.ingest import resume
@@ -266,6 +267,126 @@ async def test_zip_is_not_accepted() -> None:
 
     with pytest.raises(UnsupportedFormatError):
         await load_file("resume.zip", buffer.getvalue())
+
+
+# --- Copilot のレビューで指摘された、取り込みの抜け穴 ---
+
+
+@pytest.mark.parametrize("filename", ["resume", "resume.dat", "resume.zip", "resume.docx.bak"])
+async def test_generic_zip_is_rejected_whatever_its_file_name(filename: str) -> None:
+    # 拡張子を外す・変えるだけで、zip の再帰展開を行う変換器に回ってはならない
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as archive:
+        archive.writestr("a.txt", factory.make_text())
+
+    with pytest.raises(ResumeError):
+        await load_file(filename, buffer.getvalue())
+
+
+def test_zip_converter_is_not_registered_in_markitdown() -> None:
+    registrations = resume._markitdown()._converters  # pyright: ignore[reportPrivateUsage]
+    registered = {type(r.converter).__name__ for r in registrations}
+
+    assert "ZipConverter" not in registered
+    assert {"DocxConverter", "XlsxConverter", "PptxConverter", "PlainTextConverter"} <= registered
+
+
+async def test_docx_without_an_extension_is_recognized_by_its_content() -> None:
+    result = await load_file("resume", factory.make_docx())
+
+    assert result.format == "docx"
+    assert result.text is not None
+    assert "1級建築施工管理技士" in result.text
+
+
+@pytest.mark.parametrize(
+    "extension", ["txt", "text", "md", "markdown", "jsonl", "json", "csv", "html"]
+)
+async def test_office_file_with_any_text_extension_is_a_conversion_error(extension: str) -> None:
+    with pytest.raises(ConversionFailedError):
+        await load_file(f"resume.{extension}", factory.make_docx())
+
+
+@pytest.mark.parametrize("encoding", ["utf-16", "utf-32", "utf-8-sig"])
+async def test_unicode_text_with_a_bom_is_accepted(encoding: str) -> None:
+    # UTF-16・UTF-32 は ASCII の文字に NUL バイトを含むが、正常なテキスト
+    content = factory.make_text().encode(encoding)
+
+    result = await load_file("経歴.txt", content)
+
+    assert result.text is not None
+    assert "1級建築施工管理技士" in result.text
+
+
+async def test_pdf_header_text_inside_a_text_file_does_not_make_it_a_pdf() -> None:
+    memo = "開発メモ: PDF は先頭が %PDF-1.7 で始まる。\n%PDF-1.4 という行もある。\n"
+    body = factory.make_text() + memo
+
+    result = await load_file("経歴.txt", body.encode("utf-8"))
+
+    assert result.format == "txt"
+    assert result.pdf is None
+
+
+@pytest.mark.parametrize("prefix", [b"", b"\xef\xbb\xbf", b"\n\n", b"  "])
+async def test_pdf_header_is_recognized_at_the_start_of_the_file(prefix: bytes) -> None:
+    result = await load_file("resume.dat", prefix + factory.make_pdf_digital())
+
+    assert result.format == "pdf"
+
+
+async def test_pdf_with_junk_before_the_header_is_accepted_only_with_the_pdf_extension() -> None:
+    content = b"junk bytes\n" + factory.make_pdf_digital()
+
+    assert (await load_file("resume.pdf", content)).format == "pdf"
+    with pytest.raises(ResumeError):
+        await load_file("resume.dat", content)
+
+
+async def test_pdf_header_without_a_version_is_not_a_pdf() -> None:
+    with pytest.raises(ConversionFailedError):
+        await load_file("resume.pdf", b"%PDF- but not really a pdf" * 20)
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "-" * 40,
+        "=" * 40,
+        "| --- | --- | --- | --- | --- | --- |\n" * 6,
+        "|" * 40,
+        "# 見出しだけの文書です。長い見出しだけでは職歴書になりません\n## もう一つの長い見出しです",
+    ],
+    ids=["hyphens", "equals", "table-separators", "pipes", "headings-only"],
+)
+async def test_text_made_only_of_markup_is_empty(text: str) -> None:
+    with pytest.raises(EmptyResumeError):
+        await load_text(text)
+
+
+async def test_markup_around_real_text_is_not_counted_but_the_text_is() -> None:
+    text = "# 職歴\n\n| 期間 | 会社 |\n| --- | --- |\n| 2015〜2020 | 株式会社サンプル建設 |\n"
+
+    result = await load_text(text)
+
+    assert result.text == text
+
+
+@pytest.mark.parametrize("sheet_names", [["あ" * 30], ["シート1", "シート2", "シート3"]])
+async def test_workbook_with_only_empty_sheets_is_empty_whatever_the_sheet_names(
+    sheet_names: list[str],
+) -> None:
+    workbook = Workbook()
+    first = workbook.active
+    assert first is not None
+    first.title = sheet_names[0]
+    for name in sheet_names[1:]:
+        workbook.create_sheet(name)
+    buffer = io.BytesIO()
+    workbook.save(buffer)
+
+    with pytest.raises(EmptyResumeError):
+        await load_file("empty.xlsx", buffer.getvalue())
 
 
 # --- 出典名 ---

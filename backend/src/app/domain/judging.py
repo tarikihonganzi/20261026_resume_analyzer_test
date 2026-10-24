@@ -84,7 +84,11 @@ def missing_required(
     conditions: Sequence[Condition], judgements: Sequence[Judgement]
 ) -> list[Condition]:
     """必須条件のうち、達成していない（未達または不明の）ものを、条件の並び順で返す。"""
-    status_by_id = {j.condition_id: j.status for j in judgements}
+    status_by_id: dict[str, JudgementStatus] = {}
+    for judgement in judgements:
+        if judgement.condition_id in status_by_id:
+            raise ConditionMismatchError("同じ条件の判定が複数あります")
+        status_by_id[judgement.condition_id] = judgement.status
 
     missing: list[Condition] = []
     for condition in conditions:

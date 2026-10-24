@@ -9,7 +9,7 @@ import pytest
 
 from app.domain.errors import StorageCorruptedError, StorageError
 from app.storage import json_store
-from app.storage.json_store import read_json, write_json
+from app.storage.json_store import MISSING, read_json, write_json
 
 
 def test_roundtrip_keeps_japanese_text_as_utf8(tmp_path: Path) -> None:
@@ -28,8 +28,18 @@ def test_roundtrip_keeps_japanese_text_as_utf8(tmp_path: Path) -> None:
     assert raw.endswith(b"\n")
 
 
-def test_missing_file_reads_as_none(tmp_path: Path) -> None:
-    assert read_json(tmp_path / "none.json") is None
+def test_missing_file_reads_as_the_missing_marker(tmp_path: Path) -> None:
+    assert read_json(tmp_path / "none.json") is MISSING
+
+
+def test_file_containing_null_is_not_confused_with_a_missing_file(tmp_path: Path) -> None:
+    path = tmp_path / "data.json"
+    path.write_text("null", encoding="utf-8")
+
+    result = read_json(path)
+
+    assert result is None
+    assert result is not MISSING
 
 
 def test_parent_directories_are_created(tmp_path: Path) -> None:
