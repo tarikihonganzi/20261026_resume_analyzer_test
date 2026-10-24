@@ -18,6 +18,21 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
 }
 
+// 画面が壊れないよう、結果の骨組み（数値・配列・概要）だけは、実行時に確かめる
+function isResultShape(data: Record<string, unknown>): boolean {
+  return (
+    typeof data.score === 'number' &&
+    typeof data.original_score === 'number' &&
+    typeof data.match_rate === 'number' &&
+    typeof data.clipped === 'boolean' &&
+    Array.isArray(data.missing_required) &&
+    Array.isArray(data.conditions) &&
+    Array.isArray(data.strengths) &&
+    Array.isArray(data.weaknesses) &&
+    isRecord(data.summary)
+  )
+}
+
 function parseEvent(name: string, raw: string): EvaluationEvent | null {
   let data: unknown
   try {
@@ -36,7 +51,7 @@ function parseEvent(name: string, raw: string): EvaluationEvent | null {
       }
       break
     case 'result':
-      if (typeof data.score === 'number' && Array.isArray(data.conditions)) {
+      if (isResultShape(data)) {
         return { event: 'result', data: data as unknown as EvaluationResult }
       }
       break

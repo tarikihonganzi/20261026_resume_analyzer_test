@@ -1,6 +1,7 @@
 import { Alert, Button, Card, Flex, Result, Spin, Steps, Typography } from 'antd'
 import type { Stage } from '../api/types'
 import { useFlow } from '../state/flow-context'
+import { ResultView } from './ResultView'
 import { useEvaluationRun } from './useEvaluationRun'
 
 const STAGES: Stage[] = ['extracting', 'scoring']
@@ -82,8 +83,7 @@ export function ResultStep() {
   }
 
   if (evaluation.status === 'done') {
-    // 結果画面は T-M6-03 で作る
-    return <Card>評価が完了しました（スコア {String(evaluation.result.score)}）</Card>
+    return <ResultView result={evaluation.result} />
   }
 
   return null

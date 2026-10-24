@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { FlowProvider } from '../state/flow-context'
+import { makeResult } from '../test/fixtures'
 import { renderWithProviders } from '../test/render'
 import { defaultSettings, server } from '../test/server'
 import { FlowPage } from './FlowPage'
@@ -13,7 +14,7 @@ const catalog = [
 ]
 
 const encoder = new TextEncoder()
-const result = { score: 80, conditions: [], strengths: [], weaknesses: [] }
+const result = makeResult({ score: 80 })
 
 function sse(event: string, data: unknown): string {
   return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`
@@ -140,7 +141,7 @@ describe('③ 評価の進捗とエラー', () => {
     evaluation.send(0, 'result', result)
     await new Promise((resolve) => setTimeout(resolve, 50))
 
-    expect(screen.queryByText(/評価が完了しました/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/最終スコア/)).not.toBeInTheDocument()
     expect(screen.getByText('この職歴書を評価に使えます')).toBeInTheDocument()
   })
 
@@ -150,7 +151,7 @@ describe('③ 評価の進捗とエラー', () => {
 
     evaluation.send(0, 'result', result)
 
-    expect(await screen.findByText(/評価が完了しました/)).toBeInTheDocument()
+    expect(await screen.findByText(/最終スコア/)).toBeInTheDocument()
   })
 
   it('サーバーがエラーを返したら、原因を示し、「もう一度評価する」で新しい要求を送る', async () => {

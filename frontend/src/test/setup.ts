@@ -29,6 +29,11 @@ class ResizeObserverStub {
 }
 window.ResizeObserver = ResizeObserverStub
 
+// Ant Design の Table は、スクロールバーの幅を測るために getComputedStyle(要素, '::-webkit-scrollbar')
+// を呼ぶ。jsdom は擬似要素に未対応で、毎回警告を出すので、擬似要素の指定を外して呼ぶ
+const originalGetComputedStyle = window.getComputedStyle.bind(window)
+window.getComputedStyle = (element: Element) => originalGetComputedStyle(element)
+
 // API は msw で差し替える。想定していないリクエストは、テストの失敗にする
 beforeAll(() => {
   server.listen({ onUnhandledFrame: 'error' })
