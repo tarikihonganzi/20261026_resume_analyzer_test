@@ -40,14 +40,14 @@ def test_catalog_returns_the_presets(make_app: MakeApp) -> None:
 
     assert response.status_code == 200
     items = response.json()["items"]
-    assert len(items) == 39
+    assert len(items) == 75
     description = items[0].pop("description")  # 何をその条件として数えるか（仕様 13.1 #27）
     assert items[0] == {
         "id": "qual-kenchiku-sekou-1",
         "label": "1級建築施工管理技士",
         "kind": "boolean",
         "unit": None,
-        "category": "資格",
+        "category": "資格・認定",
     }
     assert "1級建築施工管理技士" in description
     assert all(item["description"] for item in items[1:])
