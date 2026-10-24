@@ -45,6 +45,8 @@ ignore = ["RUF001", "RUF002", "RUF003"]
 [tool.ruff.lint.per-file-ignores]
 # description は仕様書 5.4 章の文言をそのまま写す。折り返すと仕様書と見比べにくくなる
 "src/app/llm/schemas.py" = ["E501"]
+# システム指示は、1 行 1 項目の文章。折り返すと、LLM に渡す文面が変わる
+"src/app/llm/prompts.py" = ["E501"]
 
 [tool.pyright]
 include = ["src", "tests"]

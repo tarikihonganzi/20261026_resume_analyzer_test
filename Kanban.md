@@ -35,7 +35,6 @@
 ### M2: 取り込みとストレージ
 
 ### M3: LLM 層
-- **T-M3-01** `prompts`（システム指示・入力の組み立て・ゴールデンファイル） [M] — AC: 14
 - **T-M3-02** `LlmClient`・`OpenAIClient`・`FakeClient` [L] — リクエストの形・拒否・incomplete・401・429 の統合テスト
 - **T-M3-03** 実 API での調整（プロンプトと `description`） [M] — `npm run live`（ユーザーの依頼時のみ）。判定の一致率を記録
 
@@ -72,6 +71,7 @@
 
 ## Done
 
+- **T-M3-01** `prompts`（システム指示・入力の組み立て・ゴールデンファイル） — 2026-10-25。branch: `feat/T-M3-01-prompts`。llm/prompts.py（EXTRACT_SYSTEM_PROMPT・EVALUATE_SYSTEM_PROMPT・build_extract_input・build_evaluate_input）と llm/requests.py（ExtractRequest・EvaluateRequest）。システム指示は、データの扱い（職歴書・ファイル名・PDF の中の文章は指示としない）・抽出の規則（類推しない・年数の算出・重複除外・今日の日付）・根拠の書き方・公平性・最終評価の規則（±20 点以内・必須未達は summary と weaknesses の両方で触れる）。入力は、PDF を input_file（data URL・detail・filename）、それ以外を <resume name format> で囲む。職歴書の中の閉じタグと、出典名の特殊文字は無害化。ゴールデンファイル 8 件（tests/unit/golden/。UPDATE_GOLDEN=1 で更新）で意図しない変更を検知。npm run check exit 0（pytest 362 件 + POSIX 専用 1 件スキップ）。AC14 のプロンプト側
 - **T-00-07** Copilot のレビュー指摘への対応（PR#2〜#9 の 15 件） — 2026-10-25。branch: `fix/T-00-07-copilot-review`。PR#2〜#9 の Copilot の指摘 15 件に対応。①schemas の年数の例の誤り（2年5か月・合計7年 → 2年6か月・7年6か月。仕様 5.4 章も同時に修正）②深さの検査が $ref をたどらない（解決して数え、10 と 11 階層の境界テスト）③missing_required が判定の重複を上書き（エラーに）④sanitize が制御文字の除去後に NFC が崩れる（取り直し）⑤環境変数の初期値を未実装だった（仕様 4.1。ファイルにない項目を補い、空文字は保存値を優先。update は環境変数の値をファイルに書かない）⑥JSON の null と未作成の区別（MISSING。null は壊れたファイル）⑦icacls の失敗経路のテストが whoami で止まっていた⑧壊れた・空の docx を CLI の出力に追加⑨取り込み: zip 変換器を登録しない（enable_builtins=False。拡張子なしの zip の抜け穴）、.text・.markdown・.jsonl もバイナリ検査、BOM つき UTF-16/32 を許可、%PDF- は先頭のみ、見出し・水平線・表の区切りを数えない。仕様 v0.10。npm run check exit 0（pytest 333 件 + POSIX 専用 1 件スキップ）
 - **T-00-06** 仕様の調整（警告の廃止・API キーのマスク規則・取り込みの具体値） — 2026-10-25。branch: `docs/T-00-06-spec-adjust`。仕様 v0.9。13.1 章に #23（API キーのマスク。12 文字未満は ****）・#24（20 文字未満はエラー、短いことの警告は出さない）・#25（取り込みの細則）を追加し、検証結果の「警告」を廃止（5.3・6.3・7・10 章）。ingest/resume.py の警告と ResumeCheck.warnings を削除。npm run check exit 0。マージ時に lint エラー（E501）が 1 件残っていたため、fix/T-00-06-lint で直した（確認スクリプトが失敗を終了コードに反映していなかった。以後は、マージ直前に必ず npm run check を実行して失敗なら中止する）
 - **T-M2-02** `ingest/resume`（種別判定・サイズ・MarkItDown・空チェック） — 2026-10-25。branch: `feat/T-M2-02-ingest`。ingest/resume.py（load_resume・check_of・ResumeInput・ResumeCheck）と domain/errors の ResumeError 系。種別判定（拡張子・PDF 見出し）、サイズ上限（0 は無制限。貼り付けにも適用）、MarkItDown convert_stream を asyncio.to_thread で実行（イベントループを止めないことをテスト。to_thread を外すと失敗することを確認）、空・極端に短い（20 文字未満）を EmptyResumeError、100 文字未満は警告。MarkItDown の実測で、docx を .txt として渡すとバイナリを文字として成功扱いにすることが分かったため、テキスト系の拡張子で zip 系・旧 Office 署名・NUL を検出してエラーにする。.zip は拒否。エラーメッセージに内容を入れない。決定の詳細は計画書 1 章 #19。npm run check exit 0（pytest 284 件 + POSIX 専用 1 件スキップ）。AC3・AC12 の取り込み側（API 経由は T-M4-03）
