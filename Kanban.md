@@ -47,10 +47,10 @@
 
 ### M8: 仕上げ
 - **T-M8-02** 実 API での通し確認とコスト・待ち時間の実測 [M] — `npm run live`（ユーザーの依頼時のみ）
-- **T-M8-03** エラー表示の網羅確認とアクセシビリティの基本 [M] — 仕様 5.6 章
 
 ## Done
 
+- **T-M8-03** エラー表示の網羅確認とアクセシビリティの基本 — 2026-10-25。branch: `feat/T-M8-03-errors-a11y`。仕様 5.6 の各エラーの表示をテストで網羅（再実行・条件に戻る・設定リンク）。E2E に axe（WCAG 2.1 A・AA）を追加し 6 画面で違反 0（原因: 薄い文字・青・タグの色のコントラスト不足 → theme.ts のトークンと TAG_STYLES で解消）。画面の切り替わりで region へフォーカスを移す（キーボード利用者のため）。キーボードだけの操作を E2E で確認。check 通過（pytest 623・vitest 284）・e2e 9 passed。【要確認】設定ページへのリンクを、仕様 5.6（認証エラーのみ）に加えて、リクエスト拒否（llm_request。モデル名・ベース URL の誤り）にも出した。主色の青を #1677ff → #0958d9 に変えた（コントラスト）
 - **T-M8-04** `npm run build`／`npm run start` と README — 2026-10-25。branch: `feat/T-M8-04-start`。npm run start（ビルド→ FastAPI が画面と API を 1 プロセスで配信。127.0.0.1:8000）と npm run start:demo（デモモード。0.0.0.0・APP_ALLOW_REMOTE=1・他の PC 用 URL を表示）。scripts/start.mjs（cmd.exe でも動くよう Node で環境変数を指定）。AppSettings.static_dir（APP_STATIC_DIR）と StaticFiles（API のルートのあと）。テスト 10 件（配信・優先順位・/api の未定義は JSON の 404・パストラバーサル・Host 検査・dist なし）。実機: ビルド済みで評価〜設定、LAN アドレス経由（デモ）で GET 200・同一 Origin の PUT 200・他サイトの Origin 403・通常モードでは別の Host が 400。ホイールに catalog.json が入ることを確認。README を追加。check 通過（pytest 623・vitest 275）・e2e 7 passed
 - **T-M8-01** Playwright の E2E（仕様 7.3 章の 6 シナリオ） — 2026-10-25。branch: `test/T-M8-01-e2e`。Playwright の E2E 7 本（計画 7.3 の 6 シナリオ＋条件を変えて再評価）。偽の LLM のバックエンド（8100）と Vite（5273）を webServer で自動起動し、データは毎回まっさら・架空の職歴書は resume_factory で生成。開発用ポートとぶつからないよう vite.config.ts を環境変数で切替可能に（strictPort）。画面は Vite 経由なので /api の転送と Origin の確認も通る。npm run e2e 7 passed、npm run check 通過（pytest 613・vitest 275）。AC1・2・6・7・8・10・11・12・13・14・15 を通しで確認
 - **T-M7-01** 設定ページ・接続テスト・API キー未設定バナー — 2026-10-25。branch: `feat/T-M7-01-settings`。設定ページ（API キー・ベース URL・モデル名・最大ファイルサイズ）。API キーはマスクだけを示し、変更するときだけ入力・保存後は入力欄を空に戻す。変えた項目だけを PUT（lib/settings.ts の buildSettingsUpdate をテスト先行）。接続テストは保存前の入力値で実行（キー未入力ならサーバーが保存済みの値を使う）、入力を変えると結果は消える。URL・モデル名・サイズの入力検証。保存でキー未設定バナーが消えることを確認。AC10 を UI のテストと偽 LLM の実ブラウザで確認。check 通過

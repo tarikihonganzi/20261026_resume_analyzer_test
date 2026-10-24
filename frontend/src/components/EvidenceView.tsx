@@ -1,17 +1,20 @@
 import { Button, Flex, Tag, Typography } from 'antd'
 import { useId, useState } from 'react'
+import type { CSSProperties } from 'react'
 import type { VerifiedQuote } from '../api/types'
+import { TAG_STYLES } from './tagStyles'
 
 interface EvidenceViewProps {
   reason: string
   quotes: readonly VerifiedQuote[]
 }
 
-const VERIFIED_NOTES: Partial<Record<VerifiedQuote['verified'], { label: string; color: string }>> =
-  {
-    not_found: { label: '原文で確認できず', color: 'orange' },
-    skipped: { label: '未照合', color: 'default' },
-  }
+const VERIFIED_NOTES: Partial<
+  Record<VerifiedQuote['verified'], { label: string; style: CSSProperties }>
+> = {
+  not_found: { label: '原文で確認できず', style: TAG_STYLES.warning },
+  skipped: { label: '未照合', style: TAG_STYLES.neutral },
+}
 
 function QuoteItem({ quote }: { quote: VerifiedQuote }) {
   const note = VERIFIED_NOTES[quote.verified]
@@ -22,7 +25,7 @@ function QuoteItem({ quote }: { quote: VerifiedQuote }) {
           {quote.source_name}
           {quote.location ? `（${quote.location}）` : ''}
         </Typography.Text>
-        {note ? <Tag color={note.color}>{note.label}</Tag> : null}
+        {note ? <Tag style={note.style}>{note.label}</Tag> : null}
       </Flex>
       {/* 引用は原文の抜粋。Markdown として解釈せず、そのままの文字で見せる */}
       <blockquote

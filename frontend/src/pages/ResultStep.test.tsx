@@ -152,6 +152,8 @@ describe('③ 評価の進捗とエラー', () => {
     evaluation.send(0, 'result', result)
 
     expect(await screen.findByText(/最終スコア/)).toBeInTheDocument()
+    // 押していた「キャンセル」は消える。フォーカスを、結果の領域へ移す
+    expect(screen.getByRole('region', { name: '③ 結果' })).toHaveFocus()
   })
 
   it('サーバーがエラーを返したら、原因を示し、「再実行」で新しい要求を送る', async () => {
@@ -162,7 +164,7 @@ describe('③ 評価の進捗とエラー', () => {
 
     expect(await screen.findByText('評価できませんでした')).toBeInTheDocument()
     expect(screen.getByText('AI が混み合っています。')).toBeInTheDocument()
-    expect(screen.queryByText('API キーを確認してください')).not.toBeInTheDocument()
+    expect(screen.queryByText('設定を確認してください')).not.toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('button', { name: '再実行' }))
 
@@ -172,14 +174,55 @@ describe('③ 評価の進捗とエラー', () => {
     expect(await screen.findByText('評価しています')).toBeInTheDocument()
   })
 
-  it('API キーの認証エラーでは、設定ページへのリンクを出す', async () => {
-    const evaluation = controlEvaluation()
-    await startAndWaitForRequest(evaluation)
+  // 仕様 5.6: API の失敗は再試行を促し、認証・設定の誤りは設定ページへのリンクを示す
+  it.each([
+    [
+      'llm_unavailable',
+      'AI サービスの応答に時間がかかりすぎました。もう一度お試しください。',
+      false,
+    ],
+    ['llm_response', 'AI の応答を利用できませんでした。もう一度お試しください。', false],
+    [
+      'extraction_inconsistent',
+      'AI の抽出結果に不整合がありました。もう一度実行してください。',
+      false,
+    ],
+    [
+      'llm_auth',
+      'API キーが正しくないか、権限がありません。設定ページで API キーを確認してください。',
+      true,
+    ],
+    [
+      'llm_request',
+      'AI サービスがリクエストを受け付けませんでした。設定ページでモデル名とベース URL を確認してください。',
+      true,
+    ],
+  ])(
+    'エラー %s: 原因と「再実行」を示し、設定の誤りのときだけ、設定ページへのリンクを出す',
+    async (code, message, hasSettingsLink) => {
+      const evaluation = controlEvaluation()
+      await startAndWaitForRequest(evaluation)
 
-    evaluation.send(0, 'error', { code: 'llm_auth', message: 'API キーが正しくありません。' })
+      evaluation.send(0, 'error', { code, message })
 
-    const link = await screen.findByRole('link', { name: '設定ページを開く' })
-    expect(link).toHaveAttribute('href', '#/settings')
+      expect(await screen.findByText('評価できませんでした')).toBeInTheDocument()
+      expect(screen.getByText(message)).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: '再実行' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: '条件に戻る' })).toBeInTheDocument()
+      const link = screen.queryByRole('link', { name: '設定ページを開く' })
+      if (hasSettingsLink) expect(link).toHaveAttribute('href', '#/settings')
+      else expect(link).not.toBeInTheDocument()
+    },
+  )
+
+  it('サーバーに接続できないときは、その原因を示し、再実行できる', async () => {
+    replaceEvaluationFetch(() => Promise.reject(new TypeError('Failed to fetch')))
+    await reachEvaluation()
+
+    await startEvaluation()
+
+    expect(await screen.findByText(/サーバーに接続できませんでした/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '再実行' })).toBeInTheDocument()
   })
 
   it('「条件に戻る」で ① に戻る', async () => {
