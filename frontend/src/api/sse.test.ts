@@ -1,5 +1,6 @@
 import { http, HttpResponse } from 'msw'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { makeResult } from '../test/fixtures'
 import { server } from '../test/server'
 import { ApiError } from './client'
 import { streamEvaluation, type EvaluationEvent, type EvaluationInput } from './sse'
@@ -21,7 +22,7 @@ const input: EvaluationInput = {
   resume: { kind: 'text', text: '職歴の本文です。' },
 }
 
-const result = { score: 80, conditions: [], strengths: [], weaknesses: [] }
+const result = makeResult({ score: 80 })
 
 function sse(event: string, data: unknown): string {
   return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`
@@ -136,6 +137,10 @@ describe('streamEvaluation', () => {
     await expect(collect()).rejects.toMatchObject({ code: 'invalid_stream' })
 
     respondWith(sse('result', { nothing: true }))
+    await expect(collect()).rejects.toMatchObject({ code: 'invalid_stream' })
+
+    // 骨組みが足りない結果（概要がない）も、画面を壊さないよう、エラーにする
+    respondWith(sse('result', { ...result, summary: undefined }))
     await expect(collect()).rejects.toMatchObject({ code: 'invalid_stream' })
 
     respondWith(sse('error', { code: 1 }))
