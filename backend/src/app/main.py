@@ -3,10 +3,11 @@ from datetime import date
 
 from fastapi import FastAPI
 
-from app.api import catalog, condition_sets, health, resumes, settings_api
+from app.api import catalog, condition_sets, evaluations, health, resumes, settings_api
 from app.api.errors import register_exception_handlers
 from app.api.security import LocalOnlyMiddleware
 from app.domain.models import Config
+from app.llm.client import ClosableLlmClient
 from app.llm.openai_client import OpenAIClient
 from app.services import Services
 from app.settings import AppSettings
@@ -20,6 +21,7 @@ def create_app(
     environ: Mapping[str, str] | None = None,
     today: Callable[[], date] = date.today,
     openai_factory: Callable[[Config], OpenAIClient] = OpenAIClient,
+    client_factory: Callable[[Config], ClosableLlmClient] | None = None,
 ) -> FastAPI:
     """アプリを作る。`environ` は、設定の初期値（OPENAI_*）の元（既定は実際の環境変数）。"""
     settings = settings or AppSettings.from_env()
@@ -30,6 +32,7 @@ def create_app(
         condition_set_store=ConditionSetStore(settings.data_dir / "condition_sets.json"),
         today=today,
         openai_factory=openai_factory,
+        client_factory=client_factory,
     )
     register_exception_handlers(app)
     app.add_middleware(LocalOnlyMiddleware)
@@ -39,6 +42,7 @@ def create_app(
         condition_sets.router,
         settings_api.router,
         resumes.router,
+        evaluations.router,
     ):
         app.include_router(router)
     return app

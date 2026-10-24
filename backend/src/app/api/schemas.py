@@ -1,6 +1,6 @@
 """API の入出力の型。OpenAPI に出て、フロントの型の元になる（`npm run gen-types`）。"""
 
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
@@ -14,6 +14,19 @@ class ErrorResponse(BaseModel):
     code: str
     message: str
     fields: list[str] | None = None
+
+
+class StreamError(BaseModel):
+    """SSE の `error` イベント。ストリームが始まったあとの失敗（LLM のエラーなど）。"""
+
+    code: str
+    message: str
+
+
+class StageData(BaseModel):
+    """SSE の `stage` イベント。画面の進捗表示に使う。"""
+
+    stage: Literal["extracting", "scoring"]
 
 
 class CatalogResponse(BaseModel):

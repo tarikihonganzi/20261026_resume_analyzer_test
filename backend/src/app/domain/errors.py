@@ -148,3 +148,12 @@ class ExtractionInconsistentError(DomainError):
 
     def __init__(self) -> None:
         super().__init__("AI の抽出結果に不整合がありました。もう一度実行してください。")
+
+
+class InvalidConditionsError(DomainError):
+    """評価に送られた条件の形式が正しくないとき（JSON として読めない、id の重複など）。"""
+
+    code = "invalid_conditions"
+
+    def __init__(self) -> None:
+        super().__init__("条件の形式が正しくありません。条件を選び直してください。")

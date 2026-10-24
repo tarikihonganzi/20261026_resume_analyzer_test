@@ -16,6 +16,7 @@ from app.domain.errors import (
     ConditionSetNotFoundError,
     DomainError,
     FileTooLargeError,
+    InvalidConditionsError,
     LlmAuthError,
     LlmError,
     NoConditionsError,
@@ -33,7 +34,7 @@ def _json(status: int, body: ErrorResponse) -> JSONResponse:
 def _status_for(error: DomainError) -> int:
     if isinstance(error, FileTooLargeError):
         return 413
-    if isinstance(error, ResumeError | NoConditionsError | LlmAuthError):
+    if isinstance(error, ResumeError | NoConditionsError | LlmAuthError | InvalidConditionsError):
         return 422
     if isinstance(error, ConditionSetNotFoundError):
         return 404
