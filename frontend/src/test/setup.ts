@@ -1,4 +1,7 @@
 import '@testing-library/jest-dom/vitest'
+import { cleanup } from '@testing-library/react'
+import { afterAll, afterEach, beforeAll } from 'vitest'
+import { server } from './server'
 
 type MatchMediaStub = Pick<
   MediaQueryList,
@@ -16,4 +19,17 @@ Object.defineProperty(window, 'matchMedia', {
     removeEventListener: () => undefined,
     dispatchEvent: () => false,
   }),
+})
+
+// API は msw で差し替える。想定していないリクエストは、テストの失敗にする
+beforeAll(() => {
+  server.listen({ onUnhandledFrame: 'error' })
+})
+afterEach(() => {
+  cleanup()
+  server.resetHandlers()
+  window.location.hash = ''
+})
+afterAll(() => {
+  server.close()
 })

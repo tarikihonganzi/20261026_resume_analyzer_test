@@ -40,7 +40,6 @@
 ### M4: API と SSE
 
 ### M5: フロント 基盤と ① 条件
-- **T-M5-01** フロントの基盤（Ant Design 6・TanStack Query・日本語化・`AppShell`・`FlowSteps`） [M]
 - **T-M5-02** 評価フローのリデューサー [M] — AC: 11, 13。遷移規則の単体テスト
 - **T-M5-03** 条件一覧（`ConditionRow`・カテゴリ・検索・選択中のみ） [L] — AC: 1
 - **T-M5-04** 要約パネルと自由記述のモーダル [M] — AC: 2
@@ -64,6 +63,7 @@
 
 ## Done
 
+- **T-M5-01** フロントの基盤（Ant Design 6・TanStack Query・日本語化・`AppShell`・`FlowSteps`） — 2026-10-25。branch: `feat/T-M5-01-foundation`。フロントの基盤。api/（types.ts: 生成された型の別名、client.ts: ApiError と fetch のラッパー、hooks.ts: TanStack Query）、AppShell（ヘッダー・設定への入口・API キー未設定のバナー）、FlowSteps（Steps。v6 の items[].content。完了済みのステップにだけ戻れる・評価中は移動不可）、ハッシュによる画面の切り替え、msw（v3。onUnhandledFrame: error）によるテストの基盤。TypeScript の別名・API 呼び出しのテスト 17 件。ブラウザで実際に開いて確認（playwright で撮影。バナー・ヘッダー）。npm run check exit 0（pytest 581 件・Vitest 17 件）
 - **T-M4-06** OpenAPI から TypeScript の型を生成（`npm run gen-types`） — 2026-10-25。branch: `feat/T-M4-06-gen-types`。npm run gen-types（backend の app.export_openapi → frontend/src/api/openapi.json → openapi-typescript → frontend/src/api/types.gen.ts）。FastAPI の OpenAPI は SSE のイベントの中身を含まず、413・422 を text/event-stream にしてしまうため、api/openapi.py で補正（EvaluationResult・StageData・StreamError と、StageEventData・ResultEventData・ErrorEventData を components に追加し、413・422 は JSON に。計画書のリスク R7 に対応）。openapi.json が古いとテストが失敗する（API を変えたら npm run gen-types）。openapi-typescript が TypeScript 5.x のみ対応のため、TypeScript を 6.0.3 から 5.9.3 に変更（typescript-eslint の対応範囲にも入る。計画書 1 章 #14）。npm run check exit 0（pytest 581 件 + POSIX 専用 1 件スキップ・Vitest 1 件）
 - **T-M4-07** デモモード（他の PC からのアクセス。APP_ALLOW_REMOTE=1 のときだけ開放） — 2026-10-25。branch: `feat/T-M4-07-demo-mode`。仕様 v0.11（10 章・13.1 章 #20・#26）。環境変数 APP_ALLOW_REMOTE=1（AppSettings.allow_remote）のときだけ、Host の制限を外す。Origin が自身のオリジンであることの確認は残す（他のサイトからの送信は防ぐ）。認証などの追加の保護はしない（ユーザーの指示）。既定は今までどおり。起動時に、全ネットワークに開放していることをログに警告。IPv6・LAN の IP・ホスト名の Host を受け付け、別のオリジンは 403 になることをテスト。0.0.0.0 での待ち受けと npm run start:demo は、フロントのビルドと同時に T-M8-04 で追加（その時点で、実機で他の PC から接続して確認）。npm run check exit 0（pytest 575 件 + POSIX 専用 1 件スキップ）
 - **T-M4-04** `POST /api/evaluations`（SSE）と切断・`UploadFile` の統合テスト — 2026-10-25。branch: `feat/T-M4-04-evaluations-sse`。api/evaluations.py（POST /api/evaluations。multipart: file か text + conditions の JSON → SSE の stage・stage・result、または error）。入力の検証（条件の JSON・0 件・id の重複・API キー未設定・職歴書・サイズ）は Depends で、ストリームの前に通常の HTTP エラー（422・413）で返す。切断（実際の uvicorn に接続して確認）で LLM 呼び出しが CancelledError で止まり、LLM のクライアントが閉じられることをテスト（計画書 R の「切断の挙動が公式に不明」を実測で確認）。設定は評価のたびに読み直す（設定ページの変更が次の評価から反映されることをテスト）。API キーがストリーム・ログに出ないこと、職歴書がディスクに残らないことをテスト。Services に client_factory（LLM クライアントの差し替え）を追加。StageData・StreamError を OpenAPI に追加。npm run check exit 0（pytest 558 件 + POSIX 専用 1 件スキップ）。AC9 の API 側
