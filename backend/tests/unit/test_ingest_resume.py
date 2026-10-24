@@ -314,7 +314,7 @@ async def test_conversion_does_not_block_the_event_loop(monkeypatch: pytest.Monk
 # --- 検証結果（/api/resumes/check の応答の元） ---
 
 
-async def test_check_of_a_converted_file_reports_the_length_without_warnings() -> None:
+async def test_check_of_a_converted_file_reports_the_length() -> None:
     result = await load_file("経歴.docx", factory.make_docx())
 
     check = check_of(result)
@@ -323,7 +323,6 @@ async def test_check_of_a_converted_file_reports_the_length_without_warnings() -
     assert check.source_name == "経歴.docx"
     assert result.text is not None
     assert check.char_count == len(result.text)
-    assert check.warnings == []
 
 
 async def test_check_of_a_pdf_has_no_length() -> None:
@@ -331,18 +330,9 @@ async def test_check_of_a_pdf_has_no_length() -> None:
 
     assert check.format == "pdf"
     assert check.char_count is None
-    assert check.warnings == []
-
-
-async def test_check_warns_when_the_text_is_short() -> None:
-    check = check_of(await load_text("あ" * 50))
-
-    assert check.char_count == 50
-    assert len(check.warnings) == 1
-    assert "短い" in check.warnings[0]
 
 
 async def test_check_contains_nothing_but_the_summary() -> None:
     check = check_of(await load_file("経歴.docx", factory.make_docx()))
 
-    assert set(check.model_dump()) == {"format", "source_name", "char_count", "warnings"}
+    assert set(check.model_dump()) == {"format", "source_name", "char_count"}
