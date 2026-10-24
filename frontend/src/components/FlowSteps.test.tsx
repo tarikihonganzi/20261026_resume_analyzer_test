@@ -6,18 +6,18 @@ import { FlowSteps, type FlowStepItem } from './FlowSteps'
 const items = (
   overrides: Partial<FlowStepItem>[] = [],
 ): [FlowStepItem, FlowStepItem, FlowStepItem] => [
-  { title: '① 条件', status: 'finish', summary: '必須 2・任意 3', ...overrides[0] },
-  { title: '② 職歴書', status: 'process', ...overrides[1] },
-  { title: '③ 結果', status: 'wait', ...overrides[2] },
+  { title: '条件', status: 'finish', summary: '必須 2・任意 3', ...overrides[0] },
+  { title: '職歴書', status: 'process', ...overrides[1] },
+  { title: '結果', status: 'wait', ...overrides[2] },
 ]
 
 describe('FlowSteps', () => {
   it('各ステップの名前と、完了したステップの要約を表示する', () => {
     render(<FlowSteps items={items()} current={1} reachable={1} onSelect={vi.fn()} />)
 
-    expect(screen.getByText('① 条件')).toBeInTheDocument()
-    expect(screen.getByText('② 職歴書')).toBeInTheDocument()
-    expect(screen.getByText('③ 結果')).toBeInTheDocument()
+    expect(screen.getByText('条件')).toBeInTheDocument()
+    expect(screen.getByText('職歴書')).toBeInTheDocument()
+    expect(screen.getByText('結果')).toBeInTheDocument()
     expect(screen.getByText('必須 2・任意 3')).toBeInTheDocument()
   })
 
@@ -25,7 +25,7 @@ describe('FlowSteps', () => {
     const onSelect = vi.fn()
     render(<FlowSteps items={items()} current={1} reachable={1} onSelect={onSelect} />)
 
-    await userEvent.click(screen.getByText('① 条件'))
+    await userEvent.click(screen.getByText('条件'))
 
     expect(onSelect).toHaveBeenCalledWith(0)
   })
@@ -34,7 +34,7 @@ describe('FlowSteps', () => {
     const onSelect = vi.fn()
     render(<FlowSteps items={items()} current={1} reachable={1} onSelect={onSelect} />)
 
-    await userEvent.click(screen.getByText('③ 結果'))
+    await userEvent.click(screen.getByText('結果'))
 
     expect(onSelect).not.toHaveBeenCalled()
   })
@@ -43,8 +43,8 @@ describe('FlowSteps', () => {
     const onSelect = vi.fn()
     render(<FlowSteps items={items()} current={2} reachable={2} locked onSelect={onSelect} />)
 
-    await userEvent.click(screen.getByText('① 条件'))
-    await userEvent.click(screen.getByText('② 職歴書'))
+    await userEvent.click(screen.getByText('条件'))
+    await userEvent.click(screen.getByText('職歴書'))
 
     expect(onSelect).not.toHaveBeenCalled()
   })
