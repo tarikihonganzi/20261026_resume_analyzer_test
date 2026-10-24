@@ -57,18 +57,18 @@
 - **開発・実行環境は Windows**（2026-10-25 に macOS から変更）。シェルは Git Bash か PowerShell。`make` は使えないので、タスクの入口は npm scripts にする。パスは `/` 区切りで書く。
 - macOS（Intel）は対象外。`onnxruntime`（MarkItDown → magika の依存）が 1.24.1 以降で macOS x86_64 の wheel を配布していないため。
 - `uv` は Windows では `winget install --id=astral-sh.uv -e`（または公式の PowerShell インストーラー）で導入する。導入後は新しいターミナルを開いて `uv --version` で確認する。
-- Python は `uv` が管理する 3.13（`uv python install 3.13`）。Node は 24.x、パッケージ管理は `npm`（pnpm・yarn は使わない）。
+- Python は `uv` が管理する 3.14（`uv python install 3.14`。3.15 は MarkItDown が未対応のため使わない）。Node は 24.x（Windows では `fnm install 24`。PowerShell のプロファイルに `fnm env --use-on-cd --shell powershell | Out-String | Invoke-Expression` を入れる）、パッケージ管理は `npm`（pnpm・yarn は使わない）。
 - 改行は LF に統一する（`.gitattributes`）。プロンプトのゴールデンファイルが、改行の違いで失敗しないようにするため。
 - 社内の OpenAI API を使う。API キーとベース URL は、アプリの設定ページか環境変数で与える（コードやリポジトリに書かない）。
 
-## コマンド（ルートの `package.json` の npm scripts。T-M0-01 で整備する。整備したらここを実際の内容に直す）
+## コマンド（ルートの `package.json` の npm scripts。`e2e`・`live`・`start` は後続のカードで追加する）
 
-- `npm run setup`: 依存の導入（`uv sync`、`npm ci`）。
-- `npm run dev`: バックエンド（127.0.0.1:8000）と Vite（5173）を起動。
-- `npm run check`: lint・型検査・単体・統合・フロントのテスト。**ネットワークと API 費用を使わない。**
+- `npm run setup`: 依存の導入（ルートと `frontend/` の `npm ci`、`backend/` の `uv sync`）。
+- `npm run dev`: バックエンド（127.0.0.1:8000）と Vite（5173）を `concurrently` で起動。Vite が `/api` をバックエンドへ転送する。**止めるときは、`uvicorn --reload` が起動する子プロセス（Python の `multiprocessing` のワーカー）が残ることがある。残るとポートと `backend/.venv` のファイルを掴み続けるので、`Get-CimInstance Win32_Process` で親 PID を確認して止める。**
+- `npm run check`: lint・型検査・単体・統合・フロントのテスト。`check:backend`（ruff・pyright・pytest）と `check:frontend`（ESLint・Prettier・tsc・Vitest）に分けて実行もできる。**ネットワークと API 費用を使わない。**
 - `npm run e2e`: Playwright（偽の LLM で起動したサーバーに対して実行）。
 - `npm run live`: 実 API のテスト。**費用がかかるので、ユーザーが依頼したときだけ実行する。**
-- `npm run build` / `npm run start`: フロントをビルドし、FastAPI が配信する 1 プロセスで起動。
+- `npm run build`: フロントを型検査してビルドする。`npm run start`（FastAPI が配信する 1 プロセスで起動）は T-M8-04 で追加する。
 - npm scripts の中身は、`cmd.exe` でも `sh` でも動く書き方にする（`&&` と引数だけ。シェル固有の構文を避ける）。
 - 単体のテストを優先して実行する（例: `uv run --directory backend pytest tests/unit/test_judging.py -q`）。全体は区切りで実行する。
 
