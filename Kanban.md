@@ -38,7 +38,6 @@
 - **T-M3-03** 実 API での調整（プロンプトと `description`） [M] — `npm run live`（ユーザーの依頼時のみ）。判定の一致率を記録
 
 ### M4: API と SSE
-- **T-M4-04** `POST /api/evaluations`（SSE）と切断・`UploadFile` の統合テスト [L] — 切断で LLM 呼び出しがキャンセルされることを確認
 - **T-M4-06** OpenAPI から TypeScript の型を生成（`npm run gen-types`） [S] — SSE のイベント型が含まれるか確認
 
 ### M5: フロント 基盤と ① 条件
@@ -66,6 +65,7 @@
 
 ## Done
 
+- **T-M4-04** `POST /api/evaluations`（SSE）と切断・`UploadFile` の統合テスト — 2026-10-25。branch: `feat/T-M4-04-evaluations-sse`。api/evaluations.py（POST /api/evaluations。multipart: file か text + conditions の JSON → SSE の stage・stage・result、または error）。入力の検証（条件の JSON・0 件・id の重複・API キー未設定・職歴書・サイズ）は Depends で、ストリームの前に通常の HTTP エラー（422・413）で返す。切断（実際の uvicorn に接続して確認）で LLM 呼び出しが CancelledError で止まり、LLM のクライアントが閉じられることをテスト（計画書 R の「切断の挙動が公式に不明」を実測で確認）。設定は評価のたびに読み直す（設定ページの変更が次の評価から反映されることをテスト）。API キーがストリーム・ログに出ないこと、職歴書がディスクに残らないことをテスト。Services に client_factory（LLM クライアントの差し替え）を追加。StageData・StreamError を OpenAPI に追加。npm run check exit 0（pytest 558 件 + POSIX 専用 1 件スキップ）。AC9 の API 側
 - **T-00-08** Copilot のレビュー指摘への対応（2 回目。PR#12〜#16 の 6 件） — 2026-10-25。branch: `fix/T-00-08-copilot-review-2`。【重大】backend/src/app/data/catalog.json が .gitignore の data/ に巻き込まれ、T-M4-01 以来 GitHub に入っていなかった（手元にはあるのでテストが通り、検出できなかった。新しくクローンすると main のテストが失敗する状態）。.gitignore を /data/（ルートのみ）に直し、catalog.json と data/__init__.py を追加。ソース・テストが gitignore されていないことを検査するテストを追加。ほか PR#12〜#16 の指摘: ①- - -・_ _ _・* * * など、空白を挟んだ水平線と、空の表の行を、本文として数えない ②閉じタグの無害化（元に戻せない）は、引用の照合を原文と変換後の文字列の両方に対して行う方針にした ③ベース URL が空のとき、SDK が環境変数 OPENAI_BASE_URL を再参照して、設定と違う宛先に職歴書と API キーを送る恐れ → 既定の URL を明示（環境変数が設定されていても、保存済みの空文字が優先されるテスト）④偽のクライアントが、最低値 0 の未達で years=0（達成になってしまう）→ null ⑤抽出結果の years の NaN・inf・負の値を不整合として扱う。npm run check exit 0（pytest 539 件 + POSIX 専用 1 件スキップ）
 - **T-M4-05** ローカル API の保護（Host・Origin） — 2026-10-25。branch: `feat/T-M4-05-local-security`。api/security.py（素の ASGI ミドルウェア。SSE を壊さないため BaseHTTPMiddleware は使わない）。Host は localhost・127.0.0.1（ポートは問わない）のみ許可し、それ以外は 400。IPv6・0.0.0.0・LAN の IP・サブドメインの偽装も拒否。GET・HEAD・OPTIONS 以外で Origin があれば、自分自身（スキーム + Host）と一致しないと 403（Origin なしは許可。ブラウザは POST に Origin を付ける）。開発時の Vite 経由（localhost:5173）も許可。CORS は有効にせず、cross-origin のプリフライトにも CORS ヘッダーが付かないことをテスト。/api/health を含む全パスが対象（仕様 13.1 #22・#20）。統合テスト 30 件。npm run check exit 0（pytest 526 件 + POSIX 専用 1 件スキップ）
 - **T-M4-03** 条件セット・設定・`resumes/check` の API — 2026-10-25。branch: `feat/T-M4-03-api`。GET /api/catalog、条件セットの CRUD（GET・POST 201・PUT・DELETE 204）、GET・PUT /api/settings（API キーはマスクのみ返す。空なら既存を残す。pdf_detail・request_timeout_sec は API から変えられない）、POST /api/settings/test（保存前の値で接続テスト。保存しない）、POST /api/resumes/check（概要だけを返し、ディスクに残さない）。エラーは {code, message, fields} に統一（413: サイズ超過、422: 入力・職歴書、404、500: ストレージ）。検証エラーは入力値を返さない。create_app(settings, environ, today, openai_factory) と Services で組み立て、評価のたびに設定を読み直して LLM クライアントを作る（計画書の「起動時に作って使い回す」から変更。設定変更の反映が単純になるため）。偽の LLM のモードの接続テストは、bad で始まるキーが失敗。統合テスト 41 件。npm run check exit 0（pytest 494 件 + POSIX 専用 1 件スキップ）。AC8・AC10・AC12 の API 側

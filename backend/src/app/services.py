@@ -25,9 +25,13 @@ class Services:
     today: Callable[[], date] = date.today
     # テストで、HTTP を差し替えた OpenAIClient を使えるようにする
     openai_factory: Callable[[Config], OpenAIClient] = OpenAIClient
+    # テストで、評価に使う LLM クライアントそのものを差し替える
+    client_factory: Callable[[Config], ClosableLlmClient] | None = None
 
     def make_client(self, config: Config) -> ClosableLlmClient:
         """評価のたびに作り、終わったら閉じる（設定は評価のたびに読み直すため）。"""
+        if self.client_factory is not None:
+            return self.client_factory(config)
         if self.settings.llm_mode == "fake":
             return FakeClient(delay_sec=self.settings.fake_delay_sec)
         return self.openai_factory(config)
