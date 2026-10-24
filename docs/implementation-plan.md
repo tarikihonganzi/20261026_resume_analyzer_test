@@ -32,7 +32,7 @@
 | 11 | Vite 8.3.5 は Node 20.19 以上または 22.12 以上が必要。Vitest 5.0.5 は Node 22.12 以上、`eventsource-parser` 4.1.2 も Node 22.12 以上 | Node 24.x（LTS）を使えば問題なし |
 | 12 | `react-markdown` 10.1.0 は ESM のみ。`rehype-raw` と `rehype-sanitize` を組み合わせて `<u>` だけ許可できる | 仕様 5.5 のとおり |
 | 13 | **開発・実行環境を Windows に変更した（2026-10-25）。** `make` は Windows に標準でなく、Git Bash にも含まれない。Claude Code は、Git for Windows があれば Git Bash、なければ PowerShell でコマンドを実行する。`uv` は `winget install --id=astral-sh.uv -e` で導入できる | タスクの入口を、ルートの `package.json` の npm scripts にする（Node.js は必須なので追加の導入が要らない）。scripts は `cmd.exe` と `sh` の両方で動く書き方にする |
-| 14 | TypeScript の最新が 7.0.2 で、新しい世代である。**`typescript-eslint` 8.72.0（最新）の peer 依存は `typescript >=4.8.4 <6.1.0` で、7.x に対応していない**（2026-10-25、`npm view` で確認） | **TypeScript は 6.0.x（`~6.0.3`）に固定する。** `typescript-eslint` が 7.x に対応したら移行を検討する |
+| 14 | TypeScript の最新が 7.0.2 で、新しい世代である。**`typescript-eslint` 8.72.0（最新）の peer 依存は `typescript >=4.8.4 <6.1.0` で、7.x に対応していない**（2026-10-25、`npm view` で確認） | ~~TypeScript は 6.0.x に固定する~~ → **TypeScript は 5.9.x（`~5.9.3`）に固定する**（T-M4-06、2026-10-25）。`openapi-typescript` 7.13.0（OpenAPI から型を生成）の peer 依存が `typescript ^5.x` で、6.x と衝突するため（`typescript-eslint` の対応は `<6.1.0` なので、5.9 は両方を満たす）。両ツールが 6.x・7.x に対応したら移行を検討する |
 | 15 | `onnxruntime`（MarkItDown → `magika` の依存）は、1.24.1 以降で macOS x86_64 の wheel を配布していない（[公式リリースノート](https://github.com/microsoft/onnxruntime/releases/tag/v1.24.1)）。`magika` は Python 3.13 で `onnxruntime>=1.21.0`（3.14 では `>=1.24.1`）とだけ指定している。macOS Intel で依存を導入しようとして、この問題で失敗した | Windows では問題にならない。macOS（Intel）は対象外とする。`uv.lock` は最新の `onnxruntime` で解決する（macOS Intel 向けに入れた `required-environments` は外した） |
 | 16 | Windows では、Python の `os.chmod` は読み取り専用の属性しか変えられず、`0600` で所有者のみに制限できない（Python の公式ドキュメントの記載）。また、開いているファイルへの `os.replace` は失敗することがある | `data/config.json` の保護は ACL で行う。`json_store` の置き換えは、短い待ちを挟んだリトライを入れる。**T-M2-01 の確認結果（2026-10-25）**: [`icacls` の公式ドキュメント](https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/icacls)どおり、`/inheritancelevel:r`（継承を外す）と `/grant:r *<SID>:(M)`（数字の SID は先頭に `*`）で、現在のユーザーだけに許可できた。SID は `whoami /user /fo csv /nh` で取る。`(R,W)` には削除権限がなく置き換えで失敗しうるため `(M)`（変更）にする。**ファイルを移動（`os.replace`）すると、置き換え先は移動元（一時ファイル）の ACL を持つ**ことを実機で確認したので、ACL は中身を書く前の一時ファイルに設定する。開いているファイルへの `os.replace` は PermissionError になるが、0.05 秒 × 10 回のリトライで成功する（テストで確認）。API キーのマスクは、12 文字未満の短いキーは末尾 4 文字も見せず `****` だけにする（仕様 13.1 #23 に反映済み） |
 | 17 | Windows の Git の既定は、チェックアウト時に改行を CRLF にすることがある | `.gitattributes` で LF に固定する。プロンプトのゴールデンファイルのテストが、改行の違いで失敗しないようにする |
@@ -69,7 +69,7 @@
 | パッケージ管理 | `npm` | |
 | タスクの入口 | ルートの `package.json` の npm scripts | `make` は Windows で使えないため。`concurrently` で開発サーバーの同時起動を行う |
 | ビルド | Vite 8.3.5、`@vitejs/plugin-react` 6.1.2 | |
-| UI | React 19.3.1、TypeScript（6.0.3 に固定。7.x は `typescript-eslint` が非対応。1 章 #14）、Ant Design 6.6.7、`@ant-design/icons` 6 | |
+| UI | React 19.3.1、TypeScript（5.9.x に固定。6.x は `openapi-typescript`、7.x は `typescript-eslint` が非対応。1 章 #14）、Ant Design 6.6.7、`@ant-design/icons` 6 | |
 | サーバー状態 | `@tanstack/react-query` 5.104.5 | 条件セット・設定・プリセットの取得と更新に使う |
 | 評価フローの状態 | React の `useReducer` + Context | 外部の状態管理ライブラリは入れない |
 | SSE の受信 | `fetch` + `eventsource-parser` 4.1.2（`eventsource-parser/stream`） | `EventSource` は POST を使えないため |
