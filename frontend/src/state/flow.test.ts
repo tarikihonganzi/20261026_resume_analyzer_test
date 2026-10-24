@@ -27,6 +27,7 @@ const custom: Condition = {
   unit: null,
   source: 'custom',
   category: '自由記述',
+  description: null,
 }
 
 const check: ResumeCheck = { format: 'docx', source_name: '田中.docx', char_count: 300 }
@@ -535,6 +536,7 @@ describe('保存済みの条件セットの読み込み（受け入れ基準 8�
         unit: '年',
         source: 'preset',
         category: 'スキル・ツール',
+        description: null,
       },
       { ...custom, id: 'custom-2', label: '別の自由記述', required: true },
     ]
@@ -594,5 +596,56 @@ describe('Steps の状態と要約（受け入れ基準 11）', () => {
       'finish',
       'wait',
     ])
+  })
+})
+
+describe('補足説明を評価に送る（仕様 13.1 #27）', () => {
+  const described: CatalogItem[] = [
+    {
+      id: 'q1',
+      label: '品質管理',
+      kind: 'boolean',
+      unit: null,
+      category: '経験',
+      description: '検査への立会い・試験の記録を数える',
+    },
+    { id: 'q2', label: '原価管理', kind: 'boolean', unit: null, category: '経験' },
+  ]
+
+  it('プリセットの補足説明を、そのまま送る。ない条件は null', () => {
+    const state = run([select('q1', 'boolean', 'required'), select('q2', 'boolean', 'optional')])
+
+    const conditions = buildConditions(described, state)
+
+    expect(conditions.map((c) => c.description)).toEqual([
+      '検査への立会い・試験の記録を数える',
+      null,
+    ])
+  })
+
+  it('自由記述の補足説明を、そのまま送る', () => {
+    const state = reducer(initialState, {
+      type: 'addCustom',
+      condition: { ...custom, description: '診断報告書の作成までを数える' },
+    })
+
+    expect(buildConditions([], state)[0]?.description).toBe('診断報告書の作成までを数える')
+  })
+
+  it('自由記述の補足説明は、編集しても、条件セットを読み込んでも失われない', () => {
+    const added = reducer(initialState, {
+      type: 'addCustom',
+      condition: { ...custom, description: '最初の説明' },
+    })
+    const edited = reducer(added, {
+      type: 'updateCustom',
+      condition: { ...custom, description: '直した説明' },
+    })
+    const reloaded = reducer(initialState, {
+      type: 'loadConditions',
+      conditions: buildConditions([], edited),
+    })
+
+    expect(buildConditions([], reloaded)[0]?.description).toBe('直した説明')
   })
 })

@@ -187,6 +187,8 @@ export interface components {
         CatalogItem: {
             /** Category */
             category: string;
+            /** Description */
+            description?: string | null;
             /** Id */
             id: string;
             /**
@@ -211,6 +213,11 @@ export interface components {
         Condition: {
             /** Category */
             category: string | null;
+            /**
+             * Description
+             * @default null
+             */
+            description: string | null;
             /** Id */
             id: string;
             /**

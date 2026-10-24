@@ -27,6 +27,7 @@ def condition(id: str, kind: str = "boolean", **overrides: Any) -> dict[str, Any
         "unit": "年" if kind == "number" else None,
         "source": "custom",
         "category": "自由記述",
+        "description": None,
     }
     return base | overrides
 
@@ -40,6 +41,7 @@ def test_catalog_returns_the_presets(make_app: MakeApp) -> None:
     assert response.status_code == 200
     items = response.json()["items"]
     assert len(items) == 39
+    description = items[0].pop("description")  # 何をその条件として数えるか（仕様 13.1 #27）
     assert items[0] == {
         "id": "qual-kenchiku-sekou-1",
         "label": "1級建築施工管理技士",
@@ -47,6 +49,8 @@ def test_catalog_returns_the_presets(make_app: MakeApp) -> None:
         "unit": None,
         "category": "資格",
     }
+    assert "1級建築施工管理技士" in description
+    assert all(item["description"] for item in items[1:])
 
 
 # --- 条件セット（受け入れ基準 8） ---
@@ -452,3 +456,50 @@ def test_check_does_not_leave_anything_on_disk(make_app: MakeApp, tmp_path: Path
     client.post("/api/resumes/check", data={"text": factory.make_text()})
 
     assert not (tmp_path / "data").exists()
+
+
+# --- 補足説明（description。仕様 13.1 #27） ---
+
+
+def test_condition_set_keeps_the_description_of_custom_conditions(make_app: MakeApp) -> None:
+    client = make_app()
+    body = {
+        "name": "補足つき",
+        "conditions": [
+            condition("a", description="耐震診断の報告書の作成までを数える"),
+            condition("b"),
+        ],
+    }
+
+    saved = client.post("/api/condition-sets", json=body).json()
+    loaded = client.get("/api/condition-sets").json()["sets"][0]
+
+    assert [c["description"] for c in saved["conditions"]] == [
+        "耐震診断の報告書の作成までを数える",
+        None,
+    ]
+    assert [c["description"] for c in loaded["conditions"]] == [
+        saved["conditions"][0]["description"],
+        None,
+    ]
+
+
+def test_condition_without_a_description_field_is_still_accepted(make_app: MakeApp) -> None:
+    legacy = condition("a")
+    del legacy["description"]  # 以前のフロント・以前に保存したファイルには、この項目がない
+
+    response = make_app().post(
+        "/api/condition-sets", json={"name": "古い形式", "conditions": [legacy]}
+    )
+
+    assert response.status_code == 201
+    assert response.json()["conditions"][0]["description"] is None
+
+
+def test_too_long_description_is_rejected(make_app: MakeApp) -> None:
+    response = make_app().post(
+        "/api/condition-sets",
+        json={"name": "長い", "conditions": [condition("a", description="あ" * 501)]},
+    )
+
+    assert response.status_code == 422

@@ -116,3 +116,19 @@ def test_source_and_test_files_are_not_ignored_by_git() -> None:
         if "__pycache__" not in line and not line.startswith("backend/tests/fixtures/out/")
     ]
     assert ignored == []
+
+
+def test_every_preset_has_a_description_that_defines_what_to_count() -> None:
+    """補足説明がないと、「品質管理」のような名前だけでは、LLM の判定がぶれる（仕様 13.1 #27）。"""
+    for item in load_catalog():
+        assert item.description, f"{item.label} に補足説明がありません"
+        assert len(item.description) <= 500
+        assert item.description != item.label
+
+
+def test_ambiguous_presets_say_what_does_not_count() -> None:
+    by_label = {item.label: item for item in load_catalog()}
+
+    for label in ("品質管理", "原価管理", "安全管理", "工程管理"):
+        description = by_label[label].description or ""
+        assert "含めない" in description, f"{label} の補足説明に、数えないものの例がありません"

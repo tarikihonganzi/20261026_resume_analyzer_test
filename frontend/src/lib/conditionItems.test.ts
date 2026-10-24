@@ -33,6 +33,7 @@ const custom: Condition = {
   unit: null,
   source: 'custom',
   category: null,
+  description: null,
 }
 
 const items = toItems(catalog, [custom])
@@ -155,5 +156,22 @@ describe('summarize', () => {
 
   it('何も選ばれていなければ、どちらも空', () => {
     expect(summarize(items, {})).toEqual({ required: [], optional: [] })
+  })
+})
+
+describe('補足説明（toItems）', () => {
+  it('プリセットと自由記述の補足説明を、そのまま持つ。ないものは null', () => {
+    const [first, second] = catalog
+    if (!first || !second) throw new Error('テストデータが足りません')
+    const described = toItems(
+      [{ ...first, description: '国家資格の記載' }, second],
+      [{ ...custom, description: '診断報告書の作成までを数える' }],
+    )
+
+    expect(described.map((i) => i.description)).toEqual([
+      '国家資格の記載',
+      null,
+      '診断報告書の作成までを数える',
+    ])
   })
 })

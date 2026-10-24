@@ -75,6 +75,18 @@
             "title": "Category",
             "type": "string"
           },
+          "description": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
           "id": {
             "minLength": 1,
             "title": "Id",
@@ -145,6 +157,19 @@
               }
             ],
             "title": "Category"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Description"
           },
           "id": {
             "minLength": 1,

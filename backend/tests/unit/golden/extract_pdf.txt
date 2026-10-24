@@ -25,7 +25,8 @@
     "label": "現場監督の経験",
     "kind": "number",
     "min_value": 5.0,
-    "unit": "年"
+    "unit": "年",
+    "description": "現場に配置され、原価・工程・品質・安全の管理を担当した期間。事務・設計の期間は含めない"
   },
   {
     "id": "skill-revit",

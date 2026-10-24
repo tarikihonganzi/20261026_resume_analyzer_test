@@ -55,9 +55,20 @@ export function ConditionRow({
       }}
     >
       <Flex align="center" justify="space-between" gap={12} wrap>
-        <Flex align="center" gap={8} style={{ minWidth: 0, flex: 1 }}>
-          <Typography.Text strong={mode !== 'off'}>{item.label}</Typography.Text>
-          {item.source === 'custom' ? <Tag color="purple">独自</Tag> : null}
+        <Flex vertical gap={2} style={{ minWidth: 0, flex: 1 }}>
+          <Flex align="center" gap={8}>
+            <Typography.Text strong={mode !== 'off'}>{item.label}</Typography.Text>
+            {item.source === 'custom' ? <Tag color="purple">独自</Tag> : null}
+          </Flex>
+          {item.description ? (
+            <Typography.Paragraph
+              type="secondary"
+              style={{ margin: 0, fontSize: 12 }}
+              ellipsis={{ rows: 2, tooltip: item.description }}
+            >
+              {item.description}
+            </Typography.Paragraph>
+          ) : null}
         </Flex>
         <Flex align="center" gap={8}>
           {actions}

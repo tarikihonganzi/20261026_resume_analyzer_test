@@ -11,6 +11,7 @@ const boolean: ConditionItem = {
   kind: 'boolean',
   unit: null,
   category: '資格',
+  description: null,
   source: 'preset',
 }
 const number: ConditionItem = {
@@ -19,6 +20,7 @@ const number: ConditionItem = {
   kind: 'number',
   unit: '年',
   category: 'スキル・ツール',
+  description: null,
   source: 'preset',
 }
 
@@ -118,5 +120,19 @@ describe('ConditionRow', () => {
     setup({ ...boolean, source: 'custom', category: '自由記述' })
 
     expect(screen.getByText('独自')).toBeInTheDocument()
+  })
+})
+
+describe('補足説明（仕様 5.1・13.1 #27）', () => {
+  it('補足説明があれば、条件名の下に表示する', () => {
+    setup({ ...boolean, description: '検査への立会い・試験の記録を数える。' })
+
+    expect(screen.getByText('検査への立会い・試験の記録を数える。')).toBeInTheDocument()
+  })
+
+  it('補足説明がなければ、何も出さない', () => {
+    const { row } = setup(boolean)
+
+    expect(within(row).queryByText(/数える/)).not.toBeInTheDocument()
   })
 })
