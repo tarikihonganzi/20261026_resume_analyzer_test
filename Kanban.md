@@ -40,7 +40,6 @@
 ### M4: API と SSE
 
 ### M5: フロント 基盤と ① 条件
-- **T-M5-05** 条件セットの保存・読込・上書き・削除 [M] — AC: 8
 
 ### M6: フロント ② 職歴書と ③ 結果
 - **T-M6-01** `ResumeInput` と `resumes/check` の表示 [M] — AC: 12
@@ -60,6 +59,7 @@
 
 ## Done
 
+- **T-M5-05** 条件セットの保存・読込・上書き・削除 — 2026-10-25。branch: `feat/T-M5-05-condition-sets`。ConditionSetBar（読込の Select・名前を付けて保存・上書き保存・削除。TanStack Query のミューテーションで一覧を更新。保存できるのは条件がそろっているときだけ。上書き・削除は確認つき。失敗はサーバーのメッセージを表示）。読み込みで、選択・最低値・自由記述が復元されることをテスト（msw）。AC8 のフロント側。Ant Design の Segmented は、プログラムでの値の変更に、ラジオ入力の checked が追従しない（見た目の選択状態 ant-segmented-item-selected は正しい）ので、テストは見た目の状態で確認。npm run check exit 0（pytest 581 件・Vitest 127 件）
 - **T-M5-04** 要約パネルと自由記述のモーダル — 2026-10-25。branch: `feat/T-M5-04-summary-custom`。SelectionSummary（右の要約パネル。必須・任意に分けて件数つき、number は最低値を添える、項目のクリックで該当行へ移動し、絞り込みで隠れていれば外す、スクロールしても付いてくる）と CustomConditionModal（ラベル・型・最低値。名前の空白だけ・number の最低値の未入力は追加できない。編集は id と必須の指定を保つ。id は crypto.randomUUID）。自由記述の行に編集・削除（確認つき）、一覧の末尾と要約パネルに追加ボタン。summarize を lib に追加。Ant Design が 2 文字のボタンの間に空白を入れるのを ConfigProvider で無効化。実際のブラウザで確認（2 列のレイアウト・要約・モーダル）。npm run check exit 0（pytest 581 件・Vitest 118 件）。AC2 のフロント側
 - **T-M5-03** 条件一覧（`ConditionRow`・カテゴリ・検索・選択中のみ） — 2026-10-25。branch: `feat/T-M5-03-condition-list`。ConditionRow（使わない／任意／必須の Segmented。number は選んだときだけ最低値の InputNumber（0.5 刻み・小数第 1 位）。未入力の行を強調）、ConditionFilters（検索・カテゴリ・選択中のみ）、ConditionList（カテゴリごと）、ConditionsStep、FlowPage（Steps と条件の要約）。絞り込みは lib/conditionItems.ts の純粋関数（全角半角・大文字小文字・空白を無視した検索、AND 条件）でテスト。FlowProvider は画面の切り替えの外に置き、設定ページに移っても入力を保つ。実際のブラウザで開いて確認（39 件のプリセットの表示、必須・任意の選択、最低値の未入力の強調）。Steps の番号が二重に出ていたのを修正。npm run check exit 0（pytest 581 件・Vitest 98 件）。AC1 のフロント側
 - **T-M5-02** 評価フローのリデューサー — 2026-10-25。branch: `feat/T-M5-02-flow-reducer`。state/flow.ts（リデューサー・セレクター）と state/flow-context.tsx。遷移規則を純粋関数に集約: ① の完了条件（1 件以上・number の最低値が入力済みで 0 以上。0 は有効）、未到達に飛べない・評価中は戻れない・失敗した ③ から戻ると ③ は無くなる、条件を変えると古い結果を捨てて ② への到達を見直す、遅れて届いた検証結果・評価イベントの無視、キャンセルで ② に戻る、「条件を変えて再評価」（職歴書は残す）、「別の応募者を評価」（職歴書だけ捨てる）、条件セットの読み込み。buildConditions（評価に送る条件。カタログ順 → 自由記述）、stepStatuses（Steps の状態）。単体テスト 53 件。npm run check exit 0（pytest 581 件・Vitest 70 件）。AC11・AC13 のリデューサー側

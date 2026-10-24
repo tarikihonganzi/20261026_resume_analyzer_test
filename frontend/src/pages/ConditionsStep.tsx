@@ -5,6 +5,7 @@ import { useCatalog } from '../api/hooks'
 import type { Condition } from '../api/types'
 import { ConditionFilters } from '../components/ConditionFilters'
 import { ConditionList } from '../components/ConditionList'
+import { ConditionSetBar } from '../components/ConditionSetBar'
 import { CustomConditionModal } from '../components/CustomConditionModal'
 import { SelectionSummary } from '../components/SelectionSummary'
 import {
@@ -15,7 +16,7 @@ import {
   toItems,
   type Filters,
 } from '../lib/conditionItems'
-import { isConditionsComplete } from '../state/flow'
+import { buildConditions, isConditionsComplete } from '../state/flow'
 import { useFlow } from '../state/flow-context'
 
 const NO_FILTER: Filters = { query: '', category: null, selectedOnly: false }
@@ -89,6 +90,13 @@ export function ConditionsStep() {
       <Row gutter={[24, 24]}>
         <Col xs={24} lg={17}>
           <Card>
+            <ConditionSetBar
+              conditions={buildConditions(catalog.data, state)}
+              canSave={isConditionsComplete(state)}
+              onLoad={(conditions) => {
+                dispatch({ type: 'loadConditions', conditions })
+              }}
+            />
             <ConditionFilters
               filters={filters}
               categories={categoriesOf(catalog.data)}
