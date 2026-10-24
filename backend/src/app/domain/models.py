@@ -1,8 +1,15 @@
 """ドメインの型。外部（LLM・HTTP・ファイル・時刻）に依存しない。"""
 
-from typing import Literal, Self
+from typing import Annotated, Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import (
+    AwareDatetime,
+    BaseModel,
+    ConfigDict,
+    Field,
+    StringConstraints,
+    model_validator,
+)
 
 ConditionKind = Literal["boolean", "number"]
 ConditionSource = Literal["preset", "custom"]
@@ -44,3 +51,58 @@ class Judgement(BaseModel):
 
     condition_id: str = Field(min_length=1)
     status: JudgementStatus
+
+
+class ConditionSet(BaseModel):
+    """保存された条件セット（仕様 5.2、8.1）。"""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    id: str = Field(min_length=1)
+    name: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=100)]
+    conditions: list[Condition]
+    created_at: AwareDatetime
+    updated_at: AwareDatetime
+
+    @model_validator(mode="after")
+    def _check_condition_ids_are_unique(self) -> Self:
+        ids = [c.id for c in self.conditions]
+        if len(ids) != len(set(ids)):
+            raise ValueError("条件の id が重複しています")
+        return self
+
+
+PdfDetail = Literal["auto", "low", "high"]
+_Text = Annotated[str, StringConstraints(strip_whitespace=True)]
+
+
+class Config(BaseModel):
+    """設定（仕様 8.1 の `data/config.json`）。ファイルにない項目は既定値で補う。"""
+
+    model_config = ConfigDict(frozen=True, extra="ignore")
+
+    # repr に出さない（ログやエラーメッセージに全文が出ないようにする）
+    openai_api_key: str = Field(default="", repr=False)
+    openai_base_url: str = ""
+    model: str = Field(default="gpt-5.5", min_length=1)
+    # 0 は無制限
+    max_file_size_mb: int = Field(default=0, ge=0)
+    pdf_detail: PdfDetail = "high"
+    request_timeout_sec: int = Field(default=180, gt=0)
+
+
+class ConfigUpdate(BaseModel):
+    """設定ページからの更新。指定した項目だけを変える。
+
+    `openai_api_key` は、None または空のときは既存の値を残す（画面には全文を返さないため、
+    変更するときだけ送られる）。
+    """
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    openai_api_key: _Text | None = Field(default=None, repr=False)
+    openai_base_url: _Text | None = None
+    model: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)] | None = None
+    max_file_size_mb: int | None = Field(default=None, ge=0)
+    pdf_detail: PdfDetail | None = None
+    request_timeout_sec: int | None = Field(default=None, gt=0)

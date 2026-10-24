@@ -14,3 +14,15 @@ class NoConditionsError(DomainError):
 
 class ConditionMismatchError(DomainError):
     """条件と、抽出結果または判定の対応が取れないとき（不足・重複）。"""
+
+
+class StorageError(DomainError):
+    """ファイルの読み書きに失敗したとき。メッセージにファイルの内容を入れない。"""
+
+
+class StorageCorruptedError(StorageError):
+    """保存されたファイルが壊れている、または未対応の形式のとき。"""
+
+
+class ConditionSetNotFoundError(DomainError):
+    """指定された条件セットが存在しないとき。"""
