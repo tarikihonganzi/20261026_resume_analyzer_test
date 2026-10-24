@@ -17,7 +17,7 @@ interface ConditionListProps {
   alwaysShow?: readonly string[]
 }
 
-/** 条件の一覧。カテゴリ（資格／スキル・ツール／経験・実績／自由記述）ごとに、まとめて表示する。 */
+/** 条件の一覧。カテゴリ（資格・認定／スキル・ツール／施工図・図面／施工管理／現場事務・書類／経験年数／自由記述）ごとに、まとめて表示する。 */
 export function ConditionList({
   items,
   selections,

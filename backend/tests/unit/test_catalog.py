@@ -9,7 +9,14 @@ from pydantic import ValidationError
 from app.catalog import CatalogItem, load_catalog
 
 SPEC_PATH = Path(__file__).resolve().parents[3] / "docs" / "spec.md"
-CATEGORIES = ["資格", "スキル・ツール", "経験・実績"]
+CATEGORIES = [
+    "資格・認定",
+    "スキル・ツール",
+    "施工図・図面",
+    "施工管理",
+    "現場事務・書類",
+    "経験年数",
+]
 
 
 def spec_presets() -> list[tuple[str, str, str, str | None]]:
@@ -34,7 +41,7 @@ def test_catalog_matches_the_spec_tables_in_order() -> None:
 
     actual = [(i.category, i.label, i.kind, i.unit) for i in load_catalog()]
 
-    assert len(expected) == 39
+    assert len(expected) == 75
     assert actual == expected
 
 
