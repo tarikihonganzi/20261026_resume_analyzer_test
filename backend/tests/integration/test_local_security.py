@@ -1,10 +1,14 @@
 """ローカル API の保護（仕様 10、13.1 #20）: Host と Origin の検査。CORS は有効にしない。"""
 
 from collections.abc import Callable
+from pathlib import Path
 from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
+
+from app.main import create_app
+from app.settings import AppSettings
 
 MakeApp = Callable[..., TestClient]
 
@@ -157,3 +161,72 @@ def test_the_check_of_a_streaming_request_happens_before_the_body_is_read(
     )
 
     assert response.status_code == 403
+
+
+# --- デモモード（APP_ALLOW_REMOTE=1。仕様 13.1 #26） ---
+
+
+def make_demo_app(tmp_path: Path) -> TestClient:
+    settings = AppSettings(data_dir=tmp_path / "data", llm_mode="fake", allow_remote=True)
+    return TestClient(create_app(settings, environ={}), base_url="http://127.0.0.1")
+
+
+@pytest.mark.parametrize(
+    "host", ["192.168.1.10:8000", "demo-pc.local:8000", "10.0.0.5", "[::1]:8000"]
+)
+def test_demo_mode_accepts_other_host_names(tmp_path: Path, host: str) -> None:
+    response = make_demo_app(tmp_path).get("/api/health", headers={"Host": host})
+
+    assert response.status_code == 200
+
+
+def test_demo_mode_accepts_a_request_from_its_own_origin_on_another_host(tmp_path: Path) -> None:
+    response = make_demo_app(tmp_path).post(
+        "/api/condition-sets",
+        json=condition_set_body(),
+        headers={"Host": "192.168.1.10:8000", "Origin": "http://192.168.1.10:8000"},
+    )
+
+    assert response.status_code == 201
+
+
+@pytest.mark.parametrize("origin", ["https://evil.example", "http://192.168.1.99:8000", "null"])
+def test_demo_mode_still_rejects_other_origins(tmp_path: Path, origin: str) -> None:
+    response = make_demo_app(tmp_path).post(
+        "/api/condition-sets",
+        json=condition_set_body(),
+        headers={"Host": "192.168.1.10:8000", "Origin": origin},
+    )
+
+    assert response.status_code == 403
+
+
+def test_demo_mode_is_off_by_default(make_app: MakeApp) -> None:
+    assert make_app().get("/api/health", headers={"Host": "192.168.1.10:8000"}).status_code == 400
+
+
+def test_demo_mode_warns_in_the_log(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
+    with caplog.at_level("WARNING", logger="app"):
+        make_demo_app(tmp_path)
+
+    assert "デモモード" in caplog.text
+
+
+def test_normal_mode_does_not_warn(make_app: MakeApp, caplog: pytest.LogCaptureFixture) -> None:
+    with caplog.at_level("WARNING", logger="app"):
+        make_app()
+
+    assert "デモモード" not in caplog.text
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"), [("1", True), ("true", True), ("TRUE", True), ("0", False), ("", False)]
+)
+def test_demo_mode_is_read_from_the_environment(value: str, expected: bool) -> None:
+    settings = AppSettings.from_env({"APP_ALLOW_REMOTE": value})
+
+    assert settings.allow_remote is expected
+
+
+def test_demo_mode_is_off_when_the_variable_is_missing() -> None:
+    assert AppSettings.from_env({}).allow_remote is False

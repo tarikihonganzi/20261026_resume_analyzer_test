@@ -1,3 +1,4 @@
+import logging
 from collections.abc import Callable, Mapping
 from datetime import date
 
@@ -13,6 +14,8 @@ from app.services import Services
 from app.settings import AppSettings
 from app.storage.condition_set_store import ConditionSetStore
 from app.storage.config_store import ConfigStore
+
+logger = logging.getLogger("app")
 
 
 def create_app(
@@ -35,7 +38,11 @@ def create_app(
         client_factory=client_factory,
     )
     register_exception_handlers(app)
-    app.add_middleware(LocalOnlyMiddleware)
+    app.add_middleware(LocalOnlyMiddleware, allow_remote=settings.allow_remote)
+    if settings.allow_remote:
+        logger.warning(
+            "デモモード: Host の制限を外しています。同じネットワークの誰でも、このアプリを使えます"
+        )
     for router in (
         health.router,
         catalog.router,
