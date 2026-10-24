@@ -99,10 +99,14 @@ export const api = {
     requestJson<ConnectionTestResponse>('/api/settings/test', jsonBody('POST', request)),
 
   /** 職歴書を、評価の前に検証する。`file` か `text` のどちらか 1 つ。 */
-  checkResume: (input: { file: File } | { text: string }) => {
+  checkResume: (input: { file: File } | { text: string }, signal?: AbortSignal) => {
     const form = new FormData()
     if ('file' in input) form.append('file', input.file, input.file.name)
     else form.append('text', input.text)
-    return requestJson<ResumeCheck>('/api/resumes/check', { method: 'POST', body: form })
+    return requestJson<ResumeCheck>('/api/resumes/check', {
+      method: 'POST',
+      body: form,
+      signal,
+    })
   },
 }
