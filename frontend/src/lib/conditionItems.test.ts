@@ -6,6 +6,7 @@ import {
   categoriesOf,
   filterItems,
   groupByCategory,
+  summarize,
   toItems,
   type ConditionItem,
 } from './conditionItems'
@@ -119,5 +120,40 @@ describe('groupByCategory', () => {
     ])
     expect(ids(groups[0]?.items ?? [])).toEqual(['q1', 'q2'])
     expect(groupByCategory([])).toEqual([])
+  })
+})
+
+describe('summarize', () => {
+  const selections: Record<string, Selection> = {
+    q2: { kind: 'boolean', mode: 'required', minValue: null },
+    s1: { kind: 'number', mode: 'optional', minValue: 2.5 },
+    e1: { kind: 'number', mode: 'required', minValue: 5 },
+    q1: { kind: 'boolean', mode: 'off', minValue: null },
+    c1: { kind: 'boolean', mode: 'optional', minValue: null },
+  }
+
+  it('必須と任意に分け、一覧の順に並べる。「使わない」は出さない', () => {
+    const summary = summarize(items, selections)
+
+    expect(summary.required.map((e) => e.id)).toEqual(['q2', 'e1'])
+    expect(summary.optional.map((e) => e.id)).toEqual(['s1', 'c1'])
+  })
+
+  it('number の条件には、最低値を小数第 1 位で添える', () => {
+    const summary = summarize(items, selections)
+
+    expect(summary.optional[0]?.text).toBe('Revit（BIM）の実務経験 2.5年以上')
+    expect(summary.required[1]?.text).toBe('現場監督の経験年数 5.0年以上')
+    expect(summary.required[0]?.text).toBe('2級建築士')
+  })
+
+  it('最低値が未入力の number の条件は、名前だけを出す', () => {
+    const summary = summarize(items, { s1: { kind: 'number', mode: 'required', minValue: null } })
+
+    expect(summary.required[0]?.text).toBe('Revit（BIM）の実務経験')
+  })
+
+  it('何も選ばれていなければ、どちらも空', () => {
+    expect(summarize(items, {})).toEqual({ required: [], optional: [] })
   })
 })

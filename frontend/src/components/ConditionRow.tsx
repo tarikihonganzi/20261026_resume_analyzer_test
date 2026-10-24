@@ -44,6 +44,7 @@ export function ConditionRow({
 
   return (
     <div
+      id={`condition-${item.id}`}
       role="group"
       aria-label={item.label}
       style={{

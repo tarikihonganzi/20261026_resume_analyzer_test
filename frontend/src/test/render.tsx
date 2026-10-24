@@ -8,7 +8,9 @@ export function renderWithProviders(ui: ReactElement): RenderResult {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={queryClient}>
-      <ConfigProvider locale={jaJP}>{ui}</ConfigProvider>
+      <ConfigProvider locale={jaJP} button={{ autoInsertSpace: false }}>
+        {ui}
+      </ConfigProvider>
     </QueryClientProvider>,
   )
 }

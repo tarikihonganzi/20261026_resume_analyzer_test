@@ -95,8 +95,8 @@ describe('① 条件', () => {
 
     await userEvent.click(screen.getByRole('checkbox', { name: '選択中のみ表示' }))
 
-    expect(screen.getByText('2級建築士')).toBeInTheDocument()
-    expect(screen.queryByText('1級建築施工管理技士')).not.toBeInTheDocument()
+    expect(screen.getByRole('group', { name: '2級建築士' })).toBeInTheDocument()
+    expect(screen.queryByRole('group', { name: '1級建築施工管理技士' })).not.toBeInTheDocument()
   })
 
   it('条件の一覧を読み込めなかったら、理由と再読み込みのボタンを出す', async () => {
@@ -115,5 +115,68 @@ describe('① 条件', () => {
     await waitFor(() => {
       expect(screen.getByRole('button', { name: '再読み込み' })).toBeInTheDocument()
     })
+  })
+})
+
+describe('① 自由記述と要約パネル（受け入れ基準 2）', () => {
+  it('自由記述を追加すると、「自由記述」に独自の印つきで出て、任意として要約に入る', async () => {
+    renderPage()
+    await screen.findByText('1級建築施工管理技士')
+
+    await userEvent.click(
+      screen.getAllByRole('button', { name: /自由記述で条件を追加/ })[0] as HTMLElement,
+    )
+    await userEvent.type(
+      await screen.findByRole('textbox', { name: '条件の名前' }),
+      '耐震診断の経験',
+    )
+    await userEvent.click(screen.getByRole('button', { name: '追加' }))
+
+    const section = await screen.findByRole('region', { name: '自由記述' })
+    expect(within(section).getByText('耐震診断の経験')).toBeInTheDocument()
+    expect(within(section).getByText('独自')).toBeInTheDocument()
+    expect(
+      within(screen.getByRole('region', { name: '任意' })).getByText('耐震診断の経験'),
+    ).toBeInTheDocument()
+    expect(screen.getByText('■ 任意（1）')).toBeInTheDocument()
+  })
+
+  it('選ぶと、要約にリアルタイムで反映される', async () => {
+    renderPage()
+    await choose('1級建築施工管理技士', '必須')
+    await choose('Revit の実務経験', '任意')
+    await userEvent.type(within(row('Revit の実務経験')).getByRole('spinbutton'), '2')
+
+    expect(screen.getByText('■ 必須（1）')).toBeInTheDocument()
+    expect(
+      within(screen.getByRole('region', { name: '任意' })).getByText('Revit の実務経験 2.0年以上'),
+    ).toBeInTheDocument()
+  })
+
+  it('編集と削除ができる。プリセットには、編集・削除がない', async () => {
+    renderPage()
+    await screen.findByText('1級建築施工管理技士')
+    await userEvent.click(
+      screen.getAllByRole('button', { name: /自由記述で条件を追加/ })[0] as HTMLElement,
+    )
+    await userEvent.type(await screen.findByRole('textbox', { name: '条件の名前' }), '耐震診断')
+    await userEvent.click(screen.getByRole('button', { name: '追加' }))
+    expect(
+      screen.queryByRole('button', { name: /1級建築施工管理技士を編集/ }),
+    ).not.toBeInTheDocument()
+
+    await userEvent.click(await screen.findByRole('button', { name: '耐震診断を編集' }))
+    const input = await screen.findByRole('textbox', { name: '条件の名前' })
+    await userEvent.clear(input)
+    await userEvent.type(input, '耐震改修')
+    await userEvent.click(screen.getByRole('button', { name: '保存' }))
+    expect(await screen.findByRole('group', { name: '耐震改修' })).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: '耐震改修を削除' }))
+    await userEvent.click(await screen.findByRole('button', { name: '削除' }))
+    await waitFor(() => {
+      expect(screen.queryByRole('group', { name: '耐震改修' })).not.toBeInTheDocument()
+    })
+    expect(screen.getByText(/使う条件を「任意」か「必須」にしてください/)).toBeInTheDocument()
   })
 })

@@ -84,3 +84,35 @@ export function groupByCategory(items: readonly ConditionItem[]): ConditionGroup
   }
   return groups
 }
+
+export interface SummaryEntry {
+  id: string
+  /** 画面に出す文。number の条件は、最低値を添える（例: 「Revit 2.5年以上」）。 */
+  text: string
+}
+
+export interface SelectionSummaryData {
+  required: SummaryEntry[]
+  optional: SummaryEntry[]
+}
+
+function describe(item: ConditionItem, selection: Selection): string {
+  if (item.kind !== 'number' || selection.minValue === null) return item.label
+  return `${item.label} ${selection.minValue.toFixed(1)}${item.unit ?? '年'}以上`
+}
+
+/** 選ばれた条件を、「必須」と「任意」に分ける。並びは、一覧の順。 */
+export function summarize(
+  items: readonly ConditionItem[],
+  selections: Readonly<Record<string, Selection>>,
+): SelectionSummaryData {
+  const summary: SelectionSummaryData = { required: [], optional: [] }
+  for (const item of items) {
+    const selection = selections[item.id]
+    if (!selection || selection.mode === 'off') continue
+    const entry = { id: item.id, text: describe(item, selection) }
+    if (selection.mode === 'required') summary.required.push(entry)
+    else summary.optional.push(entry)
+  }
+  return summary
+}
