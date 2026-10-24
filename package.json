@@ -4,12 +4,13 @@
   "version": "0.1.0",
   "description": "職歴書マッチング評価アプリ。タスクの入口（npm scripts は cmd.exe と sh の両方で動く書き方にする）",
   "scripts": {
-    "setup": "npm ci && uv sync --directory backend && npm ci --prefix frontend",
+    "setup": "npm ci && uv sync --directory backend && npm ci --prefix frontend && npm ci --prefix e2e",
     "dev": "concurrently --names api,web --kill-others-on-fail \"uv run --directory backend uvicorn app.main:app --reload --host 127.0.0.1 --port 8000\" \"npm run dev --prefix frontend\"",
     "check": "npm run check:backend && npm run check:frontend",
     "check:backend": "uv run --directory backend ruff check && uv run --directory backend ruff format --check && uv run --directory backend pyright && uv run --directory backend pytest -q",
     "check:frontend": "npm run lint --prefix frontend && npm run format:check --prefix frontend && npm run typecheck --prefix frontend && npm run test --prefix frontend",
     "build": "npm run build --prefix frontend",
+    "e2e": "npm run test --prefix e2e",
     "gen-types": "uv run --directory backend python -m app.export_openapi ../frontend/src/api/openapi.json && npm run gen-types --prefix frontend"
   },
   "devDependencies": {
