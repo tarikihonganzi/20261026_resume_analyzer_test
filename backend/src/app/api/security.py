@@ -25,8 +25,11 @@ def _hostname(host_header: str) -> str:
 
 
 class LocalOnlyMiddleware:
-    def __init__(self, app: ASGIApp) -> None:
+    """`allow_remote=True`（デモモード）のときだけ、`Host` の制限を外す。`Origin` の確認は残す。"""
+
+    def __init__(self, app: ASGIApp, *, allow_remote: bool = False) -> None:
         self.app = app
+        self._allow_remote = allow_remote
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http":
@@ -35,7 +38,7 @@ class LocalOnlyMiddleware:
 
         headers = Headers(scope=scope)
         host = headers.get("host", "")
-        if _hostname(host) not in _ALLOWED_HOSTS:
+        if not self._allow_remote and _hostname(host) not in _ALLOWED_HOSTS:
             await self._reject(send, 400, "invalid_host", "このアドレスからは利用できません。")
             return
 

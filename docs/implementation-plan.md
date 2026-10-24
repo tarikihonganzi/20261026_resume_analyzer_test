@@ -1,6 +1,6 @@
 # 職歴書マッチング評価アプリ 実装計画
 
-- 対象仕様: [spec.md](spec.md) v0.10
+- 対象仕様: [spec.md](spec.md) v0.11
 - 作成日: 2026-10-25
 - 調査日: 2026-10-25（公式ドキュメントとパッケージレジストリで確認。出典は末尾）
 
@@ -254,6 +254,7 @@ resp = await client.responses.create(
 - `TrustedHostMiddleware(allowed_hosts=["127.0.0.1", "localhost"])`（DNS リバインディング対策）。
 - `GET` 以外では、`Origin` ヘッダーがある場合に、許可したオリジン（自身）と一致することを確認する。違えば 403。
 - CORS は有効にしない。開発時は Vite の転送で同一オリジンに見せる。
+- **デモモード**（`APP_ALLOW_REMOTE=1`。仕様 13.1 #26）: `--host 0.0.0.0` で起動し、`Host` の検査だけを外す（`Origin` の確認は残す）。素の ASGI ミドルウェア（`api/security.py`）の引数で切り替える。起動時に警告をログに出す。コマンドは `npm run start:demo`（T-M8-04）。通常の `dev`・`start` は、127.0.0.1 のまま。
 
 ### 5.6 ストレージ
 

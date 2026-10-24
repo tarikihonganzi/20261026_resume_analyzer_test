@@ -20,6 +20,8 @@ class AppSettings:
     # fake は、テスト・E2E 用の偽の LLM（環境変数 APP_LLM_MODE=fake のときだけ。既定は real）
     llm_mode: Literal["real", "fake"] = "real"
     fake_delay_sec: float = 0.0
+    # デモモード。他の PC からのアクセスを許す（Host の検査を外す。仕様 13.1 #26）
+    allow_remote: bool = False
 
     @classmethod
     def from_env(cls, environ: Mapping[str, str] | None = None) -> AppSettings:
@@ -33,4 +35,5 @@ class AppSettings:
             else _REPOSITORY_ROOT / "data",
             llm_mode=mode,
             fake_delay_sec=float(env.get("APP_FAKE_DELAY_SEC", "0")),
+            allow_remote=env.get("APP_ALLOW_REMOTE", "").strip().lower() in ("1", "true", "yes"),
         )
