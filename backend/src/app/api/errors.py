@@ -1,0 +1,81 @@
+"""ドメインの例外を、HTTP のステータスと、利用者向けのメッセージに対応づける。
+
+エラーの本文は、すべて `{"code": ..., "message": ..., "fields": [...]}`（ErrorResponse）。
+API キーや職歴書の内容を、メッセージに入れない。
+"""
+
+import logging
+
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from pydantic import ValidationError
+
+from app.api.schemas import ErrorResponse
+from app.domain.errors import (
+    ConditionSetNotFoundError,
+    DomainError,
+    FileTooLargeError,
+    LlmAuthError,
+    LlmError,
+    NoConditionsError,
+    ResumeError,
+    StorageError,
+)
+
+logger = logging.getLogger("app.api")
+
+
+def _json(status: int, body: ErrorResponse) -> JSONResponse:
+    return JSONResponse(status_code=status, content=body.model_dump(exclude_none=True))
+
+
+def _status_for(error: DomainError) -> int:
+    if isinstance(error, FileTooLargeError):
+        return 413
+    if isinstance(error, ResumeError | NoConditionsError | LlmAuthError):
+        return 422
+    if isinstance(error, ConditionSetNotFoundError):
+        return 404
+    if isinstance(error, LlmError):
+        return 502
+    return 500
+
+
+def _fields_of(error: RequestValidationError | ValidationError) -> list[str]:
+    fields: list[str] = []
+    for item in error.errors():
+        location = ".".join(str(part) for part in item["loc"] if part not in ("body", "form"))
+        if location and location not in fields:
+            fields.append(location)
+    return fields
+
+
+def register_exception_handlers(app: FastAPI) -> None:
+    @app.exception_handler(DomainError)
+    async def handle_domain_error(request: Request, error: DomainError) -> JSONResponse:  # pyright: ignore[reportUnusedFunction]
+        if isinstance(error, StorageError):
+            logger.error("storage error: %s", error)
+            return _json(500, ErrorResponse(code="storage_error", message=str(error)))
+        if isinstance(error, ConditionSetNotFoundError):
+            return _json(404, ErrorResponse(code="not_found", message=str(error)))
+        if isinstance(error, NoConditionsError):
+            return _json(422, ErrorResponse(code="no_conditions", message=str(error)))
+        code = getattr(error, "code", "error")
+        return _json(_status_for(error), ErrorResponse(code=code, message=str(error)))
+
+    async def handle_invalid_request(  # pyright: ignore[reportUnusedFunction]
+        request: Request, error: RequestValidationError | ValidationError
+    ) -> JSONResponse:
+        # 検証エラーの詳細には、入力値が含まれうるので、項目名だけを返す
+        return _json(
+            422,
+            ErrorResponse(
+                code="invalid_request",
+                message="入力内容が正しくありません。項目を確認してください。",
+                fields=_fields_of(error),
+            ),
+        )
+
+    app.add_exception_handler(RequestValidationError, handle_invalid_request)  # pyright: ignore[reportArgumentType]
+    app.add_exception_handler(ValidationError, handle_invalid_request)  # pyright: ignore[reportArgumentType]
