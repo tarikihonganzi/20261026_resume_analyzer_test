@@ -37,6 +37,9 @@ class FakeClient:
         self.extract_calls: list[ExtractRequest] = []
         self.evaluate_calls: list[EvaluateRequest] = []
 
+    async def aclose(self) -> None:
+        """閉じるものはない（`ClosableLlmClient` に合わせるため）。"""
+
     async def _simulate(self) -> None:
         if self._delay_sec > 0:
             await asyncio.sleep(self._delay_sec)

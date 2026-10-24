@@ -89,6 +89,18 @@ class OpenAIClient:
             await self._sdk.close()
             self._sdk = None
 
+    async def check_connection(self) -> None:
+        """設定ページの「接続テスト」。最小のリクエストを 1 回送り、失敗したら `LlmError`。"""
+        client = self._client()
+        started = time.perf_counter()
+        try:
+            # 出力の上限は、API が受け付ける最小の 16。応答の内容は使わない
+            await client.responses.create(
+                model=self._config.model, input="ping", max_output_tokens=16, store=False
+            )
+        except openai.OpenAIError as e:
+            raise self._translate("check", e, started) from None
+
     async def extract(self, request: ExtractRequest) -> ExtractionResult:
         items = build_extract_input(request, pdf_detail=self._config.pdf_detail)
         return await self._parse("extract", EXTRACT_SYSTEM_PROMPT, items, ExtractionResult)

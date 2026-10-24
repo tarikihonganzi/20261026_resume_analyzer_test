@@ -2,10 +2,15 @@ import os
 import re
 import subprocess
 import sys
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from pathlib import Path
+from typing import Any, Literal
 
 import pytest
+from fastapi.testclient import TestClient
+
+from app.main import create_app
+from app.settings import AppSettings
 
 
 def _windows_acl_entries(path: Path) -> list[str]:
@@ -36,3 +41,22 @@ def _assert_owner_only(path: Path) -> None:
 def assert_owner_only() -> Callable[[Path], None]:
     """ファイルが所有者のみにアクセスを許可していることを検査する。"""
     return _assert_owner_only
+
+
+@pytest.fixture
+def make_app(tmp_path: Path) -> Callable[..., TestClient]:
+    """API のテスト用のクライアントを作る。データは tmp_path に置き、環境変数は空にする。"""
+
+    def build(
+        *,
+        llm_mode: Literal["real", "fake"] = "fake",
+        environ: Mapping[str, str] | None = None,
+        data_dir: Path | None = None,
+        **options: Any,
+    ) -> TestClient:
+        settings = AppSettings(data_dir=data_dir or tmp_path / "data", llm_mode=llm_mode)
+        app = create_app(settings, environ={} if environ is None else environ, **options)
+        # Host の検査（localhost・127.0.0.1 のみ）を通る名前で呼ぶ
+        return TestClient(app, base_url="http://127.0.0.1")
+
+    return build

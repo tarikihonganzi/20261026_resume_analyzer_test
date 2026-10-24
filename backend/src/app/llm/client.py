@@ -14,3 +14,9 @@ class LlmClient(Protocol):
     async def evaluate(self, request: EvaluateRequest) -> FinalEvaluation:
         """ステップ 3: 総合スコアと、概要・良かった点・懸念点を、根拠つきで返す。"""
         ...
+
+
+class ClosableLlmClient(LlmClient, Protocol):
+    """使い終わったら閉じる必要がある `LlmClient`（HTTP の接続を持つもの）。"""
+
+    async def aclose(self) -> None: ...
