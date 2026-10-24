@@ -1,0 +1,39 @@
+[user]
+<input_text>
+今日の日付: 2026-10-25
+職歴書の名前: 職歴書.pdf
+形式: pdf
+
+条件の一覧（JSON）:
+[
+  {
+    "id": "qual-1kyu",
+    "label": "1級建築施工管理技士",
+    "kind": "boolean",
+    "min_value": null,
+    "unit": null
+  },
+  {
+    "id": "qual-denki",
+    "label": "第二種電気工事士",
+    "kind": "boolean",
+    "min_value": null,
+    "unit": null
+  },
+  {
+    "id": "exp-genba",
+    "label": "現場監督の経験",
+    "kind": "number",
+    "min_value": 5.0,
+    "unit": "年"
+  },
+  {
+    "id": "skill-revit",
+    "label": "Revit",
+    "kind": "number",
+    "min_value": 2.5,
+    "unit": "年"
+  }
+]
+</input_text>
+<input_file filename='職歴書.pdf' detail='high' file_data='data:application/pdf;base64,'…（384 文字）/>
