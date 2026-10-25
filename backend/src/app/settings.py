@@ -24,6 +24,10 @@ class AppSettings:
     allow_remote: bool = False
     # ビルドしたフロント（frontend/dist）。あれば、同じオリジンで配信する。なければ API だけ
     static_dir: Path | None = None
+    # ログの出力先（`app.log`）。None のときは、ファイルに書かない。テストなどで、意図せず、
+    # リポジトリの log/ に書かないよう、既定は None（実際の起動の既定は、from_env が決める）
+    log_dir: Path | None = None
+    log_level: str = "INFO"
 
     @classmethod
     def from_env(cls, environ: Mapping[str, str] | None = None) -> AppSettings:
@@ -42,4 +46,7 @@ class AppSettings:
             static_dir=Path(env["APP_STATIC_DIR"])
             if "APP_STATIC_DIR" in env
             else _REPOSITORY_ROOT / "frontend" / "dist",
+            # `data/` と同じ階層の `log/`
+            log_dir=Path(env["APP_LOG_DIR"]) if "APP_LOG_DIR" in env else _REPOSITORY_ROOT / "log",
+            log_level=env.get("APP_LOG_LEVEL", "INFO").strip().upper() or "INFO",
         )

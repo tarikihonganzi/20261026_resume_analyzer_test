@@ -8,10 +8,12 @@ from fastapi.staticfiles import StaticFiles
 from app.api import catalog, condition_sets, evaluations, health, resumes, settings_api
 from app.api.errors import register_exception_handlers
 from app.api.openapi import install_openapi
+from app.api.request_log import RequestLogMiddleware
 from app.api.security import LocalOnlyMiddleware
 from app.domain.models import Config
 from app.llm.client import ClosableLlmClient
 from app.llm.openai_client import OpenAIClient
+from app.logging_setup import configure_logging
 from app.services import Services
 from app.settings import AppSettings
 from app.storage.condition_set_store import ConditionSetStore
@@ -30,6 +32,8 @@ def create_app(
 ) -> FastAPI:
     """アプリを作る。`environ` は、設定の初期値（OPENAI_*）の元（既定は実際の環境変数）。"""
     settings = settings or AppSettings.from_env()
+    if settings.log_dir is not None:
+        configure_logging(settings.log_dir, level=settings.log_level)
     app = FastAPI(title="マッチング評価")
     app.state.services = Services(
         settings=settings,
@@ -42,6 +46,8 @@ def create_app(
     register_exception_handlers(app)
     install_openapi(app)
     app.add_middleware(LocalOnlyMiddleware, allow_remote=settings.allow_remote)
+    # いちばん外側にして、Host・Origin で断った要求も、記録する
+    app.add_middleware(RequestLogMiddleware)
     if settings.allow_remote:
         logger.warning(
             "デモモード: Host の制限を外しています。同じネットワークの誰でもこのアプリを使えます"
