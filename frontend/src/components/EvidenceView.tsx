@@ -8,13 +8,13 @@ interface EvidenceViewProps {
 }
 
 // 原文との照合の注意（色つきのタグにはせず、小さな文字で示す）
-const NOTE_STYLE = { fontSize: 12, color: '#873800' } as const
+const NOTE_STYLE = { fontSize: 14, color: '#873800' } as const
 
 function QuoteItem({ quote }: { quote: VerifiedQuote }) {
   return (
     <li style={{ marginBottom: 8 }}>
       <Flex gap={8} align="center" wrap>
-        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+        <Typography.Text type="secondary" style={{ fontSize: 14 }}>
           {quote.source_name}
           {quote.location ? `（${quote.location}）` : ''}
         </Typography.Text>
@@ -22,7 +22,7 @@ function QuoteItem({ quote }: { quote: VerifiedQuote }) {
           <Typography.Text style={NOTE_STYLE}>原文で確認できず</Typography.Text>
         ) : null}
         {quote.verified === 'skipped' ? (
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          <Typography.Text type="secondary" style={{ fontSize: 14 }}>
             未照合
           </Typography.Text>
         ) : null}
@@ -54,7 +54,7 @@ export function EvidenceView({ reason, quotes }: EvidenceViewProps) {
 
   if (!hasReason && quotes.length === 0) {
     return (
-      <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+      <Typography.Text type="secondary" style={{ fontSize: 14 }}>
         根拠が出力されませんでした
       </Typography.Text>
     )
@@ -68,7 +68,7 @@ export function EvidenceView({ reason, quotes }: EvidenceViewProps) {
         <Button
           type="link"
           size="small"
-          style={{ padding: 0, height: 'auto', fontSize: 12 }}
+          style={{ padding: 0, height: 'auto', fontSize: 14 }}
           aria-expanded={open}
           aria-controls={bodyId}
           onClick={() => {
@@ -84,7 +84,7 @@ export function EvidenceView({ reason, quotes }: EvidenceViewProps) {
       {open ? (
         <div id={bodyId} style={{ marginTop: 4 }}>
           {hasReason ? (
-            <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginBottom: 8 }}>
+            <Typography.Paragraph type="secondary" style={{ fontSize: 14, marginBottom: 8 }}>
               {reason}
             </Typography.Paragraph>
           ) : null}

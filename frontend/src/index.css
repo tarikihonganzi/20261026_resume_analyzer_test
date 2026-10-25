@@ -1,3 +1,14 @@
 body {
   margin: 0;
 }
+
+/* カードの見出し: 中央揃えの、太い文字。背景の帯は、テーマ（theme.ts）で色をつける */
+.ant-card-head {
+  color: #0b2f6b;
+  font-weight: 700;
+  text-align: center;
+}
+
+.ant-card-head-title {
+  text-align: center;
+}

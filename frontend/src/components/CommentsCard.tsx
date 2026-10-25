@@ -3,6 +3,24 @@ import type { EvaluationPoint } from '../api/types'
 import { EvidenceView } from './EvidenceView'
 import { MarkdownView } from './MarkdownView'
 
+/** 評価コメントの小見出し（総評・良かった点・悪かった点）。太い文字と下線で、本文と区切る。 */
+function SubHeading({ children }: { children: string }) {
+  return (
+    <div
+      style={{
+        fontSize: 18,
+        fontWeight: 700,
+        textAlign: 'center',
+        paddingBottom: 6,
+        marginBottom: 12,
+        borderBottom: '2px solid #d9d9d9',
+      }}
+    >
+      {children}
+    </div>
+  )
+}
+
 function Point({ point }: { point: EvaluationPoint }) {
   return (
     <div>
@@ -15,9 +33,7 @@ function Point({ point }: { point: EvaluationPoint }) {
 function PointColumn({ title, points }: { title: string; points: readonly EvaluationPoint[] }) {
   return (
     <section aria-label={title}>
-      <Typography.Text strong style={{ display: 'block', marginBottom: 8 }}>
-        {title}
-      </Typography.Text>
+      <SubHeading>{title}</SubHeading>
       {points.length === 0 ? (
         <Typography.Text type="secondary">該当する項目はありません</Typography.Text>
       ) : (
@@ -46,9 +62,7 @@ export function CommentsCard({ summary, strengths, weaknesses }: CommentsCardPro
     <Card title="AI の評価コメント">
       <Flex vertical gap={24}>
         <section aria-label="総評">
-          <Typography.Text strong style={{ display: 'block', marginBottom: 8 }}>
-            総評
-          </Typography.Text>
+          <SubHeading>総評</SubHeading>
           <Point point={summary} />
         </section>
         <Row gutter={[32, 24]}>

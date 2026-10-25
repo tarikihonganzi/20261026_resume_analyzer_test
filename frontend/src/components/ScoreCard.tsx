@@ -44,13 +44,13 @@ export function ScoreCard({ result }: { result: EvaluationResult }) {
             height: '100%',
           }}
         >
-          <div style={{ fontSize: 15 }}>最終スコア（AI 算出）</div>
+          <div style={{ fontSize: 18 }}>最終スコア（AI 算出）</div>
           <div style={{ lineHeight: 1.1, marginTop: 4 }}>
-            <span style={{ fontSize: 72, fontWeight: 700 }}>{result.score}</span>
-            <span style={{ fontSize: 20, marginLeft: 6 }}>/ 100</span>
+            <span style={{ fontSize: 80, fontWeight: 700 }}>{result.score}</span>
+            <span style={{ fontSize: 22, marginLeft: 6 }}>/ 100</span>
           </div>
           {result.clipped ? (
-            <div style={{ fontSize: 13, marginTop: 8 }}>
+            <div style={{ fontSize: 15, marginTop: 8 }}>
               補正あり: AI の元のスコアは {result.original_score} 点。マッチ度合いから ±20
               点の範囲に収めました。
             </div>
@@ -61,8 +61,8 @@ export function ScoreCard({ result }: { result: EvaluationResult }) {
         <Card style={{ height: '100%' }} styles={{ body: { padding: '20px 24px' } }}>
           <Typography.Text type="secondary">マッチ度合い（スキルの充足度）</Typography.Text>
           <div style={{ lineHeight: 1.1, marginTop: 4 }}>
-            <span style={{ fontSize: 40, fontWeight: 600 }}>{result.match_rate}</span>
-            <span style={{ fontSize: 18, marginLeft: 4 }}>%</span>
+            <span style={{ fontSize: 44, fontWeight: 600 }}>{result.match_rate}</span>
+            <span style={{ fontSize: 20, marginLeft: 4 }}>%</span>
           </div>
           <Typography.Text type="secondary" style={{ display: 'block', marginTop: 4 }}>
             {total} 件の条件のうち、{achieved} 件をクリア

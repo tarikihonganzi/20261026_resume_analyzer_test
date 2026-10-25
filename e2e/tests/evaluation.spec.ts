@@ -39,7 +39,7 @@ test('職歴書を評価すると、スコア・必須条件の NG・判定・�
   await expect(page.getByText(/必須条件 1 件が NG: 現場監督（施工管理）の経験年数/)).toBeVisible()
 
   // 条件別の判定: 必須と任意に分かれ、それぞれ「クリア」「NG」の列に並ぶ
-  const judgement = page.getByRole('region', { name: '条件別の判定' })
+  const judgement = page.getByRole('region', { name: '判定', exact: true })
   await expect(judgement.getByText('必須条件（2 件）')).toBeVisible()
   await expect(judgement.getByText('任意条件（1 件）')).toBeVisible()
   const columns = judgement.getByRole('region', { name: /^(クリア|NG)$/ })

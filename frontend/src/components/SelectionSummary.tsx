@@ -126,7 +126,7 @@ export function SelectionSummary({
           <ArrowRightOutlined />
         </Button>
         {nextDisabledReason ? (
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          <Typography.Text type="secondary" style={{ fontSize: 14 }}>
             {nextDisabledReason}
           </Typography.Text>
         ) : null}

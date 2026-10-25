@@ -18,7 +18,7 @@ export function ResultView({ result }: { result: EvaluationResult }) {
         weaknesses={result.weaknesses}
       />
       <JudgementSections conditions={result.conditions} />
-      <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+      <Typography.Text type="secondary" style={{ fontSize: 14 }}>
         本結果は判断材料です。最終的な判断は人が行ってください。
       </Typography.Text>
     </Flex>

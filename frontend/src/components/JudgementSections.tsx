@@ -16,13 +16,13 @@ function Item({ judged, first }: { judged: JudgedCondition; first: boolean }) {
   const line = valueLine(judged)
 
   return (
-    <li style={{ padding: '10px 0', borderTop: first ? 'none' : '1px solid #f0f0f0' }}>
-      <Flex gap={8} align="flex-start">
+    <li style={{ padding: '12px 0', borderTop: first ? 'none' : '1px solid #f0f0f0' }}>
+      <Flex gap={10} align="flex-start">
         <ResultMark kind={kind} />
         <div style={{ minWidth: 0, flex: 1 }}>
           <Typography.Text>{judged.condition.label}</Typography.Text>
           {line ? (
-            <Typography.Text type="secondary" style={{ display: 'block', fontSize: 13 }}>
+            <Typography.Text type="secondary" style={{ display: 'block', fontSize: 15 }}>
               {line}
             </Typography.Text>
           ) : null}
@@ -48,8 +48,9 @@ function Column({
       <div
         data-testid="column-heading"
         style={{
-          fontSize: 17,
+          fontSize: 19,
           fontWeight: 700,
+          textAlign: 'center',
           color: HEADING_COLORS[mark],
           paddingBottom: 6,
           borderBottom: `2px solid ${HEADING_COLORS[mark]}`,
@@ -58,11 +59,11 @@ function Column({
         <ResultMark kind={mark} /> {label}（{items.length}）
       </div>
       {items.length === 0 ? (
-        <div style={{ padding: '10px 0' }}>
+        <div style={{ padding: '12px 0', textAlign: 'center' }}>
           <Typography.Text type="secondary">なし</Typography.Text>
         </div>
       ) : (
-        <ul style={{ margin: '8px 0 0', padding: 0, listStyle: 'none' }}>
+        <ul style={{ margin: '4px 0 0', padding: 0, listStyle: 'none' }}>
           {items.map((judged, index) => (
             <Item key={judged.condition.id} judged={judged} first={index === 0} />
           ))}
@@ -72,12 +73,20 @@ function Column({
   )
 }
 
+// 「必須条件」「任意条件」の帯。大きな見出し（青い帯）の中の、小見出しなので、灰色の帯にする
+const SUB_HEADER = { background: '#f0f0f0', color: '#262626' }
+
 function Section({ title, group }: { title: string; group: JudgementGroup }) {
   const total = group.clear.length + group.ng.length
   if (total === 0) return null
 
   return (
-    <Card size="small" title={`${title}（${String(total)} 件）`} style={{ marginTop: 12 }}>
+    <Card
+      size="small"
+      title={`${title}（${String(total)} 件）`}
+      styles={{ header: SUB_HEADER }}
+      style={{ marginBottom: 16 }}
+    >
       <Row gutter={[32, 16]}>
         <Col xs={24} md={12}>
           <Column label="クリア" mark="clear" items={group.clear} />
@@ -91,32 +100,19 @@ function Section({ title, group }: { title: string; group: JudgementGroup }) {
 }
 
 /**
- * 条件別の判定（仕様 5.5、13.1 #31）。「必須」「任意」のセクションに分け（必須が上）、各セクションを
- * 「クリア」「NG」の 2 列にして、条件を並べる。判定は、タグではなく記号（○ × △）で示す。
+ * 判定（仕様 5.5、13.1 #31・#34）。見出しは「判定」だけで、説明は付けない。「必須」「任意」の
+ * セクションに分け（必須が上）、各セクションを「クリア」「NG」の 2 列にして、条件を並べる。
+ * 判定は、タグではなく記号（○ × △）で示す。
  */
 export function JudgementSections({ conditions }: { conditions: readonly JudgedCondition[] }) {
   const groups = groupJudgements(conditions)
 
   return (
-    <section aria-label="条件別の判定">
-      <Typography.Title level={5} style={{ marginBottom: 4 }}>
-        条件別の判定
-      </Typography.Title>
-      <Flex gap={16} wrap>
-        {(
-          [
-            ['clear', 'クリア'],
-            ['unmet', 'NG'],
-            ['unknown', '不明（書類から確認できなかった。NG の列に入ります）'],
-          ] as const
-        ).map(([kind, label]) => (
-          <Typography.Text key={kind} type="secondary" style={{ fontSize: 12 }}>
-            <ResultMark kind={kind} /> {label}
-          </Typography.Text>
-        ))}
-      </Flex>
-      <Section title="必須条件" group={groups.required} />
-      <Section title="任意条件" group={groups.optional} />
+    <section aria-label="判定">
+      <Card title="判定">
+        <Section title="必須条件" group={groups.required} />
+        <Section title="任意条件" group={groups.optional} />
+      </Card>
     </section>
   )
 }

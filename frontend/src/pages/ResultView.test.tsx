@@ -101,7 +101,7 @@ describe('結果画面', () => {
       render(<ResultView result={makeResult()} />)
 
       const comments = screen.getByText('AI の評価コメント')
-      const judgement = screen.getByRole('region', { name: '条件別の判定' })
+      const judgement = screen.getByRole('region', { name: '判定' })
       expect(
         comments.compareDocumentPosition(judgement) & Node.DOCUMENT_POSITION_FOLLOWING,
       ).toBeTruthy()
@@ -198,6 +198,23 @@ describe('結果画面', () => {
       ],
     })
 
+    it('見出しは「判定」だけで、その下に説明（凡例）を出さない', () => {
+      render(<ResultView result={result} />)
+
+      expect(screen.getByText('判定', { selector: '.ant-card-head-title' })).toBeInTheDocument()
+      expect(screen.queryByText('条件別の判定')).not.toBeInTheDocument()
+      expect(screen.queryByText(/NG の列に入ります/)).not.toBeInTheDocument()
+    })
+
+    it('見出しは、カードの見出しの帯（背景色つき）にする。「判定」の中に、必須・任意の帯がある', () => {
+      render(<ResultView result={result} />)
+
+      const heads = [...document.querySelectorAll('.ant-card-head-title')].map(
+        (el) => el.textContent,
+      )
+      expect(heads).toEqual(['AI の評価コメント', '判定', '必須条件（2 件）', '任意条件（2 件）'])
+    })
+
     it('「必須条件」のセクションが、「任意条件」のセクションより上にある', () => {
       render(<ResultView result={result} />)
 
@@ -210,7 +227,7 @@ describe('結果画面', () => {
 
     it('各セクションの「クリア」の列と「NG」の列に、条件を並べる', () => {
       render(<ResultView result={result} />)
-      const judgement = section('条件別の判定')
+      const judgement = section('判定')
 
       const columns = judgement.getAllByRole('region', { name: /^(クリア|NG)$/ })
       // 必須: クリア・NG、任意: クリア・NG
@@ -228,7 +245,7 @@ describe('結果画面', () => {
       const { container } = render(<ResultView result={result} />)
 
       expect(container.querySelector('.ant-tag')).toBeNull()
-      const judgement = section('条件別の判定')
+      const judgement = section('判定')
       expect(judgement.getAllByRole('img', { name: 'クリア' }).length).toBeGreaterThan(0)
       expect(judgement.getAllByRole('img', { name: 'NG' }).length).toBeGreaterThan(0)
       expect(judgement.getAllByRole('img', { name: '不明' }).length).toBeGreaterThan(0)
@@ -241,13 +258,13 @@ describe('結果画面', () => {
       const { container } = render(<ResultView result={result} />)
 
       expect(container.textContent).not.toContain('未達')
-      expect(section('条件別の判定').getByText('NG')).toBeInTheDocument()
+      expect(section('判定').getAllByTestId('column-heading')[1]).toHaveTextContent('NG')
     })
 
     it('「クリア」「NG」の見出しは、条件名より大きく太い文字で、条件名と見分けがつく', () => {
       render(<ResultView result={result} />)
 
-      const heading = section('条件別の判定').getAllByTestId('column-heading')[0]
+      const heading = section('判定').getAllByTestId('column-heading')[0]
       const item = screen.getByText('必須の達成')
       expect(Number.parseInt(heading?.style.fontSize ?? '0', 10)).toBeGreaterThan(
         Number.parseInt(item.style.fontSize || '14', 10),
@@ -273,7 +290,7 @@ describe('結果画面', () => {
     it('列に条件がなければ、「なし」と出す', () => {
       render(<ResultView result={makeResult()} />)
 
-      const columns = section('条件別の判定').getAllByRole('region', { name: /^(クリア|NG)$/ })
+      const columns = section('判定').getAllByRole('region', { name: /^(クリア|NG)$/ })
       expect(within(columns[1] as HTMLElement).getByText('なし')).toBeInTheDocument()
     })
   })
@@ -281,7 +298,7 @@ describe('結果画面', () => {
   describe('根拠と引用（受け入れ基準 14・15）', () => {
     it('既定では閉じていて、「根拠を見る」で、reason と引用（出典名・位置・原文）が開く', async () => {
       render(<ResultView result={makeResult()} />)
-      const judgement = section('条件別の判定')
+      const judgement = section('判定')
 
       expect(judgement.queryByText('職歴書.docx に資格の記載があります。')).not.toBeInTheDocument()
       const toggle = judgement.getByRole('button', { name: '根拠を見る' })
@@ -329,7 +346,7 @@ describe('結果画面', () => {
           })}
         />,
       )
-      const judgement = section('条件別の判定')
+      const judgement = section('判定')
 
       expect(judgement.getByText('原文で確認できず')).toBeInTheDocument()
       await userEvent.click(judgement.getByRole('button', { name: '根拠を見る' }))
@@ -357,7 +374,7 @@ describe('結果画面', () => {
         />,
       )
 
-      await userEvent.click(section('条件別の判定').getByRole('button', { name: '根拠を見る' }))
+      await userEvent.click(section('判定').getByRole('button', { name: '根拠を見る' }))
 
       const quote = screen.getByText(text)
       expect(quote.tagName).toBe('BLOCKQUOTE')
@@ -378,7 +395,7 @@ describe('結果画面', () => {
 
     const note = screen.getByText('本結果は判断材料です。最終的な判断は人が行ってください。')
     expect(note).toHaveClass('ant-typography-secondary')
-    expect(note).toHaveStyle({ fontSize: '12px' })
+    expect(note).toHaveStyle({ fontSize: '14px' })
     expect(container.firstElementChild?.lastElementChild).toBe(note)
   })
 })
