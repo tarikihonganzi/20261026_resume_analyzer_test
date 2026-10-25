@@ -11,6 +11,7 @@ import tempfile
 import threading
 import time
 from collections.abc import Callable, Iterator
+from datetime import date
 from pathlib import Path
 from typing import Any, ClassVar
 
@@ -225,9 +226,27 @@ def test_pdf_quotes_are_not_verified(make_app: MakeApp) -> None:
     assert {q["verified"] for q in quotes} == {"skipped"}
 
 
-def test_today_comes_from_the_server_clock(make_app: MakeApp) -> None:
-    from datetime import date
+def test_today_is_read_for_every_evaluation_not_fixed_when_the_app_starts(
+    make_app: MakeApp,
+) -> None:
+    # アプリを起動したまま日をまたいでも、「今日の日付」が、起動した日のままにならない
+    days = iter([date(2030, 1, 2), date(2030, 1, 3), date(2030, 1, 3)])
+    fake = FakeClient()
+    client = make_app(today=lambda: next(days), client_factory=always(fake))
 
+    for _ in range(3):
+        assert (
+            client.post("/api/evaluations", data=form(text=factory.make_text())).status_code == 200
+        )
+
+    assert [call.today for call in fake.extract_calls] == [
+        date(2030, 1, 2),
+        date(2030, 1, 3),
+        date(2030, 1, 3),
+    ]
+
+
+def test_today_comes_from_the_server_clock(make_app: MakeApp) -> None:
     fake = FakeClient()
     client = make_app(today=lambda: date(2030, 1, 2), client_factory=always(fake))
 

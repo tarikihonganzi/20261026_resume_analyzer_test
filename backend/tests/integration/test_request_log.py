@@ -2,12 +2,13 @@
 
 import re
 from collections.abc import Iterator
+from datetime import date
 from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
 
-from app.logging_setup import LOG_FILE_NAME, shutdown_logging
+from app.logging_setup import log_file_name, shutdown_logging
 from app.main import create_app
 from app.settings import AppSettings
 from fixtures import resume_factory as factory
@@ -35,7 +36,7 @@ def make_client(tmp_path: Path, **options: object) -> tuple[TestClient, Path]:
 
 def log_text(log_dir: Path) -> str:
     shutdown_logging()  # 書き込みを確定して、ファイルを閉じる
-    return (log_dir / LOG_FILE_NAME).read_text(encoding="utf-8")
+    return (log_dir / log_file_name(date.today())).read_text(encoding="utf-8")
 
 
 def test_each_api_request_is_logged_with_method_path_status_and_duration(tmp_path: Path) -> None:
