@@ -40,7 +40,7 @@ export async function selectTypicalConditions(page: Page): Promise<void> {
 export async function goToResumeAndUpload(page: Page, filename: string): Promise<void> {
   await page.getByRole('button', { name: /次へ/ }).click()
   await page.locator('input[type=file]').setInputFiles(fixture(filename))
-  await expect(page.getByText('この職歴書を評価に使えます')).toBeVisible()
+  await expect(page.getByText('1 件の職歴書を評価に使えます')).toBeVisible()
 }
 
 export async function startEvaluation(page: Page): Promise<void> {

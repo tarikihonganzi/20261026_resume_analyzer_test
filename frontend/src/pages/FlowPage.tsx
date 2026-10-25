@@ -38,7 +38,8 @@ export function FlowPage() {
     {
       title: '職歴書',
       status: resume,
-      summary: state.resume?.check.status === 'ok' ? state.resume.name : undefined,
+      // ファイル名は並べない（複数のファイルや、長い名前でも、表示が崩れないように。仕様 6.2）
+      summary: resume === 'finish' ? 'ファイルアップロード完了' : undefined,
     },
     { title: '結果', status: result },
   ]

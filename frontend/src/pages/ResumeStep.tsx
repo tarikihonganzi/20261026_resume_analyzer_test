@@ -1,34 +1,41 @@
-import { Button, Card, Flex, Tooltip } from 'antd'
+import { Button, Card, Flex, Tooltip, message } from 'antd'
 import { useSettings } from '../api/hooks'
 import { ConditionsBadge } from '../components/ConditionsBadge'
-import { ResumeCheckResult } from '../components/ResumeCheckResult'
 import { ResumeInput } from '../components/ResumeInput'
-import { canEvaluate, conditionCounts } from '../state/flow'
+import { ResumeList } from '../components/ResumeList'
+import { MAX_RESUMES, canEvaluate, conditionCounts, resumesStatus } from '../state/flow'
 import { useFlow } from '../state/flow-context'
-import { useResumeCheck } from './useResumeCheck'
 
-/** ② 職歴書。ファイルか貼り付けテキストを選ぶと、その場で検証する。「評価する」で ③ へ進む。 */
+const PASTED_TEXT_NAME = '貼り付けテキスト'
+
+/**
+ * ② 職歴書。ファイル（複数）か貼り付けテキストを選ぶと、その場で 1 件ずつ検証し、アップロード済みの
+ * 一覧に並べる（削除できる）。「評価する」で ③ へ進む。
+ */
 export function ResumeStep() {
   const { state, dispatch } = useFlow()
   const settings = useSettings()
-  useResumeCheck()
+  const [messageApi, contextHolder] = message.useMessage()
 
   const counts = conditionCounts(state)
   const keyIsUnset = settings.data?.openai_api_key_masked === ''
   const ready = canEvaluate(state)
+  const status = resumesStatus(state)
 
+  const pasted = state.resumes.find((item) => item.source.kind === 'text')
   const disabledReason = keyIsUnset
     ? '評価するには、設定ページで API キーを登録してください'
-    : state.resume === null
+    : status === 'empty'
       ? '職歴書を選んでください'
-      : state.resume.check.status === 'checking'
+      : status === 'checking'
         ? '職歴書を確認しています'
-        : state.resume.check.status === 'error'
-          ? '使える職歴書を選んでください'
+        : status === 'error'
+          ? '使えない職歴書を削除してください'
           : undefined
 
   return (
     <Card>
+      {contextHolder}
       <Flex vertical gap={20}>
         <ConditionsBadge
           required={counts.required}
@@ -38,28 +45,33 @@ export function ResumeStep() {
           }}
         />
         <ResumeInput
-          initial={
-            state.resume === null
-              ? null
-              : state.resume.source.kind === 'text'
-                ? { kind: 'text', text: state.resume.source.text }
-                : { kind: 'file' }
-          }
+          count={state.resumes.length}
+          pastedText={pasted?.source.kind === 'text' ? pasted.source.text : null}
           onSelectFile={(file) => {
-            dispatch({ type: 'resumeSelected', source: { kind: 'file', file }, name: file.name })
+            dispatch({ type: 'resumeAdded', source: { kind: 'file', file }, name: file.name })
           }}
           onSelectText={(text) => {
             dispatch({
-              type: 'resumeSelected',
+              type: 'resumeAdded',
               source: { kind: 'text', text },
-              name: '貼り付けテキスト',
+              name: PASTED_TEXT_NAME,
             })
           }}
-          onClear={() => {
-            dispatch({ type: 'clearResume' })
+          onClearText={() => {
+            if (pasted) dispatch({ type: 'resumeRemoved', id: pasted.id })
+          }}
+          onLimit={() => {
+            void messageApi.warning(
+              `職歴書は、最大 ${String(MAX_RESUMES)} 件までです。超える分は、追加しませんでした`,
+            )
           }}
         />
-        {state.resume ? <ResumeCheckResult resume={state.resume} /> : null}
+        <ResumeList
+          items={state.resumes}
+          onRemove={(id) => {
+            dispatch({ type: 'resumeRemoved', id })
+          }}
+        />
         <Flex justify="space-between">
           <Button
             onClick={() => {

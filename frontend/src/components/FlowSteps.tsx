@@ -22,17 +22,23 @@ interface FlowStepsProps {
 /** 画面上部のステップ表示（仕様 6.2）。完了済みのステップには、クリックして戻れる。 */
 export function FlowSteps({ items, current, reachable, locked = false, onSelect }: FlowStepsProps) {
   return (
-    <Steps
-      current={current}
-      onChange={(next) => {
-        if (next === 0 || next === 1 || next === 2) onSelect(next)
-      }}
-      items={items.map((item, index) => ({
-        title: item.title,
-        content: item.summary,
-        status: item.status,
-        disabled: locked || index > reachable || index === current,
-      }))}
-    />
+    // 評価中は、押しても動かない。`disabled` にすると、完了済みのステップの見た目だけが変わって
+    // しまう（① と ② の色が違って見える）ので、マウスの操作だけを止める
+    <div style={locked ? { pointerEvents: 'none' } : undefined} aria-busy={locked}>
+      <Steps
+        current={current}
+        onChange={(next) => {
+          if (locked) return
+          if (next === 0 || next === 1 || next === 2) onSelect(next)
+        }}
+        items={items.map((item, index) => ({
+          title: item.title,
+          content: item.summary,
+          status: item.status,
+          // 先へ飛べないステップだけを、無効の見た目にする
+          disabled: index > reachable,
+        }))}
+      />
+    </div>
   )
 }

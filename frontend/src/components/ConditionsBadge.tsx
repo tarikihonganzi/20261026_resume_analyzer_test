@@ -1,5 +1,4 @@
-import { Button, Flex, Tag, Typography } from 'antd'
-import { TAG_STYLES } from './tagStyles'
+import { Button, Flex, Typography } from 'antd'
 
 interface ConditionsBadgeProps {
   required: number
@@ -9,13 +8,14 @@ interface ConditionsBadgeProps {
   disabled?: boolean
 }
 
-/** ② の上部に出す、選んだ条件の件数（例: 必須 2・任意 3）と、「変更」（仕様 6.1）。 */
+/** ② の上部に出す、選んだ条件の件数と、「変更」（仕様 6.1）。タグにせず、ふつうの 1 行にする。 */
 export function ConditionsBadge({ required, optional, onChange, disabled }: ConditionsBadgeProps) {
   return (
     <Flex align="center" gap={8}>
       <Typography.Text type="secondary">評価する条件:</Typography.Text>
-      <Tag style={TAG_STYLES.error}>必須 {required}</Tag>
-      <Tag style={TAG_STYLES.info}>任意 {optional}</Tag>
+      <Typography.Text>
+        必須 {required} 件・任意 {optional} 件
+      </Typography.Text>
       <Button type="link" size="small" disabled={disabled} onClick={onChange}>
         変更
       </Button>

@@ -8,9 +8,12 @@ export type EvaluationEvent =
   | { event: 'result'; data: EvaluationResult }
   | { event: 'error'; data: StreamError }
 
+export type ResumeSource = { kind: 'file'; file: File } | { kind: 'text'; text: string }
+
 export type EvaluationInput = {
   conditions: Condition[]
-  resume: { kind: 'file'; file: File } | { kind: 'text'; text: string }
+  /** 1 人の応募者の書類（ファイルは複数、貼り付けテキストは最大 1 件。仕様 5.3）。 */
+  resumes: readonly ResumeSource[]
 }
 
 // イベントの JSON が、想定した形かを、実行時に確かめる（サーバーとフロントの版が違っても、壊れない）
@@ -82,10 +85,9 @@ export async function* streamEvaluation(
 ): AsyncGenerator<EvaluationEvent> {
   const form = new FormData()
   form.append('conditions', JSON.stringify(input.conditions))
-  if (input.resume.kind === 'file') {
-    form.append('files', input.resume.file, input.resume.file.name)
-  } else {
-    form.append('text', input.resume.text)
+  for (const resume of input.resumes) {
+    if (resume.kind === 'file') form.append('files', resume.file, resume.file.name)
+    else form.append('text', resume.text)
   }
 
   const response = await fetchOrThrow('/api/evaluations', {
