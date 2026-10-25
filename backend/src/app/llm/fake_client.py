@@ -8,6 +8,7 @@
 import asyncio
 
 from app.domain.models import Condition
+from app.ingest.resume import ResumeInput
 from app.llm.requests import EvaluateRequest, ExtractRequest
 from app.llm.schemas import (
     ConditionExtraction,
@@ -47,9 +48,14 @@ class FakeClient:
             raise self._fail_with
 
     @staticmethod
-    def _quote_source(request: ExtractRequest | EvaluateRequest) -> str:
+    def _primary(request: ExtractRequest | EvaluateRequest) -> ResumeInput:
+        """引用と出典名に使う書類。テキストを持つ最初の書類（なければ最初の書類）。"""
+        return next((r for r in request.resumes if r.text is not None), request.resumes[0])
+
+    @staticmethod
+    def _quote_source(resume: ResumeInput) -> str:
         """引用に使う、原文の一部。テキストの職歴書なら、最初の十分に長い行。"""
-        text = request.resume.text
+        text = resume.text
         if text is None:
             return _PDF_QUOTE
         lines = [line.strip() for line in text.splitlines() if len(line.strip()) >= 8]
@@ -90,8 +96,9 @@ class FakeClient:
     async def extract(self, request: ExtractRequest) -> ExtractionResult:
         self.extract_calls.append(request)
         await self._simulate()
-        name = request.resume.source_name
-        quote = self._quote_source(request)
+        primary = self._primary(request)
+        name = primary.source_name
+        quote = self._quote_source(primary)
         return ExtractionResult(
             results=[
                 self._extract_one(index, condition, name, quote)
@@ -102,8 +109,9 @@ class FakeClient:
     async def evaluate(self, request: EvaluateRequest) -> FinalEvaluation:
         self.evaluate_calls.append(request)
         await self._simulate()
-        name = request.resume.source_name
-        quote = self._quote_source(request)
+        primary = self._primary(request)
+        name = primary.source_name
+        quote = self._quote_source(primary)
         found = Quote(source_name=name, location=None, text=quote)
         missing = Quote(source_name=name, location=None, text=UNVERIFIABLE_QUOTE)
         score = request.match_rate if self._score is None else self._score

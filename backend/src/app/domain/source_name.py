@@ -5,6 +5,7 @@
 
 import re
 import unicodedata
+from collections.abc import Sequence
 
 PASTED_TEXT_NAME = "貼り付けテキスト"
 # 整形の結果が空になったときの名前。仕様に定めがないので、出典名が空にならないようにする
@@ -31,3 +32,29 @@ def sanitize(filename: str) -> str:
     name = name.strip()[:MAX_LENGTH]
     # 切り詰めの結果、末尾に空白が残ることがある
     return name.rstrip() or UNNAMED
+
+
+def make_unique(names: Sequence[str]) -> list[str]:
+    """複数の書類の出典名を、一意にする。重なった 2 件目以降に ` (2)`、` (3)` を付ける。
+
+    出典名は、引用がどの書類のものかを決める鍵になる（仕様 5.4）。付ける番号を含めて、200 文字以内
+    にする。すでにある名前（` (2)` が付いたものを含む）とは重ならない。
+    """
+    taken = set(names)
+    seen: set[str] = set()
+    result: list[str] = []
+    for name in names:
+        if name not in seen:
+            seen.add(name)
+            result.append(name)
+            continue
+        number = 2
+        while True:
+            suffix = f" ({number})"
+            candidate = name[: MAX_LENGTH - len(suffix)].rstrip() + suffix
+            if candidate not in taken and candidate not in seen:
+                break
+            number += 1
+        seen.add(candidate)
+        result.append(candidate)
+    return result

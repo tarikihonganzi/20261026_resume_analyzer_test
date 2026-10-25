@@ -52,12 +52,13 @@ async def collect(
     client: object,
     *,
     resume: ResumeInput = TEXT_RESUME,
+    resumes: Sequence[ResumeInput] | None = None,
     conditions: Sequence[Condition] = CONDITIONS,
 ) -> list[PipelineEvent]:
     return [
         event
         async for event in run(
-            resume=resume,
+            resumes=resumes if resumes is not None else [resume],
             conditions=conditions,
             client=client,  # pyright: ignore[reportArgumentType]
             today=TODAY,
@@ -160,7 +161,7 @@ async def test_the_evaluation_request_carries_the_values_computed_by_code() -> N
     assert [c.id for c in request.missing_required] == ["b", "c"]
     assert [j.status for j in request.judgements] == ["achieved", "unmet", "unmet", "achieved"]
     assert request.today == TODAY
-    assert request.resume == TEXT_RESUME
+    assert request.resumes == [TEXT_RESUME]
 
 
 async def test_score_within_the_range_is_kept() -> None:
@@ -330,7 +331,7 @@ async def test_cancellation_stops_the_pipeline_without_a_result() -> None:
 
     async def consume() -> None:
         async for event in run(
-            resume=TEXT_RESUME, conditions=CONDITIONS, client=client, today=TODAY
+            resumes=[TEXT_RESUME], conditions=CONDITIONS, client=client, today=TODAY
         ):
             events.append(event)
 
@@ -375,3 +376,76 @@ async def test_quote_that_matches_neither_form_is_still_not_found() -> None:
     result = result_of(await collect(ScriptedClient(answer), resume=resume)).result
 
     assert result.conditions[0].quotes[0].verified == "not_found"
+
+
+# --- 複数の書類（仕様 5.4。13.1 #30） ---
+
+LICENSE_TEXT = "履歴書です。\n資格: 1級建築施工管理技士（2018年取得）\n"
+CAREER_TEXT = "職務経歴書です。\n2018年から現場監督として 8 年勤務した。\n"
+LICENSE_DOC = ResumeInput(source_name="履歴書.docx", format="docx", text=LICENSE_TEXT)
+CAREER_DOC = ResumeInput(source_name="職務経歴書.docx", format="docx", text=CAREER_TEXT)
+PDF_DOC = ResumeInput(source_name="別紙.pdf", format="pdf", pdf=b"%PDF-1.7\n")
+
+
+async def quote_verdict(quote: Quote, resumes: Sequence[ResumeInput]) -> tuple[str, str]:
+    answer = ExtractionResult(
+        results=[extraction("a", has_skill=True, quotes=[quote]), *GOOD.results[1:]]
+    )
+    result = result_of(await collect(ScriptedClient(answer), resumes=resumes)).result
+    [verified] = result.conditions[0].quotes
+    return verified.source_name, verified.verified
+
+
+async def test_all_documents_are_passed_to_both_llm_calls_in_order() -> None:
+    client = FakeClient()
+
+    await collect(client, resumes=[LICENSE_DOC, CAREER_DOC])
+
+    assert client.extract_calls[0].resumes == [LICENSE_DOC, CAREER_DOC]
+    assert client.evaluate_calls[0].resumes == [LICENSE_DOC, CAREER_DOC]
+
+
+async def test_a_quote_is_verified_against_the_document_named_as_its_source() -> None:
+    quote = Quote(source_name="職務経歴書.docx", location=None, text="現場監督として 8 年勤務した")
+
+    assert await quote_verdict(quote, [LICENSE_DOC, CAREER_DOC]) == ("職務経歴書.docx", "match")
+
+
+async def test_a_quote_that_exists_only_in_another_document_is_not_found() -> None:
+    # 出典名は履歴書だが、引用は職務経歴書のもの。引用元を取り違えているので、確認できない
+    quote = Quote(source_name="履歴書.docx", location=None, text="現場監督として 8 年勤務した")
+
+    assert await quote_verdict(quote, [LICENSE_DOC, CAREER_DOC]) == ("履歴書.docx", "not_found")
+
+
+async def test_an_unknown_source_name_is_replaced_with_the_document_that_contains_the_quote() -> (
+    None
+):
+    quote = Quote(source_name="存在しない名前", location=None, text="資格: 1級建築施工管理技士")
+
+    assert await quote_verdict(quote, [CAREER_DOC, LICENSE_DOC]) == ("履歴書.docx", "match")
+
+
+async def test_an_unknown_source_name_and_a_missing_quote_is_not_found_and_keeps_the_name() -> None:
+    quote = Quote(source_name="存在しない名前", location=None, text="どこにも無い記載です")
+
+    assert await quote_verdict(quote, [LICENSE_DOC, CAREER_DOC]) == ("存在しない名前", "not_found")
+
+
+async def test_a_quote_whose_source_is_a_pdf_is_not_verified() -> None:
+    quote = Quote(source_name="別紙.pdf", location="1ページ", text="PDF の中の記載")
+
+    assert await quote_verdict(quote, [LICENSE_DOC, PDF_DOC]) == ("別紙.pdf", "skipped")
+
+
+async def test_an_unknown_source_name_with_a_pdf_among_the_documents_is_not_verified() -> None:
+    # PDF の中の引用かもしれないので、見つからなくても「確認できず」とは言えない
+    quote = Quote(source_name="存在しない名前", location=None, text="どこにも無い記載です")
+
+    assert await quote_verdict(quote, [LICENSE_DOC, PDF_DOC]) == ("存在しない名前", "skipped")
+
+
+async def test_the_single_document_rule_is_kept() -> None:
+    quote = Quote(source_name="別のファイル.pdf", location=None, text="資格: 1級建築施工管理技士")
+
+    assert await quote_verdict(quote, [LICENSE_DOC]) == ("履歴書.docx", "match")

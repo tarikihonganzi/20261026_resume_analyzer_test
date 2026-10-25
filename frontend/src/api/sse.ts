@@ -83,7 +83,7 @@ export async function* streamEvaluation(
   const form = new FormData()
   form.append('conditions', JSON.stringify(input.conditions))
   if (input.resume.kind === 'file') {
-    form.append('file', input.resume.file, input.resume.file.name)
+    form.append('files', input.resume.file, input.resume.file.name)
   } else {
     form.append('text', input.resume.text)
   }

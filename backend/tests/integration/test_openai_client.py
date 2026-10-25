@@ -63,7 +63,7 @@ PDF_RESUME = ResumeInput(source_name="田中.pdf", format="pdf", pdf=b"%PDF-1.7\
 
 
 def extract_request(resume: ResumeInput = TEXT_RESUME) -> ExtractRequest:
-    return ExtractRequest(resume=resume, today=date(2026, 10, 25), conditions=CONDITIONS)
+    return ExtractRequest(resumes=[resume], today=date(2026, 10, 25), conditions=CONDITIONS)
 
 
 def extraction(condition_id: str, **values: Any) -> ConditionExtraction:
@@ -77,7 +77,7 @@ EXTRACTION_RESULT = ExtractionResult(results=EXTRACTIONS)
 
 def evaluate_request(resume: ResumeInput = TEXT_RESUME) -> EvaluateRequest:
     return EvaluateRequest(
-        resume=resume,
+        resumes=[resume],
         today=date(2026, 10, 25),
         conditions=CONDITIONS,
         extractions=EXTRACTIONS,

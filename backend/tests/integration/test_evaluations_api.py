@@ -62,6 +62,11 @@ def form(conditions: list[dict[str, Any]] | None = None, **extra: str) -> dict[s
     return {"conditions": json.dumps(CONDITIONS if conditions is None else conditions)} | extra
 
 
+def field_of(path: str) -> str:
+    """アップロードのフィールド名。検証は 1 件（file）、評価は複数（files）。"""
+    return "file" if path == "/api/resumes/check" else "files"
+
+
 def always(client: FakeClient) -> Callable[[Config], FakeClient]:
     """どんな設定でも、同じ偽のクライアントを返す。"""
     return lambda _config: client
@@ -120,7 +125,7 @@ def test_uploaded_docx_uses_its_file_name_as_the_source_name(make_app: MakeApp) 
     response = make_app().post(
         "/api/evaluations",
         data=form(),
-        files={"file": ("田中_職務経歴書.docx", factory.make_docx())},
+        files={"files": ("田中_職務経歴書.docx", factory.make_docx())},
     )
 
     result = parse_sse(response.text)[-1][1]
@@ -128,9 +133,90 @@ def test_uploaded_docx_uses_its_file_name_as_the_source_name(make_app: MakeApp) 
     assert "田中_職務経歴書.docx" in result["conditions"][0]["reason"]
 
 
+# --- 複数の書類（仕様 5.3。13.1 #30） ---
+
+
+def test_several_files_and_a_pasted_text_are_passed_to_the_llm_in_order(
+    make_app: MakeApp,
+) -> None:
+    fake = FakeClient()
+    client = make_app(client_factory=always(fake))
+
+    response = client.post(
+        "/api/evaluations",
+        data=form(text=factory.make_text()),
+        files=[
+            ("files", ("職務経歴書.docx", factory.make_docx())),
+            ("files", ("別紙.pdf", factory.make_pdf_digital())),
+        ],
+    )
+
+    assert response.status_code == 200
+    assert parse_sse(response.text)[-1][0] == "result"
+    assert [r.source_name for r in fake.extract_calls[0].resumes] == [
+        "職務経歴書.docx",
+        "別紙.pdf",
+        "貼り付けテキスト",
+    ]
+
+
+def test_files_with_the_same_name_get_distinct_source_names(make_app: MakeApp) -> None:
+    fake = FakeClient()
+    client = make_app(client_factory=always(fake))
+
+    client.post(
+        "/api/evaluations",
+        data=form(),
+        files=[
+            ("files", ("経歴.txt", factory.make_text().encode())),
+            ("files", ("経歴.txt", factory.make_text().encode())),
+        ],
+    )
+
+    assert [r.source_name for r in fake.extract_calls[0].resumes] == ["経歴.txt", "経歴.txt (2)"]
+
+
+def test_more_than_five_documents_is_rejected_before_the_stream(make_app: MakeApp) -> None:
+    files = [("files", (f"経歴{i}.txt", factory.make_text().encode())) for i in range(5)]
+
+    response = make_app().post("/api/evaluations", data=form(text=factory.make_text()), files=files)
+
+    assert response.status_code == 422
+    assert response.json()["code"] == "too_many_resumes"
+    assert "5" in response.json()["message"]
+
+
+def test_the_count_is_checked_before_any_file_is_read(
+    make_app: MakeApp, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    reads = ReadSizes(monkeypatch)
+    files = [("files", (f"経歴{i}.txt", factory.make_text().encode())) for i in range(6)]
+
+    response = make_app().post("/api/evaluations", data=form(), files=files)
+
+    assert response.json()["code"] == "too_many_resumes"
+    assert reads.sizes == []
+
+
+def test_one_unreadable_file_among_several_is_rejected_before_the_stream(
+    make_app: MakeApp,
+) -> None:
+    response = make_app().post(
+        "/api/evaluations",
+        data=form(),
+        files=[
+            ("files", ("経歴.txt", factory.make_text().encode())),
+            ("files", ("broken.docx", factory.make_broken_docx())),
+        ],
+    )
+
+    assert response.status_code == 422
+    assert response.json()["code"] == "conversion_failed"
+
+
 def test_pdf_quotes_are_not_verified(make_app: MakeApp) -> None:
     response = make_app().post(
-        "/api/evaluations", data=form(), files={"file": ("職歴書.pdf", factory.make_pdf_digital())}
+        "/api/evaluations", data=form(), files={"files": ("職歴書.pdf", factory.make_pdf_digital())}
     )
 
     result = parse_sse(response.text)[-1][1]
@@ -182,7 +268,9 @@ def test_resume_problems_are_rejected_before_the_stream(make_app: MakeApp) -> No
     client = make_app()
 
     unreadable = client.post(
-        "/api/evaluations", data=form(), files={"file": ("broken.docx", factory.make_broken_docx())}
+        "/api/evaluations",
+        data=form(),
+        files={"files": ("broken.docx", factory.make_broken_docx())},
     )
     too_short = client.post("/api/evaluations", data=form(text="短い"))
     neither = client.post("/api/evaluations", data=form())
@@ -197,7 +285,7 @@ def test_file_over_the_limit_is_413_before_the_stream(make_app: MakeApp) -> None
     client.put("/api/settings", json={"max_file_size_mb": 1})
 
     response = client.post(
-        "/api/evaluations", data=form(), files={"file": ("big.txt", b"a" * (1024 * 1024 + 1))}
+        "/api/evaluations", data=form(), files={"files": ("big.txt", b"a" * (1024 * 1024 + 1))}
     )
 
     assert response.status_code == 413
@@ -356,7 +444,7 @@ def test_key_never_appears_in_the_stream_or_the_logs(
 
 def test_nothing_of_the_resume_is_left_on_disk(make_app: MakeApp, tmp_path: Path) -> None:
     client = make_app()
-    client.post("/api/evaluations", data=form(), files={"file": ("a.docx", factory.make_docx())})
+    client.post("/api/evaluations", data=form(), files={"files": ("a.docx", factory.make_docx())})
     client.post("/api/evaluations", data=form(text=factory.make_text()))
 
     # 設定や条件セットを保存していないので、データのディレクトリ自体が作られない
@@ -467,7 +555,7 @@ def test_a_file_over_the_limit_is_read_only_up_to_the_limit_plus_one_byte(
     reads = ReadSizes(monkeypatch)
     data = form() if path == "/api/evaluations" else {}
 
-    response = client.post(path, data=data, files={"file": ("big.txt", b"a" * (3 * MB))})
+    response = client.post(path, data=data, files={field_of(path): ("big.txt", b"a" * (3 * MB))})
 
     assert response.status_code == 413
     assert reads.sizes == [1 * MB + 1]
@@ -481,7 +569,7 @@ def test_without_a_limit_the_whole_file_is_read(
     reads = ReadSizes(monkeypatch)
     data = form() if path == "/api/evaluations" else {}
 
-    client.post(path, data=data, files={"file": ("a.txt", factory.make_text().encode())})
+    client.post(path, data=data, files={field_of(path): ("a.txt", factory.make_text().encode())})
 
     assert reads.sizes == [-1]
 
@@ -518,7 +606,7 @@ def test_uploaded_temp_files_are_closed_after_a_normal_request(
 ) -> None:
     data = form() if path == "/api/evaluations" else {}
 
-    response = make_app().post(path, data=data, files={"file": ("a.txt", big_resume())})
+    response = make_app().post(path, data=data, files={field_of(path): ("a.txt", big_resume())})
 
     assert response.status_code == 200
     assert tracked_spools
@@ -533,7 +621,7 @@ def test_uploaded_temp_files_are_closed_after_an_input_error(
     client.put("/api/settings", json={"max_file_size_mb": 1})
     data = form() if path == "/api/evaluations" else {}
 
-    response = client.post(path, data=data, files={"file": ("big.txt", b"a" * (2 * MB))})
+    response = client.post(path, data=data, files={field_of(path): ("big.txt", b"a" * (2 * MB))})
 
     assert response.status_code == 413
     assert tracked_spools
@@ -551,7 +639,7 @@ async def test_uploaded_temp_files_are_closed_after_a_disconnect(
             "POST",
             "/api/evaluations",
             data=form(),
-            files={"file": ("a.txt", big_resume())},
+            files={"files": ("a.txt", big_resume())},
         ) as response,
     ):
         await anext(response.aiter_lines())

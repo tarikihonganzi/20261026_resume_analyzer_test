@@ -111,7 +111,7 @@ describe('③ 評価の進捗とエラー', () => {
     const form = evaluation.requests[0]?.form
     const conditions = JSON.parse(form?.get('conditions') as string) as { id: string }[]
     expect(conditions.map((c) => c.id)).toEqual(['q1'])
-    expect((form?.get('file') as File).name).toBe('田中.docx')
+    expect((form?.get('files') as File).name).toBe('田中.docx')
 
     const current = () =>
       screen.getByRole('status').querySelector('.ant-steps-item-process')?.textContent
@@ -312,6 +312,6 @@ describe('③ 結果からの操作（受け入れ基準 13）', () => {
     const form = evaluation.requests[1]?.form
     const conditions = JSON.parse(form?.get('conditions') as string) as { id: string }[]
     expect(conditions.map((c) => c.id)).toEqual(['q1', 'q2'])
-    expect((form?.get('file') as File).name).toBe('田中.docx')
+    expect((form?.get('files') as File).name).toBe('田中.docx')
   })
 })

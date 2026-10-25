@@ -157,7 +157,7 @@ describe('streamEvaluation', () => {
     const form = init?.body as FormData
     expect(JSON.parse(form.get('conditions') as string)).toEqual([condition])
     expect(form.get('text')).toBe('職歴の本文です。')
-    expect(form.has('file')).toBe(false)
+    expect(form.has('files')).toBe(false)
   })
 
   it('ファイルは、元のファイル名つきで送る', async () => {
@@ -174,7 +174,7 @@ describe('streamEvaluation', () => {
     expect(events).toHaveLength(1)
 
     const form = spy.mock.calls[0]?.[1]?.body as FormData
-    expect((form.get('file') as File).name).toBe('田中_職務経歴書.pdf')
+    expect((form.get('files') as File).name).toBe('田中_職務経歴書.pdf')
     expect(form.has('text')).toBe(false)
   })
 
