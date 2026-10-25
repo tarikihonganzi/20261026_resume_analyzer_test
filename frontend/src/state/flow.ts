@@ -178,6 +178,10 @@ export function buildConditions(catalog: readonly CatalogItem[], state: FlowStat
   return conditions
 }
 
+/**
+ * Steps の表示状態。① は、離れたら完了。② は、書類が使えない状態ならエラー、いまいるなら進行中、
+ * 使える書類がそろっていれば完了。③ は、評価の状態に従う（評価中は進行中）。
+ */
 export function stepStatuses(state: FlowState): [StepStatus, StepStatus, StepStatus] {
   const conditions: StepStatus = state.step === 0 ? 'process' : 'finish'
 

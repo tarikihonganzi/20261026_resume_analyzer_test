@@ -1,4 +1,4 @@
-"""ログの設定（`log/YYYY-MM-DD.log`。仕様 8.3、13.1 #36）。"""
+"""ログの設定（`log/YYYY-MM-DD.log`。仕様 8.3）。"""
 
 import logging
 from collections.abc import Iterator

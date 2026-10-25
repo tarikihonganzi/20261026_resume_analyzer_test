@@ -82,7 +82,7 @@ def test_judgement_rejects_unknown_status() -> None:
         Judgement.model_validate({"condition_id": "c1", "status": "partial"})
 
 
-# --- 補足説明（仕様 5.1・13.1 #27） ---
+# --- 補足説明（仕様 5.1） ---
 
 
 def test_description_is_optional_and_defaults_to_none() -> None:

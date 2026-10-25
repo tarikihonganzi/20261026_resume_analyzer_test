@@ -26,7 +26,7 @@ function RequiredLine({ result }: { result: EvaluationResult }) {
 
 /**
  * 最終スコア（AI 算出）を、青地の大きな数字で示し、隣に、マッチ度合い（スキルの充足度）と、
- * 必須条件の状況を並べる（仕様 5.5、13.1 #31）。補正があったときは、元のスコアと理由を併記する。
+ * 必須条件の状況を並べる（仕様 5.5）。補正があったときは、元のスコアと理由を併記する。
  */
 export function ScoreCard({ result }: { result: EvaluationResult }) {
   const { token } = theme.useToken()

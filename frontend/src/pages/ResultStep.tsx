@@ -110,5 +110,6 @@ export function ResultStep() {
     )
   }
 
+  // idle: 評価を始める前は、何も出さない（② から開始すると、すぐ running になる）
   return null
 }

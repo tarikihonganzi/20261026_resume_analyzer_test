@@ -1,6 +1,6 @@
 export type MarkKind = 'clear' | 'unmet' | 'unknown'
 
-// 判定を示す記号。日本で一般的な ○ × △ にする（チェックマークは、一般的でない。13.1 #31）。
+// 判定を示す記号。日本で一般的な ○ × △ にする（チェックマークは、一般的でない）。
 // 色は控えめにし、色だけに頼らず、記号と名前（読み上げ用）でも判別できるようにする
 const MARKS: Record<MarkKind, { glyph: string; label: string; color: string }> = {
   clear: { glyph: '○', label: 'クリア', color: '#237804' },

@@ -55,7 +55,7 @@ interface CommentsCardProps {
 
 /**
  * AI の評価コメント（総評・良かった点・悪かった点。仕様 5.5）。Markdown で描画し、項目ごとに、閉じた
- * 「根拠を見る」を付ける。見落とされないよう、条件別の判定より先に置く（13.1 #31）。
+ * 「根拠を見る」を付ける。見落とされないよう、条件別の判定より先に置く（仕様 5.5）。
  */
 export function CommentsCard({ summary, strengths, weaknesses }: CommentsCardProps) {
   return (

@@ -1,7 +1,7 @@
 // 利用時の起動: FastAPI が、ビルドしたフロント（frontend/dist）と API を、1 つのプロセスで配信する。
 //
 //   npm run start         127.0.0.1 だけで待ち受ける（通常）
-//   npm run start:demo    デモモード。同じネットワークの他の PC からも開ける（仕様 13.1 #26）
+//   npm run start:demo    デモモード。同じネットワークの他の PC からも開ける（仕様 10）
 //
 // npm scripts に環境変数の指定（`APP_ALLOW_REMOTE=1 …`）を書くと、cmd.exe では動かないので、
 // このスクリプトで指定する。

@@ -15,7 +15,7 @@ export interface JudgementGroup {
 
 /**
  * 条件別の判定を、「必須」「任意」に分け、それぞれを「クリア」（達成）と「NG」（未達・不明）に
- * 振り分ける（仕様 5.5、13.1 #31）。不明は、NG の列に置く（必須の不明は、必須条件の未達として数える）。
+ * 振り分ける（仕様 5.5）。不明は、NG の列に置く（必須の不明は、必須条件の未達として数える）。
  */
 export function groupJudgements(conditions: readonly JudgedCondition[]): {
   required: JudgementGroup

@@ -20,12 +20,13 @@ class AppSettings:
     # fake は、テスト・E2E 用の偽の LLM（環境変数 APP_LLM_MODE=fake のときだけ。既定は real）
     llm_mode: Literal["real", "fake"] = "real"
     fake_delay_sec: float = 0.0
-    # デモモード。他の PC からのアクセスを許す（Host の検査を外す。仕様 13.1 #26）
+    # デモモード。他の PC からのアクセスを許す（Host の検査を外す。仕様 10）
     allow_remote: bool = False
     # ビルドしたフロント（frontend/dist）。あれば、同じオリジンで配信する。なければ API だけ
     static_dir: Path | None = None
-    # ログの出力先（`app.log`）。None のときは、ファイルに書かない。テストなどで、意図せず、
-    # リポジトリの log/ に書かないよう、既定は None（実際の起動の既定は、from_env が決める）
+    # ログの出力先（`YYYY-MM-DD.log` を置くディレクトリ）。None のときは、ファイルに書かない。
+    # テストなどで、意図せず、リポジトリの log/ に書かないよう、既定は None
+    # （実際の起動の既定は、from_env が決める）
     log_dir: Path | None = None
     log_level: str = "INFO"
 

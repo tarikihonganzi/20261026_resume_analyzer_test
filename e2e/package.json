@@ -1,7 +1,7 @@
 {
   "name": "resume-matching-e2e",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Playwright の E2E。偽の LLM（APP_LLM_MODE=fake）で起動したサーバーに対して実行する。API 費用はかからない",
   "type": "module",
   "scripts": {

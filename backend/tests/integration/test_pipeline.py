@@ -378,7 +378,7 @@ async def test_quote_that_matches_neither_form_is_still_not_found() -> None:
     assert result.conditions[0].quotes[0].verified == "not_found"
 
 
-# --- 複数の書類（仕様 5.4。13.1 #30） ---
+# --- 複数の書類（仕様 5.4） ---
 
 LICENSE_TEXT = "履歴書です。\n資格: 1級建築施工管理技士（2018年取得）\n"
 CAREER_TEXT = "職務経歴書です。\n2018年から現場監督として 8 年勤務した。\n"

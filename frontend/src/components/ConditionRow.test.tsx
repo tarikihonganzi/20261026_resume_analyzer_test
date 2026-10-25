@@ -123,7 +123,7 @@ describe('ConditionRow', () => {
   })
 })
 
-describe('補足説明（仕様 5.1・13.1 #27）', () => {
+describe('補足説明（仕様 5.1）', () => {
   it('補足説明があれば、条件名の下に表示する', () => {
     setup({ ...boolean, description: '検査への立会い・試験の記録を数える。' })
 
