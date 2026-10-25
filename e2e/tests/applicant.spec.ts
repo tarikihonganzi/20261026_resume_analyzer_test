@@ -49,7 +49,7 @@ test('「条件を変えて再評価」で ① に戻り、職歴書は残って
   await expect(page.getByText('最終スコア')).toBeVisible({ timeout: 20_000 })
 
   await page.getByRole('button', { name: '条件を変えて再評価' }).click()
-  await expect(page.getByText('■ 必須（2）')).toBeVisible()
+  await expect(page.getByText('必須（2）')).toBeVisible()
   await page.getByRole('button', { name: /次へ/ }).click()
 
   await expect(page.getByText('この職歴書を評価に使えます')).toBeVisible()

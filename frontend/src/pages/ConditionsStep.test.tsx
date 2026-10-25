@@ -44,6 +44,17 @@ describe('① 条件', () => {
     await screen.findByText('1級建築施工管理技士')
 
     expect(next()).toBeDisabled()
+    expect(screen.getByText('条件を 1 件以上選んでください')).toBeInTheDocument()
+  })
+
+  it('「次へ」は、右の「選択中の条件」の列にあり、一覧の下には置かない', async () => {
+    renderPage()
+    await choose('1級建築施工管理技士', '必須')
+
+    const panel = screen.getByText('選択中の条件').closest('.ant-card')
+    expect(panel).not.toBeNull()
+    expect(within(panel as HTMLElement).getByRole('button', { name: /次へ/ })).toBeEnabled()
+    expect(screen.getAllByRole('button', { name: /次へ/ })).toHaveLength(1)
   })
 
   it('1 件選ぶと「次へ」を押せて、Steps に件数が出る', async () => {
@@ -61,6 +72,7 @@ describe('① 条件', () => {
     renderPage()
     await choose('Revit の実務経験', '任意')
     expect(next()).toBeDisabled()
+    expect(screen.getByText('最低年数が未入力の条件が 1 件あります')).toBeInTheDocument()
 
     await userEvent.type(within(row('Revit の実務経験')).getByRole('spinbutton'), '2')
 
@@ -138,7 +150,7 @@ describe('① 自由記述と要約パネル（受け入れ基準 2）', () => {
     expect(
       within(screen.getByRole('region', { name: '任意' })).getByText('耐震診断の経験'),
     ).toBeInTheDocument()
-    expect(screen.getByText('■ 任意（1）')).toBeInTheDocument()
+    expect(screen.getByText('任意（1）')).toBeInTheDocument()
   })
 
   it('選ぶと、要約にリアルタイムで反映される', async () => {
@@ -147,7 +159,7 @@ describe('① 自由記述と要約パネル（受け入れ基準 2）', () => {
     await choose('Revit の実務経験', '任意')
     await userEvent.type(within(row('Revit の実務経験')).getByRole('spinbutton'), '2')
 
-    expect(screen.getByText('■ 必須（1）')).toBeInTheDocument()
+    expect(screen.getByText('必須（1）')).toBeInTheDocument()
     expect(
       within(screen.getByRole('region', { name: '任意' })).getByText('Revit の実務経験 2.0年以上'),
     ).toBeInTheDocument()
