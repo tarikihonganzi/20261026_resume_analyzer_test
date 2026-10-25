@@ -115,8 +115,8 @@ describe('条件セット（受け入れ基準 8）', () => {
 
     await loadSavedSet()
 
-    expect(await screen.findByText('■ 必須（1）')).toBeInTheDocument()
-    expect(screen.getByText('■ 任意（2）')).toBeInTheDocument()
+    expect(await screen.findByText('必須（1）')).toBeInTheDocument()
+    expect(screen.getByText('任意（2）')).toBeInTheDocument()
     expect(selectedMode('2級建築士')).toBe('必須')
     expect(selectedMode('Revit の実務経験')).toBe('任意')
     expect(within(row('Revit の実務経験')).getByRole('spinbutton')).toHaveValue('2.5')

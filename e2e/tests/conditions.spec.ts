@@ -25,8 +25,8 @@ test('条件セットを保存し、再読み込みのあとに読み込むと�
   await expect(
     page.getByRole('region', { name: '自由記述' }).getByText('耐震診断の経験'),
   ).toBeVisible()
-  await expect(page.getByText('■ 必須（2）')).toBeVisible()
-  await expect(page.getByText('■ 任意（2）')).toBeVisible()
+  await expect(page.getByText('必須（2）')).toBeVisible()
+  await expect(page.getByText('任意（2）')).toBeVisible()
 
   await page.getByRole('button', { name: /名前を付けて保存/ }).click()
   await page.getByRole('dialog').getByRole('textbox').fill('E2E の条件セット')
@@ -35,13 +35,13 @@ test('条件セットを保存し、再読み込みのあとに読み込むと�
 
   // 再読み込みで、画面の状態は消える（仕様 6.2）。保存したセットだけが残る
   await page.reload()
-  await expect(page.getByText('■ 必須（2）')).toHaveCount(0)
+  await expect(page.getByText('必須（2）')).toHaveCount(0)
 
   await page.getByRole('combobox', { name: '保存済みの条件セット' }).click()
   await page.locator('.ant-select-item-option-content', { hasText: 'E2E の条件セット' }).click()
 
-  await expect(page.getByText('■ 必須（2）')).toBeVisible()
-  await expect(page.getByText('■ 任意（2）')).toBeVisible()
+  await expect(page.getByText('必須（2）')).toBeVisible()
+  await expect(page.getByText('任意（2）')).toBeVisible()
   await expect(
     conditionRow(page, '現場監督（施工管理）の経験年数').getByRole('spinbutton'),
   ).toHaveValue('5.0')

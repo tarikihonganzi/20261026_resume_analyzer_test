@@ -49,7 +49,7 @@ export function ConditionRow({
       role="group"
       aria-label={item.label}
       style={{
-        padding: '10px 12px 10px 16px',
+        padding: '14px 16px 14px 16px',
         borderLeft: `3px solid ${MODE_COLORS[mode]}`,
         borderBottom: '1px solid #f0f0f0',
         background: mode === 'off' ? undefined : '#fafcff',
@@ -74,6 +74,7 @@ export function ConditionRow({
         <Flex align="center" gap={8}>
           {actions}
           <Segmented<Mode>
+            size="large"
             options={MODE_OPTIONS}
             value={mode}
             onChange={onModeChange}

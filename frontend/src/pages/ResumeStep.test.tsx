@@ -91,7 +91,7 @@ describe('② 職歴書', () => {
     await userEvent.click(screen.getByRole('button', { name: '変更' }))
 
     expect(await screen.findByRole('group', { name: '1級建築施工管理技士' })).toBeInTheDocument()
-    expect(screen.getByText('■ 必須（1）')).toBeInTheDocument()
+    expect(screen.getByText('必須（1）')).toBeInTheDocument()
   })
 
   it('職歴書を選ぶまでは、「評価する」を押せない', async () => {

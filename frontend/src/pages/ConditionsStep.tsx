@@ -5,6 +5,7 @@ import { useCatalog } from '../api/hooks'
 import type { Condition } from '../api/types'
 import { ConditionFilters } from '../components/ConditionFilters'
 import { ConditionList } from '../components/ConditionList'
+import { isMinValueMissing } from '../components/ConditionRow'
 import { ConditionSetBar } from '../components/ConditionSetBar'
 import { CustomConditionModal } from '../components/CustomConditionModal'
 import { SelectionSummary } from '../components/SelectionSummary'
@@ -82,6 +83,17 @@ export function ConditionsStep() {
       />
     )
   }
+
+  // 「次へ」を押せない理由（右の列に示す）
+  const selectedCount = summary.required.length + summary.optional.length
+  const missingMinCount = items.filter((item) =>
+    isMinValueMissing(item, state.selections[item.id]),
+  ).length
+  const nextDisabledReason = isConditionsComplete(state)
+    ? null
+    : selectedCount === 0
+      ? '条件を 1 件以上選んでください'
+      : `最低年数が未入力の条件が ${String(missingMinCount)} 件あります`
 
   const customCondition = (id: string) => state.customConditions.find((c) => c.id === id)
 
@@ -163,17 +175,6 @@ export function ConditionsStep() {
                   : []
               }
             />
-            <Flex justify="flex-end" style={{ marginTop: 8 }}>
-              <Button
-                type="primary"
-                disabled={!isConditionsComplete(state)}
-                onClick={() => {
-                  dispatch({ type: 'next' })
-                }}
-              >
-                次へ（職歴書）
-              </Button>
-            </Flex>
           </Card>
         </Col>
         <Col xs={24} lg={7}>
@@ -188,6 +189,10 @@ export function ConditionsStep() {
               onAddCustom={() => {
                 setDialog({ mode: 'add' })
               }}
+              onNext={() => {
+                dispatch({ type: 'next' })
+              }}
+              nextDisabledReason={nextDisabledReason}
             />
           </div>
         </Col>

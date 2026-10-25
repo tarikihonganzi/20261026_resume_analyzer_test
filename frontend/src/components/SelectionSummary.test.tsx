@@ -13,19 +13,35 @@ const summary = {
 
 describe('SelectionSummary', () => {
   it('必須と任意に分けて、件数つきで表示する', () => {
-    render(<SelectionSummary summary={summary} onJump={vi.fn()} onAddCustom={vi.fn()} />)
+    render(
+      <SelectionSummary
+        summary={summary}
+        onJump={vi.fn()}
+        onAddCustom={vi.fn()}
+        onNext={vi.fn()}
+        nextDisabledReason={null}
+      />,
+    )
 
     const required = screen.getByRole('region', { name: '必須' })
     const optional = screen.getByRole('region', { name: '任意' })
-    expect(within(required).getByText('■ 必須（2）')).toBeInTheDocument()
+    expect(within(required).getByText('必須（2）')).toBeInTheDocument()
     expect(within(required).getByText('現場監督の経験年数 5.0年以上')).toBeInTheDocument()
-    expect(within(optional).getByText('■ 任意（1）')).toBeInTheDocument()
+    expect(within(optional).getByText('任意（1）')).toBeInTheDocument()
     expect(within(optional).getByText('Revit 2.0年以上')).toBeInTheDocument()
   })
 
   it('項目をクリックすると、その条件の id で通知する', async () => {
     const onJump = vi.fn()
-    render(<SelectionSummary summary={summary} onJump={onJump} onAddCustom={vi.fn()} />)
+    render(
+      <SelectionSummary
+        summary={summary}
+        onJump={onJump}
+        onAddCustom={vi.fn()}
+        onNext={vi.fn()}
+        nextDisabledReason={null}
+      />,
+    )
 
     await userEvent.click(screen.getByRole('button', { name: 'Revit 2.0年以上' }))
 
@@ -38,6 +54,8 @@ describe('SelectionSummary', () => {
         summary={{ required: [], optional: [] }}
         onJump={vi.fn()}
         onAddCustom={vi.fn()}
+        onNext={vi.fn()}
+        nextDisabledReason={null}
       />,
     )
 
@@ -50,6 +68,8 @@ describe('SelectionSummary', () => {
         summary={{ required: [], optional: summary.optional }}
         onJump={vi.fn()}
         onAddCustom={vi.fn()}
+        onNext={vi.fn()}
+        nextDisabledReason={null}
       />,
     )
 
@@ -60,10 +80,67 @@ describe('SelectionSummary', () => {
 
   it('「自由記述で条件を追加」を押せる', async () => {
     const onAddCustom = vi.fn()
-    render(<SelectionSummary summary={summary} onJump={vi.fn()} onAddCustom={onAddCustom} />)
+    render(
+      <SelectionSummary
+        summary={summary}
+        onJump={vi.fn()}
+        onAddCustom={onAddCustom}
+        onNext={vi.fn()}
+        nextDisabledReason={null}
+      />,
+    )
 
     await userEvent.click(screen.getByRole('button', { name: /自由記述で条件を追加/ }))
 
     expect(onAddCustom).toHaveBeenCalled()
+  })
+
+  describe('「次へ」（右の固定列に置く）', () => {
+    it('押すと、通知する', async () => {
+      const onNext = vi.fn()
+      render(
+        <SelectionSummary
+          summary={summary}
+          onJump={vi.fn()}
+          onAddCustom={vi.fn()}
+          onNext={onNext}
+          nextDisabledReason={null}
+        />,
+      )
+
+      await userEvent.click(screen.getByRole('button', { name: /次へ/ }))
+
+      expect(onNext).toHaveBeenCalled()
+    })
+
+    it('進めないときは、押せず、理由を、ボタンの近くに示す', () => {
+      render(
+        <SelectionSummary
+          summary={{ required: [], optional: [] }}
+          onJump={vi.fn()}
+          onAddCustom={vi.fn()}
+          onNext={vi.fn()}
+          nextDisabledReason="条件を 1 件以上選んでください"
+        />,
+      )
+
+      expect(screen.getByRole('button', { name: /次へ/ })).toBeDisabled()
+      expect(screen.getByText('条件を 1 件以上選んでください')).toBeInTheDocument()
+    })
+  })
+
+  it('選んだ条件の項目は、リンクの青ではなく、ふつうの文字で示す', () => {
+    render(
+      <SelectionSummary
+        summary={summary}
+        onJump={vi.fn()}
+        onAddCustom={vi.fn()}
+        onNext={vi.fn()}
+        nextDisabledReason={null}
+      />,
+    )
+
+    const item = screen.getByRole('button', { name: 'Revit 2.0年以上' })
+    expect(item).not.toHaveClass('ant-btn-variant-link')
   })
 })
