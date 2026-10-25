@@ -142,7 +142,7 @@ function SettingsForm({ saved }: { saved: SettingsView }) {
         <Form.Item
           label="最大ファイルサイズ"
           htmlFor="maxFileSizeMb"
-          extra="職歴書ファイルの上限です。0 のときは、制限しません。"
+          extra="ファイル 1 件あたりのサイズの上限です。0 のときは、制限しません。"
         >
           <Space.Compact>
             <Form.Item

@@ -102,9 +102,9 @@ describe('valueLine（条件の下に出す、抽出値の 1 行）', () => {
     expect(valueLine(judged(years, { status: 'unmet', years: null }))).toBe('年数の記載なし')
   })
 
-  it('不明は、「職歴書から確認できませんでした」（boolean も number も）', () => {
-    expect(valueLine(judged({}, { status: 'unknown' }))).toBe('職歴書から確認できませんでした')
-    expect(valueLine(judged(years, { status: 'unknown' }))).toBe('職歴書から確認できませんでした')
+  it('不明は、「書類から確認できませんでした」（boolean も number も）', () => {
+    expect(valueLine(judged({}, { status: 'unknown' }))).toBe('書類から確認できませんでした')
+    expect(valueLine(judged(years, { status: 'unknown' }))).toBe('書類から確認できませんでした')
   })
 
   it('boolean の達成・未達は、1 行を足さない', () => {

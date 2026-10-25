@@ -7,7 +7,7 @@ const items = (
   overrides: Partial<FlowStepItem>[] = [],
 ): [FlowStepItem, FlowStepItem, FlowStepItem] => [
   { title: '条件', status: 'finish', summary: '必須 2・任意 3', ...overrides[0] },
-  { title: '職歴書', status: 'process', ...overrides[1] },
+  { title: '書類', status: 'process', ...overrides[1] },
   { title: '結果', status: 'wait', ...overrides[2] },
 ]
 
@@ -16,7 +16,7 @@ describe('FlowSteps', () => {
     render(<FlowSteps items={items()} current={1} reachable={1} onSelect={vi.fn()} />)
 
     expect(screen.getByText('条件')).toBeInTheDocument()
-    expect(screen.getByText('職歴書')).toBeInTheDocument()
+    expect(screen.getByText('書類')).toBeInTheDocument()
     expect(screen.getByText('結果')).toBeInTheDocument()
     expect(screen.getByText('必須 2・任意 3')).toBeInTheDocument()
   })
@@ -47,7 +47,7 @@ describe('FlowSteps', () => {
 
     expect(container.firstElementChild).toHaveStyle({ pointerEvents: 'none' })
     fireEvent.click(screen.getByText('条件'))
-    fireEvent.click(screen.getByText('職歴書'))
+    fireEvent.click(screen.getByText('書類'))
 
     expect(onSelect).not.toHaveBeenCalled()
   })

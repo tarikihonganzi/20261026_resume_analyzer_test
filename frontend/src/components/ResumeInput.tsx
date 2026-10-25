@@ -96,7 +96,7 @@ export function ResumeInput({
               </p>
               <p className="ant-upload-text">
                 {full
-                  ? `職歴書は、最大 ${String(MAX_RESUMES)} 件までです（削除すると、追加できます）`
+                  ? `書類は、最大 ${String(MAX_RESUMES)} 件までです（削除すると、追加できます）`
                   : 'ここにファイルをドラッグ、またはクリックして選ぶ（複数可）'}
               </p>
               <Typography.Text type="secondary">
@@ -112,11 +112,11 @@ export function ResumeInput({
           label: 'テキストを貼り付ける',
           children: (
             <Input.TextArea
-              aria-label="職歴書のテキスト"
+              aria-label="書類のテキスト"
               rows={12}
               value={text}
               disabled={full && pastedText === null}
-              placeholder="職歴書の内容を、ここに貼り付けてください"
+              placeholder="書類の内容を、ここに貼り付けてください"
               onChange={(event) => {
                 changeText(event.target.value)
               }}

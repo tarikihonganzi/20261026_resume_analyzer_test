@@ -29,7 +29,7 @@ test('職歴書を評価すると、スコア・必須条件の NG・判定・�
 
   // 進捗（抽出中 → 最終評価中）
   await expect(page.getByText('評価しています')).toBeVisible()
-  await expect(page.getByText('職歴書から条件を抽出中')).toBeVisible()
+  await expect(page.getByText('書類から条件を抽出中')).toBeVisible()
 
   // 結果: 最終スコア（AI 算出）とマッチ度合い（スキルの充足度）
   await expect(page.getByText('最終スコア（AI 算出）')).toBeVisible({ timeout: 20_000 })

@@ -29,7 +29,7 @@ export function AppShell({ view, onNavigate, children }: AppShellProps) {
         }}
       >
         <Typography.Title level={4} style={{ margin: 0 }}>
-          職歴書マッチング評価
+          マッチング評価
         </Typography.Title>
         {view === 'flow' ? (
           <Button

@@ -19,7 +19,7 @@ from app.llm.schemas import (
 )
 
 # 最終評価に 1 件だけ入れる、原文にない引用
-UNVERIFIABLE_QUOTE = "この引用は職歴書の原文にありません（偽のクライアントが入れたもの）"
+UNVERIFIABLE_QUOTE = "この引用は書類の原文にありません（偽のクライアントが入れたもの）"
 _ACHIEVED_PATTERN = (True, False, False, True)
 _PDF_QUOTE = "（PDF の内容の引用）"
 

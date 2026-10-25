@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 from app.main import create_app
 from app.settings import AppSettings
 
-INDEX = "<!doctype html><title>職歴書マッチング評価</title><div id=root></div>"
+INDEX = "<!doctype html><title>マッチング評価</title><div id=root></div>"
 
 
 @pytest.fixture

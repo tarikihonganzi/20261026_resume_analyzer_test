@@ -22,7 +22,7 @@ test('キーボードだけで、条件の状態を切り替え、② へ進め�
   // 「次へ」を Enter で押す。押したボタンは消えるので、② の領域にフォーカスが移る
   await page.getByRole('button', { name: /次へ/ }).focus()
   await page.keyboard.press('Enter')
-  await expect(page.getByRole('region', { name: '② 職歴書' })).toBeFocused()
+  await expect(page.getByRole('region', { name: '② 書類' })).toBeFocused()
 
   // 「戻る」も、キーボードで押せて、① の領域にフォーカスが移る
   await page.getByRole('button', { name: '戻る' }).focus()

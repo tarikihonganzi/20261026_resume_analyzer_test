@@ -9,7 +9,7 @@ import { useFlow } from '../state/flow-context'
 const PASTED_TEXT_NAME = '貼り付けテキスト'
 
 /**
- * ② 職歴書。ファイル（複数）か貼り付けテキストを選ぶと、その場で 1 件ずつ検証し、アップロード済みの
+ * ② 書類。ファイル（複数）か貼り付けテキストを選ぶと、その場で 1 件ずつ検証し、アップロード済みの
  * 一覧に並べる（削除できる）。「評価する」で ③ へ進む。
  */
 export function ResumeStep() {
@@ -26,11 +26,11 @@ export function ResumeStep() {
   const disabledReason = keyIsUnset
     ? '評価するには、設定ページで API キーを登録してください'
     : status === 'empty'
-      ? '職歴書を選んでください'
+      ? '書類を選んでください'
       : status === 'checking'
-        ? '職歴書を確認しています'
+        ? '書類を確認しています'
         : status === 'error'
-          ? '使えない職歴書を削除してください'
+          ? '使えない書類を削除してください'
           : undefined
 
   return (
@@ -62,7 +62,7 @@ export function ResumeStep() {
           }}
           onLimit={() => {
             void messageApi.warning(
-              `職歴書は、最大 ${String(MAX_RESUMES)} 件までです。超える分は、追加しませんでした`,
+              `書類は、最大 ${String(MAX_RESUMES)} 件までです。超える分は、追加しませんでした`,
             )
           }}
         />

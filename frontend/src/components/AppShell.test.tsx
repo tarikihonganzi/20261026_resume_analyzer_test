@@ -14,7 +14,7 @@ describe('AppShell', () => {
       </AppShell>,
     )
 
-    expect(screen.getByRole('heading', { name: '職歴書マッチング評価' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'マッチング評価' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /設定/ })).toBeInTheDocument()
     expect(screen.getByText('本文')).toBeInTheDocument()
   })

@@ -51,7 +51,7 @@ class TooManyResumesError(ResumeError):
     code = "too_many_resumes"
 
     def __init__(self, limit: int) -> None:
-        super().__init__(f"職歴書は、1 回の評価に、最大 {limit} 件まで渡せます。減らしてください。")
+        super().__init__(f"書類は、1 回の評価に、最大 {limit} 件まで渡せます。減らしてください。")
         self.limit = limit
 
 

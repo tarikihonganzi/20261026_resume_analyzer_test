@@ -28,7 +28,7 @@ test.beforeEach(async ({ request }) => {
   await registerApiKey(request)
 })
 
-test('① 条件・② 職歴書・③ 進捗・③ 結果・設定ページに、自動検査で見つかる違反がない', async ({
+test('① 条件・② 書類・③ 進捗・③ 結果・設定ページに、自動検査で見つかる違反がない', async ({
   page,
 }) => {
   await page.goto('/')
@@ -44,7 +44,7 @@ test('① 条件・② 職歴書・③ 進捗・③ 結果・設定ページに�
     'color',
     'rgb(255, 255, 255)',
   )
-  await expectNoViolations(page, '② 職歴書')
+  await expectNoViolations(page, '② 書類')
 
   await startEvaluation(page)
   await expect(page.getByText('評価しています')).toBeVisible()

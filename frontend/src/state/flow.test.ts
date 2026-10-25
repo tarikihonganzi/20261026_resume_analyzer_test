@@ -272,7 +272,7 @@ describe('ステップの移動（仕様 6.2・受け入れ基準 11）', () => 
   })
 })
 
-describe('② 職歴書', () => {
+describe('② 書類', () => {
   it('選ぶと、検証中になる。検証に成功すると、評価できる', () => {
     const selected = reducer(atResume(), {
       type: 'resumeAdded',
