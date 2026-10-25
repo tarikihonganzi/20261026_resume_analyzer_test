@@ -64,7 +64,7 @@ export function ConditionRow({
           {item.description ? (
             <Typography.Paragraph
               type="secondary"
-              style={{ margin: 0, fontSize: 12 }}
+              style={{ margin: 0, fontSize: 14 }}
               ellipsis={{ rows: 2, tooltip: item.description }}
             >
               {item.description}

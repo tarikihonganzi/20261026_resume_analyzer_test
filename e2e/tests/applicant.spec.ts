@@ -34,7 +34,7 @@ test('「別の応募者を評価」で、条件を残したまま ② に戻り
 
   await expect(page.getByText('最終スコア（AI 算出）')).toBeVisible({ timeout: 20_000 })
   // 2 人目の結果の根拠には、2 人目のファイル名が出る
-  const judgement = page.getByRole('region', { name: '条件別の判定' })
+  const judgement = page.getByRole('region', { name: '判定', exact: true })
   await judgement.getByRole('button', { name: '根拠を見る' }).first().click()
   await expect(judgement).toContainText('resume.txt')
   await expect(judgement).not.toContainText('resume.docx')

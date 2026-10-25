@@ -74,7 +74,7 @@ function ResumeRow({ item, onRemove }: { item: ResumeItem; onRemove: (id: number
       {item.check.status === 'error' ? (
         <Typography.Paragraph
           type="danger"
-          style={{ margin: '4px 0 0 28px', fontSize: 13 }}
+          style={{ margin: '4px 0 0 28px', fontSize: 15 }}
           role="alert"
         >
           使えません: {item.check.error.message}

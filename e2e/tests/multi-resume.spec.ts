@@ -42,7 +42,7 @@ test('複数の書類（docx・PDF・txt）を上げ、間違えた 1 件を削�
 
   await expect(page.getByText('最終スコア（AI 算出）')).toBeVisible({ timeout: 20_000 })
   // 引用の出典名は、実際にアップロードした書類の名前になる（受け入れ基準 14・16）
-  const judgement = page.getByRole('region', { name: '条件別の判定' })
+  const judgement = page.getByRole('region', { name: '判定', exact: true })
   await judgement.getByRole('button', { name: '根拠を見る' }).first().click()
   await expect(judgement).toContainText('resume.docx')
 })
