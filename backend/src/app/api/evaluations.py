@@ -18,7 +18,7 @@ from app.api.schemas import ErrorResponse, StageData, StreamError
 from app.api.uploads import read_upload
 from app.domain.errors import InvalidConditionsError, LlmAuthError, NoConditionsError
 from app.domain.models import Condition, Config
-from app.ingest.resume import ResumeInput, load_resume
+from app.ingest.resume import ResumeInput, check_document_count, load_resumes
 from app.pipeline import ErrorEvent, PipelineEvent, ResultEvent, StageEvent, run
 
 router = APIRouter()
@@ -28,7 +28,7 @@ _CONDITIONS = TypeAdapter(list[Condition])
 
 @dataclass(frozen=True)
 class EvaluationInput:
-    resume: ResumeInput
+    resumes: list[ResumeInput]
     conditions: list[Condition]
     config: Config
 
@@ -36,7 +36,7 @@ class EvaluationInput:
 async def get_evaluation_input(
     services: ServicesDep,
     conditions: Annotated[str, Form()],
-    file: Annotated[UploadFile | None, File()] = None,
+    files: Annotated[list[UploadFile] | None, File()] = None,
     text: Annotated[str | None, Form()] = None,
 ) -> EvaluationInput:
     """ストリームを始める前に、入力を検証する。問題は、通常の HTTP エラー（422・413）で返す。"""
@@ -55,15 +55,18 @@ async def get_evaluation_input(
             "API キーが設定されていません。設定ページで API キーを登録してください。"
         )
 
+    # 件数の確認は、ファイルを読む前に行う（上限を超えるのに、全部を読み込まないため）
+    uploads = files or []
+    check_document_count(len(uploads), text)
     # ファイルは、ここで読み切る（検証のあとに、サーバーに残さない）
-    content = await read_upload(file, config.max_file_size_mb) if file is not None else None
-    resume = await load_resume(
-        filename=(file.filename or "") if file is not None else None,
-        content=content,
-        pasted_text=text,
-        max_size_mb=config.max_file_size_mb,
+    contents = [
+        (upload.filename or "", await read_upload(upload, config.max_file_size_mb))
+        for upload in uploads
+    ]
+    resumes = await load_resumes(
+        files=contents, pasted_text=text, max_size_mb=config.max_file_size_mb
     )
-    return EvaluationInput(resume=resume, conditions=parsed, config=config)
+    return EvaluationInput(resumes=resumes, conditions=parsed, config=config)
 
 
 def _to_sse(event: PipelineEvent) -> ServerSentEvent:
@@ -92,7 +95,7 @@ async def evaluate(
     client = services.make_client(evaluation.config)
     try:
         async for event in run(
-            resume=evaluation.resume,
+            resumes=evaluation.resumes,
             conditions=evaluation.conditions,
             client=client,
             today=services.today(),

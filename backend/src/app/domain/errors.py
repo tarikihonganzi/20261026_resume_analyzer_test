@@ -45,6 +45,16 @@ class InvalidResumeInputError(ResumeError):
     code = "invalid_input"
 
 
+class TooManyResumesError(ResumeError):
+    """1 回の評価に渡す書類が、上限（5 件）を超えたとき。"""
+
+    code = "too_many_resumes"
+
+    def __init__(self, limit: int) -> None:
+        super().__init__(f"職歴書は、1 回の評価に、最大 {limit} 件まで渡せます。減らしてください。")
+        self.limit = limit
+
+
 class UnsupportedFormatError(ResumeError):
     """未対応の形式のとき。"""
 

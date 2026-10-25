@@ -11,9 +11,9 @@ from app.llm.schemas import ConditionExtraction
 
 @dataclass(frozen=True)
 class ExtractRequest:
-    """ステップ 1（条件の抽出）への入力。"""
+    """ステップ 1（条件の抽出）への入力。`resumes` は、同一の応募者の書類（1 件以上）。"""
 
-    resume: ResumeInput
+    resumes: Sequence[ResumeInput]
     today: date
     conditions: Sequence[Condition]
 
@@ -22,7 +22,7 @@ class ExtractRequest:
 class EvaluateRequest:
     """ステップ 3（最終評価）への入力。判定とマッチ度合いは、コードが算出した値。"""
 
-    resume: ResumeInput
+    resumes: Sequence[ResumeInput]
     today: date
     conditions: Sequence[Condition]
     extractions: Sequence[ConditionExtraction]

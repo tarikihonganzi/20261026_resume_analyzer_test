@@ -1,0 +1,74 @@
+[user]
+<input_text>
+今日の日付: 2026-10-25
+職歴書: 3 件（すべて、同一の応募者の書類です）
+1. 職歴書の名前: 職歴書.pdf（形式: pdf）
+2. 職歴書の名前: 職務経歴書.docx（形式: docx）
+3. 職歴書の名前: 貼り付けテキスト（形式: text）
+
+条件の一覧（JSON）:
+[
+  {
+    "id": "qual-1kyu",
+    "label": "1級建築施工管理技士",
+    "kind": "boolean",
+    "min_value": null,
+    "unit": null
+  },
+  {
+    "id": "qual-denki",
+    "label": "第二種電気工事士",
+    "kind": "boolean",
+    "min_value": null,
+    "unit": null
+  },
+  {
+    "id": "exp-genba",
+    "label": "現場監督の経験",
+    "kind": "number",
+    "min_value": 5.0,
+    "unit": "年",
+    "description": "現場に配置され、原価・工程・品質・安全の管理を担当した期間。事務・設計の期間は含めない"
+  },
+  {
+    "id": "skill-revit",
+    "label": "Revit",
+    "kind": "number",
+    "min_value": 2.5,
+    "unit": "年"
+  }
+]
+</input_text>
+<input_file filename='職歴書.pdf' detail='high' file_data='data:application/pdf;base64,'…（384 文字）/>
+<input_text>
+<resume name="職務経歴書.docx" format="docx">
+職務経歴書（架空のサンプル）
+氏名: 架空 花子（サンプル）
+
+■ 保有資格
+・1級建築施工管理技士（2018年取得）
+・2級建築士（2016年取得）
+・普通自動車第一種運転免許（2012年取得）
+
+■ 職歴
+2015年4月〜2020年3月  株式会社サンプル建設  現場監督
+　中規模マンションの施工管理を担当した。
+2020年4月〜2023年6月  架空工務店株式会社  現場監督
+　戸建住宅と小規模店舗の施工管理を担当した。
+2023年7月〜2025年9月  架空工務店株式会社  BIM 担当
+　Revit で設計図のモデル化を担当した。
+
+■ スキル・ツール
+・AutoCAD（実務 8 年）
+・Revit（実務 3 年）
+
+■ 自己PR
+施工現場での工程・品質・安全の管理を行ってきた。BIM の導入にも取り組んだ。
+
+</resume>
+</input_text>
+<input_text>
+<resume name="貼り付けテキスト" format="text">
+補足のメモです。
+</resume>
+</input_text>

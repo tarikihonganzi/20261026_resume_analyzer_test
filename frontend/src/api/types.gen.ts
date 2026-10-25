@@ -175,8 +175,8 @@ export interface components {
         Body_evaluate_api_evaluations_post: {
             /** Conditions */
             conditions: string;
-            /** File */
-            file?: string | null;
+            /** Files */
+            files?: string[] | null;
             /** Text */
             text?: string | null;
         };

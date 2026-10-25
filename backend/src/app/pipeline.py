@@ -58,10 +58,10 @@ PipelineEvent = StageEvent | ResultEvent | ErrorEvent
 
 
 async def _extract(
-    client: LlmClient, resume: ResumeInput, conditions: Sequence[Condition], today: date
+    client: LlmClient, resumes: Sequence[ResumeInput], conditions: Sequence[Condition], today: date
 ) -> dict[str, ConditionExtraction]:
     """抽出し、条件と整合しなければ、1 回だけ再実行する。条件の id で引ける形で返す。"""
-    request = ExtractRequest(resume=resume, today=today, conditions=conditions)
+    request = ExtractRequest(resumes=resumes, today=today, conditions=conditions)
     for attempt in range(_EXTRACTION_RETRIES + 1):
         result: ExtractionResult = await client.extract(request)
         problems = find_extraction_problems(conditions, result.results)
@@ -80,22 +80,45 @@ def _verify(quote_text: str, resume: ResumeInput) -> QuoteVerification:
     return verdict
 
 
-def _verified_quotes(quotes: Sequence[Quote], resume: ResumeInput) -> list[VerifiedQuote]:
-    """出典名を、与えた名前に置き換え、原文と照合する（テキストがない PDF は未照合）。"""
-    return [
-        VerifiedQuote(
-            source_name=resume.source_name,
-            location=q.location,
-            text=q.text,
-            verified=_verify(q.text, resume),
+def _resolve_quote(quote: Quote, resumes: Sequence[ResumeInput]) -> tuple[str, QuoteVerification]:
+    """引用の出典名と照合結果を決める（仕様 5.4）。
+
+    出典名が与えた書類の名前と一致すれば、その書類で照合する（別の書類にだけ載っている引用は、
+    引用元の取り違えなので「確認できず」）。一致しなければ、書類が 1 件ならその書類として、複数なら
+    テキストを持つ書類から探す。どこにも見つからないとき、PDF が含まれるなら（PDF の中かもしれ
+    ないので）未照合、そうでなければ「確認できず」とし、出典名は LLM が返したままにする。
+    """
+    for resume in resumes:
+        if resume.source_name == quote.source_name:
+            return resume.source_name, _verify(quote.text, resume)
+    if len(resumes) == 1:
+        only = resumes[0]
+        return only.source_name, _verify(quote.text, only)
+    for resume in resumes:
+        if resume.text is not None and _verify(quote.text, resume) == "match":
+            return resume.source_name, "match"
+    has_pdf = any(resume.pdf is not None for resume in resumes)
+    return quote.source_name, "skipped" if has_pdf else "not_found"
+
+
+def _verified_quotes(
+    quotes: Sequence[Quote], resumes: Sequence[ResumeInput]
+) -> list[VerifiedQuote]:
+    """出典名を、与えた書類の名前にそろえ、引用元の書類の原文と照合する。"""
+    verified: list[VerifiedQuote] = []
+    for q in quotes:
+        source_name, verdict = _resolve_quote(q, resumes)
+        verified.append(
+            VerifiedQuote(
+                source_name=source_name, location=q.location, text=q.text, verified=verdict
+            )
         )
-        for q in quotes
-    ]
+    return verified
 
 
-def _point(point: EvaluatedPoint, resume: ResumeInput) -> EvaluationPoint:
+def _point(point: EvaluatedPoint, resumes: Sequence[ResumeInput]) -> EvaluationPoint:
     return EvaluationPoint(
-        text=point.text, reason=point.reason, quotes=_verified_quotes(point.quotes, resume)
+        text=point.text, reason=point.reason, quotes=_verified_quotes(point.quotes, resumes)
     )
 
 
@@ -103,7 +126,7 @@ def _judged_conditions(
     conditions: Sequence[Condition],
     judgements: Sequence[Judgement],
     extractions: dict[str, ConditionExtraction],
-    resume: ResumeInput,
+    resumes: Sequence[ResumeInput],
 ) -> list[JudgedCondition]:
     judged: list[JudgedCondition] = []
     for condition, judgement in zip(conditions, judgements, strict=True):
@@ -115,7 +138,7 @@ def _judged_conditions(
                 has_skill=extraction.has_skill,
                 years=extraction.years,
                 reason=extraction.reason,
-                quotes=_verified_quotes(extraction.quotes, resume),
+                quotes=_verified_quotes(extraction.quotes, resumes),
             )
         )
     return judged
@@ -123,7 +146,7 @@ def _judged_conditions(
 
 async def run(
     *,
-    resume: ResumeInput,
+    resumes: Sequence[ResumeInput],
     conditions: Sequence[Condition],
     client: LlmClient,
     today: date,
@@ -138,7 +161,7 @@ async def run(
 
     try:
         yield StageEvent("extracting")
-        extractions = await _extract(client, resume, conditions, today)
+        extractions = await _extract(client, resumes, conditions, today)
 
         judgements = judge(conditions, list(extractions.values()))
         rate = match_rate(judgements)
@@ -148,7 +171,7 @@ async def run(
         yield StageEvent("scoring")
         evaluation = await client.evaluate(
             EvaluateRequest(
-                resume=resume,
+                resumes=resumes,
                 today=today,
                 conditions=conditions,
                 extractions=[extractions[c.id] for c in conditions],
@@ -176,9 +199,9 @@ async def run(
                 )
                 for c in missing
             ],
-            conditions=_judged_conditions(conditions, judgements, extractions, resume),
-            summary=_point(evaluation.summary, resume),
-            strengths=[_point(p, resume) for p in evaluation.strengths],
-            weaknesses=[_point(p, resume) for p in evaluation.weaknesses],
+            conditions=_judged_conditions(conditions, judgements, extractions, resumes),
+            summary=_point(evaluation.summary, resumes),
+            strengths=[_point(p, resumes) for p in evaluation.strengths],
+            weaknesses=[_point(p, resumes) for p in evaluation.weaknesses],
         )
     )

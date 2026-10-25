@@ -42,7 +42,7 @@ CONDITIONS = [
 
 
 def extract_request(resume: ResumeInput = TEXT_RESUME) -> ExtractRequest:
-    return ExtractRequest(resume=resume, today=date(2026, 10, 25), conditions=CONDITIONS)
+    return ExtractRequest(resumes=[resume], today=date(2026, 10, 25), conditions=CONDITIONS)
 
 
 async def evaluate_request(
@@ -50,7 +50,7 @@ async def evaluate_request(
 ) -> EvaluateRequest:
     extraction = await client.extract(extract_request(resume))
     return EvaluateRequest(
-        resume=resume,
+        resumes=[resume],
         today=date(2026, 10, 25),
         conditions=CONDITIONS,
         extractions=extraction.results,
@@ -102,7 +102,9 @@ async def test_extract_is_deterministic_and_mixes_achieved_and_unmet() -> None:
 async def test_unmet_number_condition_with_a_zero_minimum_is_unknown_not_zero_years() -> None:
     # years=0 は、最低値 0 に対して「達成」になってしまう。記載がないときは null（不明）にする
     zero_minimum = [condition("z0", "number", min_value=0), condition("z1", "number", min_value=0)]
-    request = ExtractRequest(resume=TEXT_RESUME, today=date(2026, 10, 25), conditions=zero_minimum)
+    request = ExtractRequest(
+        resumes=[TEXT_RESUME], today=date(2026, 10, 25), conditions=zero_minimum
+    )
 
     result = await FakeClient().extract(request)
 

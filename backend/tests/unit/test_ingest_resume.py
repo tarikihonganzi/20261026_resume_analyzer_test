@@ -13,6 +13,7 @@ from app.domain.errors import (
     FileTooLargeError,
     InvalidResumeInputError,
     ResumeError,
+    TooManyResumesError,
     UnsupportedFormatError,
 )
 from app.ingest import resume
@@ -471,3 +472,83 @@ async def test_check_contains_nothing_but_the_summary() -> None:
     check = check_of(await load_file("経歴.docx", factory.make_docx()))
 
     assert set(check.model_dump()) == {"format", "source_name", "char_count"}
+
+
+# --- 複数の書類（仕様 5.3。13.1 #30） ---
+
+TEXT = factory.make_text()
+
+
+async def load_many(
+    files: list[tuple[str, bytes]], text: str | None = None, *, max_size_mb: int = 0
+) -> list[ResumeInput]:
+    return await resume.load_resumes(files=files, pasted_text=text, max_size_mb=max_size_mb)
+
+
+async def test_several_files_and_a_pasted_text_are_loaded_in_order() -> None:
+    result = await load_many(
+        [("職務経歴書.docx", factory.make_docx()), ("履歴書.pdf", factory.make_pdf_digital())],
+        TEXT,
+    )
+
+    assert [r.source_name for r in result] == ["職務経歴書.docx", "履歴書.pdf", "貼り付けテキスト"]
+    assert [r.format for r in result] == ["docx", "pdf", "text"]
+
+
+async def test_the_same_file_name_is_made_unique() -> None:
+    result = await load_many([("経歴.txt", TEXT.encode()), ("経歴.txt", TEXT.encode())])
+
+    assert [r.source_name for r in result] == ["経歴.txt", "経歴.txt (2)"]
+
+
+async def test_a_file_named_like_the_pasted_text_does_not_collide_with_it() -> None:
+    result = await load_many([("貼り付けテキスト", TEXT.encode())], TEXT)
+
+    names = [r.source_name for r in result]
+    assert len(set(names)) == 2
+
+
+async def test_up_to_five_documents_are_accepted() -> None:
+    files = [(f"経歴{i}.txt", TEXT.encode()) for i in range(4)]
+
+    result = await load_many(files, TEXT)
+
+    assert len(result) == 5
+
+
+async def test_more_than_five_documents_is_an_error() -> None:
+    files = [(f"経歴{i}.txt", TEXT.encode()) for i in range(5)]
+
+    with pytest.raises(TooManyResumesError) as excinfo:
+        await load_many(files, TEXT)
+
+    assert excinfo.value.code == "too_many_resumes"
+    assert "5" in str(excinfo.value)
+
+
+async def test_no_documents_is_an_error() -> None:
+    with pytest.raises(InvalidResumeInputError):
+        await load_many([], None)
+
+
+async def test_a_blank_pasted_text_is_ignored_when_there_are_files() -> None:
+    result = await load_many([("経歴.txt", TEXT.encode())], "")
+
+    assert [r.source_name for r in result] == ["経歴.txt"]
+
+
+async def test_a_blank_pasted_text_alone_is_an_empty_error() -> None:
+    with pytest.raises(EmptyResumeError):
+        await load_many([], "")
+
+
+async def test_one_unreadable_file_makes_the_whole_load_fail() -> None:
+    with pytest.raises(ConversionFailedError):
+        await load_many([("経歴.txt", TEXT.encode()), ("壊れた.docx", factory.make_broken_docx())])
+
+
+async def test_the_size_limit_applies_to_each_file() -> None:
+    big = ("大.txt", b"x" * (MB + 1))
+
+    with pytest.raises(FileTooLargeError):
+        await load_many([("経歴.txt", TEXT.encode()), big], max_size_mb=1)

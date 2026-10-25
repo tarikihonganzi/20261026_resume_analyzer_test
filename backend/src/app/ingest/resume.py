@@ -10,7 +10,8 @@ import functools
 import io
 import re
 import zipfile
-from dataclasses import dataclass
+from collections.abc import Sequence
+from dataclasses import dataclass, replace
 from pathlib import PurePath
 
 from markitdown import (
@@ -37,14 +38,17 @@ from app.domain.errors import (
     EmptyResumeError,
     FileTooLargeError,
     InvalidResumeInputError,
+    TooManyResumesError,
     UnsupportedFormatError,
 )
 from app.domain.quotes import normalize
-from app.domain.source_name import PASTED_TEXT_NAME, sanitize
+from app.domain.source_name import PASTED_TEXT_NAME, make_unique, sanitize
 
 # 変換結果が、空白と Markdown の記号を除いてこの文字数に満たなければ「極端に短い」
 # とする（仕様 13.1 #24）
 MIN_TEXT_CHARS = 20
+# 1 回の評価に渡せる書類の数（仕様 5.3、13.1 #30）
+MAX_RESUMES = 5
 
 # Office 形式。拡張子と内容（zip・旧 Office の署名）が一致するはずの形式
 _OFFICE_EXTENSIONS = frozenset({"docx", "xlsx", "xls", "pptx"})
@@ -280,3 +284,40 @@ async def load_resume(
     if filename is None or content is None:
         raise InvalidResumeInputError("ファイル名とファイルの内容の両方が必要です。")
     return await _load_file(filename, content, max_size_mb)
+
+
+def _uses_pasted_text(file_count: int, pasted_text: str | None) -> bool:
+    """貼り付けテキストを、書類として使うか。ファイルがあるときの空の貼り付けは、数えない。"""
+    return pasted_text is not None and (file_count == 0 or pasted_text.strip() != "")
+
+
+def check_document_count(file_count: int, pasted_text: str | None) -> None:
+    """書類の数（ファイル + 貼り付けテキスト）が、1 件以上、上限以下かを確かめる。
+
+    ファイルを読み込む前に呼べる（上限を超えるのに、全部を読み込まないため）。
+    """
+    count = file_count + (1 if _uses_pasted_text(file_count, pasted_text) else 0)
+    if count == 0:
+        raise InvalidResumeInputError("職歴書を 1 件以上指定してください。")
+    if count > MAX_RESUMES:
+        raise TooManyResumesError(MAX_RESUMES)
+
+
+async def load_resumes(
+    *,
+    files: Sequence[tuple[str, bytes]],
+    pasted_text: str | None,
+    max_size_mb: int,
+) -> list[ResumeInput]:
+    """1 人の応募者の書類（ファイル（複数）と貼り付けテキスト（1 件））を、検証して並べる。
+
+    順序は、ファイル（渡された順）→ 貼り付けテキスト。出典名は、重なったものに ` (2)` を付けて一意に
+    する（仕様 5.4）。1 件でも問題があれば、`ResumeError` を送出する。
+    """
+    check_document_count(len(files), pasted_text)
+
+    loaded = [await _load_file(name, content, max_size_mb) for name, content in files]
+    if pasted_text is not None and _uses_pasted_text(len(files), pasted_text):
+        loaded.append(await _load_pasted_text(pasted_text, max_size_mb))
+    names = make_unique([r.source_name for r in loaded])
+    return [replace(r, source_name=name) for r, name in zip(loaded, names, strict=True)]

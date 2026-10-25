@@ -36,17 +36,20 @@
             "title": "Conditions",
             "type": "string"
           },
-          "file": {
+          "files": {
             "anyOf": [
               {
-                "contentMediaType": "application/octet-stream",
-                "type": "string"
+                "items": {
+                  "contentMediaType": "application/octet-stream",
+                  "type": "string"
+                },
+                "type": "array"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "File"
+            "title": "Files"
           },
           "text": {
             "anyOf": [
