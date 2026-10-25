@@ -63,6 +63,13 @@ describe('設定ページ', () => {
     expect(screen.getByText(/保存済み: \*\*\*\*1234/)).toBeInTheDocument()
   })
 
+  it('ベース URL の説明は、社内エンドポイントの URL とだけ書く（OpenAI の既定の URL には触れない）', async () => {
+    await renderPage()
+
+    expect(screen.getByText('社内エンドポイントの URL。')).toBeInTheDocument()
+    expect(screen.queryByText(/OpenAI の既定/)).not.toBeInTheDocument()
+  })
+
   it('何も変えていないあいだは、「保存」を押せない', async () => {
     await renderPage()
 
