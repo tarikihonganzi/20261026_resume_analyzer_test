@@ -30,7 +30,7 @@ def create_app(
 ) -> FastAPI:
     """アプリを作る。`environ` は、設定の初期値（OPENAI_*）の元（既定は実際の環境変数）。"""
     settings = settings or AppSettings.from_env()
-    app = FastAPI(title="職歴書マッチング評価")
+    app = FastAPI(title="マッチング評価")
     app.state.services = Services(
         settings=settings,
         config_store=ConfigStore(settings.data_dir / "config.json", environ=environ),
@@ -44,7 +44,7 @@ def create_app(
     app.add_middleware(LocalOnlyMiddleware, allow_remote=settings.allow_remote)
     if settings.allow_remote:
         logger.warning(
-            "デモモード: Host の制限を外しています。同じネットワークの誰でも、このアプリを使えます"
+            "デモモード: Host の制限を外しています。同じネットワークの誰でもこのアプリを使えます"
         )
     for router in (
         health.router,
