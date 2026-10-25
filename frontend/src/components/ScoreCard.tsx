@@ -44,6 +44,7 @@ export function ScoreCard({ result }: { result: EvaluationResult }) {
             height: '100%',
           }}
         >
+          {/* 最終スコアは、画面でいちばん大きく見せる（マッチ度合いの 44px より大きい 80px） */}
           <div style={{ fontSize: 18 }}>最終スコア（AI 算出）</div>
           <div style={{ lineHeight: 1.1, marginTop: 4 }}>
             <span style={{ fontSize: 80, fontWeight: 700 }}>{result.score}</span>
@@ -51,6 +52,7 @@ export function ScoreCard({ result }: { result: EvaluationResult }) {
           </div>
           {result.clipped ? (
             <div style={{ fontSize: 15, marginTop: 8 }}>
+              {/* ±20 は、バックエンドの補正幅（domain/clipping.py の MAX_DEVIATION）と同じ値 */}
               補正あり: AI の元のスコアは {result.original_score} 点。マッチ度合いから ±20
               点の範囲に収めました。
             </div>

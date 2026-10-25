@@ -122,6 +122,7 @@ def _verified_quotes(
 
 
 def _point(point: EvaluatedPoint, resumes: Sequence[ResumeInput]) -> EvaluationPoint:
+    """最終評価の 1 項目（概要・良かった点・懸念点）の引用に、原文との照合結果を付ける。"""
     return EvaluationPoint(
         text=point.text, reason=point.reason, quotes=_verified_quotes(point.quotes, resumes)
     )
@@ -133,6 +134,7 @@ def _judged_conditions(
     extractions: dict[str, ConditionExtraction],
     resumes: Sequence[ResumeInput],
 ) -> list[JudgedCondition]:
+    """条件ごとの判定（コードが決めた達成・未達・不明）に、LLM が抽出した値と根拠を合わせる。"""
     judged: list[JudgedCondition] = []
     for condition, judgement in zip(conditions, judgements, strict=True):
         extraction = extractions[condition.id]
@@ -169,15 +171,19 @@ async def run(
     started = time.perf_counter()
 
     try:
+        # ステップ 1（LLM）: 条件ごとの有無・年数と根拠を抽出する
         yield StageEvent("extracting")
         extractions = await _extract(client, resumes, conditions, today)
         logger.info("stage=extracting done duration_ms=%d", _elapsed_ms(started))
 
+        # ステップ 2（コード）: 達成・未達・不明、マッチ度合い、未達の必須条件を決める
+        # （LLM は使わない）
         judgements = judge(conditions, list(extractions.values()))
         rate = match_rate(judgements)
         missing = missing_required(conditions, judgements)
         status_by_id = {j.condition_id: j.status for j in judgements}
 
+        # ステップ 3（LLM）: 判定結果とマッチ度合いを渡し、最終スコアと評価文を作らせる
         yield StageEvent("scoring")
         scoring_started = time.perf_counter()
         evaluation = await client.evaluate(
@@ -197,6 +203,8 @@ async def run(
         yield ErrorEvent(code=e.code, message=str(e))
         return
 
+    # ステップ 4（コード）: 最終スコアをマッチ度合い ± 20 点に収める。
+    # 引用の照合は、下の結果の組み立てで行う
     clipped = clip_score(evaluation.score, rate)
     logger.info(
         "evaluation done score=%d match_rate=%d clipped=%s missing_required=%d duration_ms=%d",

@@ -87,6 +87,8 @@ export function SelectionSummary({
       size="small"
       styles={{ body: { display: 'flex', flexDirection: 'column', gap: 12 } }}
     >
+      {/* 一覧が長くても、下の「次へ」ボタンまでが 1 画面に収まるよう、高さを抑えて中だけスクロールする
+          （330px は、見出し・件数・ボタン・余白の合計の目安） */}
       <div style={{ maxHeight: 'calc(100vh - 330px)', minHeight: 72, overflowY: 'auto' }}>
         {total === 0 ? (
           <Empty

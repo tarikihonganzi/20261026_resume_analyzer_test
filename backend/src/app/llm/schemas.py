@@ -101,6 +101,7 @@ class EvaluatedPoint(BaseModel):
 
 class FinalEvaluation(BaseModel):
     score: int = Field(
+        # マッチ度合い（0〜100）と同じ尺度。範囲外の値を受け取らない
         ge=0,
         le=100,
         description=(
@@ -116,6 +117,7 @@ class FinalEvaluation(BaseModel):
             "応募者の全体像、スコアの理由、必須条件が未達の場合はその影響を書く。"
         )
     )
+    # 件数の範囲は仕様 5.4 の「1〜5 件」。画面に出す量を抑える
     strengths: list[EvaluatedPoint] = Field(
         min_length=1,
         max_length=5,

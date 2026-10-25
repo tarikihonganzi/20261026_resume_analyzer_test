@@ -4,6 +4,7 @@ import { useFlow } from '../state/flow-context'
 import { ResultView } from './ResultView'
 import { useEvaluationRun } from './useEvaluationRun'
 
+// 画面の進捗の並び。サーバーが流す `stage` イベントの順と同じ
 const STAGES: Stage[] = ['extracting', 'scoring']
 
 // 設定ページで直せる失敗: 認証（API キー）と、リクエストの拒否（モデル名・ベース URL の誤り）

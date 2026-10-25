@@ -103,6 +103,7 @@ export function ConditionsStep() {
     <>
       {contextHolder}
       <Row gutter={[24, 24]}>
+        {/* 広い画面では、左（一覧）17 : 右（選択中の条件）7 の幅（全体は 24 分割）。狭い画面では縦に並ぶ */}
         <Col xs={24} lg={17}>
           <Card>
             <ConditionSetBar

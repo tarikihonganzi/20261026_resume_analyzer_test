@@ -15,6 +15,7 @@ const demo = process.argv.includes('--demo')
 const port = process.env.APP_PORT ?? '8000'
 const host = demo ? '0.0.0.0' : '127.0.0.1'
 
+// デモモードで案内する、この PC の IPv4 アドレス（ループバックは除く）
 function lanAddresses() {
   return Object.values(networkInterfaces())
     .flat()
@@ -50,6 +51,7 @@ const child = spawn(
   },
 )
 
+// uvicorn が終わったら、このスクリプトも同じ終了コードで終わる。Ctrl+C では uvicorn も止める
 child.on('exit', (code) => process.exit(code ?? 0))
 for (const signal of ['SIGINT', 'SIGTERM']) {
   process.on(signal, () => child.kill())

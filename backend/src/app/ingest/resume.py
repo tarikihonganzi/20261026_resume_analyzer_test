@@ -69,6 +69,12 @@ _UNICODE_BOMS = (
     codecs.BOM_UTF16_BE,
 )
 
+_BYTES_PER_MB = 1024 * 1024
+# PDF の見出し（`%PDF-`）を探す先頭のバイト数。PDF の仕様は、先頭 1024 バイト以内を許す
+_PDF_HEAD_BYTES = 1024
+# テキストかどうかの判定で、NUL バイトを探す先頭のバイト数（全体を調べると、大きなファイルで遅い）
+_BINARY_SCAN_BYTES = 8192
+
 # PDF の見出し。ファイルの先頭（BOM・空白は許す）にあれば、拡張子に関わらず PDF とする。
 # 拡張子が .pdf のときだけ、先頭 1024 バイト以内の行頭にあれば許す（PDF の仕様の許容範囲）
 _PDF_AT_START = re.compile(rb"(?:\xef\xbb\xbf)?\s*%PDF-[12]\.\d")
@@ -157,7 +163,7 @@ def _extension_of(name: str) -> str:
 
 
 def _check_size(size: int, max_size_mb: int) -> None:
-    if max_size_mb > 0 and size > max_size_mb * 1024 * 1024:
+    if max_size_mb > 0 and size > max_size_mb * _BYTES_PER_MB:
         raise FileTooLargeError(max_size_mb)
 
 
@@ -185,7 +191,7 @@ def _check_text_length(text: str) -> None:
 
 
 def _is_pdf(content: bytes, extension: str) -> bool:
-    head = content[:1024]
+    head = content[:_PDF_HEAD_BYTES]
     if _PDF_AT_START.match(head):
         return True
     return extension == "pdf" and _PDF_AT_LINE_START.search(head) is not None
@@ -197,7 +203,7 @@ def _looks_binary(content: bytes) -> bool:
         return True
     if content.startswith(_UNICODE_BOMS):
         return False
-    return b"\x00" in content[:8192]
+    return b"\x00" in content[:_BINARY_SCAN_BYTES]
 
 
 def _office_format_of_zip(content: bytes) -> str | None:

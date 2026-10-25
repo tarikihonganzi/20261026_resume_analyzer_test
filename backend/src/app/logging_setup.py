@@ -67,6 +67,8 @@ class DailyFileHandler(logging.FileHandler):
         super().emit(record)
 
     def _switch_to(self, day: date) -> None:
+        # 開いているファイルを閉じ、書き込み先だけを次の日のファイルに変える（次の書き込みで開く）。
+        # 別のスレッドが書いている最中に切り替えないよう、ロックを取る
         self.acquire()
         try:
             if self.stream is not None:
@@ -79,6 +81,7 @@ class DailyFileHandler(logging.FileHandler):
         self._purge_old_files()
 
     def _purge_old_files(self) -> None:
+        # 当日を含めて、保持日数分を残す（30 日なら、当日と、29 日前まで）
         oldest_kept = self._day - timedelta(days=self._retention_days - 1)
         for path in self._log_dir.glob(f"*{_SUFFIX}"):
             try:

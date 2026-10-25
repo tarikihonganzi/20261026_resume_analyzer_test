@@ -61,6 +61,7 @@ class FakeClient:
         text = resume.text
         if text is None:
             return _PDF_QUOTE
+        # 短すぎる引用は、原文のどこにでも一致してしまうので、8 文字以上の最初の行を使う
         lines = [line.strip() for line in text.splitlines() if len(line.strip()) >= 8]
         return lines[0] if lines else text.strip()[:30]
 

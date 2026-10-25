@@ -15,6 +15,7 @@ export interface ConditionItem {
   description: string | null
 }
 
+/** プリセットと自由記述を、一覧に出す 1 つの形にそろえる（プリセット → 自由記述の順）。 */
 export function toItems(
   catalog: readonly CatalogItem[],
   customs: readonly Condition[],
@@ -61,6 +62,7 @@ function normalizeForSearch(text: string): string {
   return text.normalize('NFKC').toLowerCase().replace(/\s+/g, '')
 }
 
+/** 絞り込み（カテゴリ・選択中のみ・名前の検索）に合う条件だけを、元の順のまま返す。 */
 export function filterItems(
   items: readonly ConditionItem[],
   filters: Filters,
@@ -79,6 +81,7 @@ export interface ConditionGroup {
   items: ConditionItem[]
 }
 
+/** カテゴリごとにまとめる。カテゴリの並びは、最初に現れた順。 */
 export function groupByCategory(items: readonly ConditionItem[]): ConditionGroup[] {
   const groups: ConditionGroup[] = []
   for (const item of items) {
@@ -100,6 +103,7 @@ export interface SelectionSummaryData {
   optional: SummaryEntry[]
 }
 
+/** 選択中の条件の表示用の文。単位がない number の条件は「年」とみなす。 */
 function describe(item: ConditionItem, selection: Selection): string {
   if (item.kind !== 'number' || selection.minValue === null) return item.label
   return `${item.label} ${selection.minValue.toFixed(1)}${item.unit ?? '年'}以上`

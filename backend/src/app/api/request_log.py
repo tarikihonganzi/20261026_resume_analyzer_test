@@ -19,6 +19,7 @@ logger = logging.getLogger("app.request")
 
 # フロントの配信（静的ファイル）は、記録しない。API だけを記録する
 _LOGGED_PREFIX = "/api/"
+# 記録するパスの最大長。異常に長いパスで、ログが膨らまないようにする
 _MAX_PATH_LENGTH = 200
 
 
@@ -32,6 +33,7 @@ class RequestLogMiddleware:
             return
 
         # 手元で作る。クライアントが送ってきた値は、ログの偽造に使われうるので、信用しない
+        # 8 桁（16 進数）。ログを目で追うのに十分な短さで、個人利用のアプリでは重なる心配がない
         request_id = uuid.uuid4().hex[:8]
         # リクエストごとの task の中で動くので、終わったあとに戻さなくてよい。むしろ、戻さない
         # ことで、外側（ServerErrorMiddleware）が、想定外の例外を記録するときも、同じ ID が付く
@@ -58,5 +60,5 @@ class RequestLogMiddleware:
                     scope["method"],
                     path[:_MAX_PATH_LENGTH],
                     status,
-                    int((time.perf_counter() - started) * 1000),
+                    int((time.perf_counter() - started) * 1000),  # ミリ秒
                 )
