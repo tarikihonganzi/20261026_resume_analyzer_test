@@ -36,7 +36,12 @@ export default function App() {
     // 評価フローの状態は、設定ページに移っても保つ（FlowProvider は、画面の切り替えの外に置く）
     <FlowProvider>
       <AppShell view={view} onNavigate={navigate}>
-        {view === 'settings' ? <SettingsPage /> : <FlowPage />}
+        {/* 評価フローは、設定ページを見ているあいだも、取り壊さず、隠すだけにする。取り壊すと、
+            評価中の要求が取り消され、戻ったときに、最初からやり直して、API の費用が二重にかかる */}
+        <div hidden={view === 'settings'}>
+          <FlowPage />
+        </div>
+        {view === 'settings' ? <SettingsPage /> : null}
       </AppShell>
     </FlowProvider>
   )

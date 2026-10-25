@@ -5,6 +5,7 @@ FastAPI の SSE は、イベントの中身（`data`）の型を OpenAPI に出�
 - `EvaluationResult` と、SSE の各イベント（`StageEventData` など）を、スキーマに加える
 - すべてのエンドポイントの 422 を、実際の応答（`ErrorResponse`）にする
 - `/api/evaluations` の 413 を、JSON にする
+- 本文を受け取る操作に、400（本文を読み取れない）を、条件セットの更新・削除に、404 を書く
 """
 
 from typing import Any
@@ -41,8 +42,22 @@ def build_openapi(app: FastAPI) -> dict[str, Any]:
             responses = operation.get("responses", {})
             if "422" in responses:
                 responses["422"] = {"description": "入力が正しくない", "content": error_body}
+            # JSON・multipart として読めない本文は、フレームワークが 400 にする（errors.py が、
+            # 同じ形に整える）。本文を受け取る操作に、書く
+            if "requestBody" in operation:
+                responses.setdefault(
+                    "400",
+                    {"description": "リクエストの本文を読み取れない", "content": error_body},
+                )
     for unused in ("HTTPValidationError", "ValidationError"):
         schemas.pop(unused, None)
+
+    # 存在しない条件セットの更新・削除は、404
+    for method in ("put", "delete"):
+        spec["paths"]["/api/condition-sets/{set_id}"][method]["responses"]["404"] = {
+            "description": "条件セットがない",
+            "content": error_body,
+        }
 
     post = spec["paths"]["/api/evaluations"]["post"]
     if "413" in post["responses"]:

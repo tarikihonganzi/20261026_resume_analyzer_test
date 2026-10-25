@@ -34,6 +34,7 @@ dev = [
     "python-pptx>=1.0.2",
     "reportlab>=5.1.0",
     "ruff>=0.17.2",
+    "schemathesis>=4.32.4",
 ]
 
 [tool.ruff]

@@ -378,6 +378,8 @@ GitHub などの CI は使わず、`npm run check`（lint・型検査・単体�
 
 **カバレッジ（T-M9-10）:** `npm run coverage`（バックエンド: pytest-cov の行＋分岐、しきい値 98%。フロント: Vitest の v8、文 98%・分岐 94% など）。測定結果は、バックエンド 99.7%（改善前 98%）、フロントは文 99.0%・分岐 95.4%（改善前 94.5%・91.2%）。除外は、生成した型（`types.gen.ts`）、起動の配線（`main.tsx`）、`python -m` の入口だけ。純粋なロジックには、性質テスト（hypothesis。マッチ度合いの四捨五入・補正・引用の正規化と照合・出典名の一意化）を置く。性質テストは、引用の正規化が冪等でない不具合（13.1 #35）を見つけた。
 
+**横断テスト（T-M9-13）:** (1) `e2e/tests/explore.spec.ts`: 実ブラウザで、画面をまたぐ操作（評価中の設定ページ・再読み込み・戻る／進む）、素早い連打、境界の値、HTML の入力、狭い画面（375・768px）、通信の失敗（500・ストリームの途中切断・接続不能）を試し、画面のエラーと 5xx も数える。サーバーのログ（`log/`）を読んで、画面から見えない動き（LLM の呼び出しの二重）も確かめる。(2) `backend/tests/integration/test_api_fuzz.py`: schemathesis で、OpenAPI から入力を自動生成し、全エンドポイントで、5xx・応答の形・ステータスの書き漏れ・媒体の種類を確かめる。(3) `test_upload_fuzz.py`: 壊した・切った・混ぜたファイル（docx・xlsx・pptx・PDF・文字コード）を検証と評価に当てる。(4) `test_concurrency.py`: 同時の評価で、リクエスト ID・書類・結果が混ざらない。深く調べるときは、`FUZZ_EXAMPLES=3000` のように指定する（既定は 60。`npm run check` を遅くしないため）。
+
 **E2E の構成（T-M8-01）:** `e2e/` に Playwright（`@playwright/test` を Playwright のブラウザのバージョンに固定）。`playwright.config.ts` の `webServer` が、`APP_LLM_MODE=fake`・`APP_FAKE_DELAY_SEC=1.0` のバックエンド（127.0.0.1:8100。`start-backend.mjs` が、起動のたびに `e2e/.data` を空にする）と、Vite（127.0.0.1:5273。`APP_API_PORT`・`APP_WEB_PORT` で転送先とポートを切り替える）を起動する。開発用の 8000・5173 とぶつからない。画面は Vite 経由で開くので、`/api` の転送と `Origin` の確認も通る。架空の職歴書は、`global-setup.ts` がバックエンドの `resume_factory.py` で生成する（Git に入れない）。サーバーのデータを共有するため、`workers: 1`。
 
 ---

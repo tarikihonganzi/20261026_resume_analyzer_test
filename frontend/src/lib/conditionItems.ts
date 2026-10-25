@@ -120,3 +120,24 @@ export function summarize(
   }
   return summary
 }
+
+/**
+ * 保存した条件セットの条件を、いまの画面で扱えるものと、扱えないものに分ける。
+ *
+ * プリセットは、カタログ（いまの一覧）にあるものだけ読み込める。一覧から外れたプリセットを選択に
+ * 入れると、画面には出ないのに「選択済み」と数えられ、見えない条件のまま「次へ」に進めてしまう。
+ * 自由記述は、セットが持っているものなので、そのまま読み込む。
+ */
+export function partitionLoadable(
+  conditions: readonly Condition[],
+  catalog: readonly CatalogItem[],
+): { loadable: Condition[]; skipped: Condition[] } {
+  const known = new Set(catalog.map((item) => item.id))
+  const loadable: Condition[] = []
+  const skipped: Condition[] = []
+  for (const condition of conditions) {
+    if (condition.source === 'custom' || known.has(condition.id)) loadable.push(condition)
+    else skipped.push(condition)
+  }
+  return { loadable, skipped }
+}

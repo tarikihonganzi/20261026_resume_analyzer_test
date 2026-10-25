@@ -93,9 +93,7 @@ describe('① 条件', () => {
     renderPage()
     await screen.findByText('1級建築施工管理技士')
 
-    await userEvent.click(
-      screen.getByText('スキル・ツール', { selector: '.ant-segmented-item-label' }),
-    )
+    await userEvent.click(screen.getByRole('button', { name: 'スキル・ツール' }))
 
     expect(screen.getByText('Revit の実務経験')).toBeInTheDocument()
     expect(screen.queryByText('2級建築士')).not.toBeInTheDocument()
@@ -266,5 +264,128 @@ describe('① 要約パネルからの操作', () => {
     await userEvent.click(screen.getByRole('button', { name: '再読み込み' }))
 
     expect(await screen.findByRole('group', { name: '2級建築士' })).toBeInTheDocument()
+  })
+})
+
+describe('① 保存した条件セットの読み込み（いまの一覧にない条件）', () => {
+  const gone = {
+    id: 'removed-preset',
+    label: 'いまはない条件',
+    kind: 'boolean',
+    required: true,
+    min_value: null,
+    unit: null,
+    source: 'preset',
+    category: '資格',
+    description: null,
+  }
+  const present = { ...gone, id: 'q2', label: '2級建築士' }
+
+  function renderWithSet(conditions: unknown[]) {
+    server.use(
+      http.get('*/api/catalog', () => HttpResponse.json({ items: catalog })),
+      http.get('*/api/condition-sets', () =>
+        HttpResponse.json({
+          sets: [
+            {
+              id: 'set-1',
+              name: '古いセット',
+              conditions,
+              created_at: '2026-10-25T09:00:00+09:00',
+              updated_at: '2026-10-25T09:00:00+09:00',
+            },
+          ],
+        }),
+      ),
+    )
+    renderWithProviders(
+      <FlowProvider>
+        <FlowPage />
+      </FlowProvider>,
+    )
+  }
+
+  async function loadSet() {
+    await userEvent.click(await screen.findByRole('combobox', { name: '保存済みの条件セット' }))
+    await userEvent.click(
+      await screen.findByText('古いセット', { selector: '.ant-select-item-option-content' }),
+    )
+  }
+
+  it('一覧にない条件は、選択に入れず、読み込めなかった旨を知らせる。残りは、読み込む', async () => {
+    renderWithSet([gone, present])
+
+    await loadSet()
+
+    expect(
+      await screen.findByText('1 件の条件は、いまの一覧にないため、読み込めませんでした'),
+    ).toBeInTheDocument()
+    expect(screen.getByText('必須（1）')).toBeInTheDocument()
+    expect(next()).toBeEnabled()
+  })
+
+  it('すべて一覧にない条件だったら、何も選ばれず、「次へ」は押せない（見えない条件で進めない）', async () => {
+    renderWithSet([gone])
+
+    await loadSet()
+
+    expect(
+      await screen.findByText(/いまの一覧にないため、読み込めませんでした/),
+    ).toBeInTheDocument()
+    expect(screen.getByText('条件を 1 件以上選んでください')).toBeInTheDocument()
+    expect(next()).toBeDisabled()
+  })
+
+  it('一覧にある条件だけなら、何も知らせない', async () => {
+    renderWithSet([present])
+
+    await loadSet()
+
+    await screen.findByText('必須（1）')
+    expect(screen.queryByText(/読み込めませんでした/)).not.toBeInTheDocument()
+  })
+})
+
+describe('① カテゴリの絞り込み（幅が狭くても、はみ出さない）', () => {
+  it('カテゴリは、折り返すボタンで並ぶ（横にはみ出す、幅が固定のタブにしない）', async () => {
+    renderPage()
+    await screen.findByText('1級建築施工管理技士')
+
+    const group = screen.getByRole('group', { name: 'カテゴリ' })
+
+    expect(
+      within(group)
+        .getAllByRole('button')
+        .map((b) => b.textContent),
+    ).toEqual(['すべて', '資格', 'スキル・ツール', '自由記述'])
+    expect(group.querySelector('.ant-segmented')).toBeNull()
+    // 折り返す指定（実際にはみ出さないことは、E2E で、狭い画面で確かめる）
+    expect(group).toHaveClass('ant-flex-wrap-wrap')
+  })
+
+  it('選んでいるカテゴリが分かり（aria-pressed）、もう一度「すべて」で戻せる', async () => {
+    renderPage()
+    await screen.findByText('1級建築施工管理技士')
+    const group = screen.getByRole('group', { name: 'カテゴリ' })
+    expect(within(group).getByRole('button', { name: 'すべて' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+
+    await userEvent.click(within(group).getByRole('button', { name: '資格' }))
+
+    expect(within(group).getByRole('button', { name: '資格' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    expect(within(group).getByRole('button', { name: 'すべて' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    )
+    expect(screen.queryByText('Revit の実務経験')).not.toBeInTheDocument()
+
+    await userEvent.click(within(group).getByRole('button', { name: 'すべて' }))
+
+    expect(screen.getByText('Revit の実務経験')).toBeInTheDocument()
   })
 })
