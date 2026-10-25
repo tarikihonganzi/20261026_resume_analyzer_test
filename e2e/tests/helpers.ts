@@ -1,5 +1,7 @@
 import { expect, type APIRequestContext, type Locator, type Page } from '@playwright/test'
-import { fixture } from '../paths'
+import { existsSync, readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+import { LOG_DIR, fixture } from '../paths'
 
 /** 条件の行（3 状態トグルと、number の最低値を含む）。 */
 export function conditionRow(page: Page, name: string): Locator {
@@ -45,4 +47,18 @@ export async function goToResumeAndUpload(page: Page, filename: string): Promise
 
 export async function startEvaluation(page: Page): Promise<void> {
   await page.getByRole('button', { name: '評価する' }).click()
+}
+
+/**
+ * サーバーのログ（その日のファイル）に、パターンに合う行が、いくつあるか。
+ * 画面からは見えない、サーバーの動き（LLM の呼び出しが、二重になっていないか、など）を確かめる。
+ */
+export function countServerLogLines(pattern: string): number {
+  const today = new Date()
+  const name = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}.log`
+  const path = resolve(LOG_DIR, name)
+  if (!existsSync(path)) return 0
+  return readFileSync(path, 'utf-8')
+    .split(/\r?\n/)
+    .filter((line) => line.includes(pattern)).length
 }

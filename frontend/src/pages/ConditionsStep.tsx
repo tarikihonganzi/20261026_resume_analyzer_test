@@ -1,5 +1,5 @@
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons'
-import { Alert, Button, Card, Col, Flex, Popconfirm, Row, Spin } from 'antd'
+import { Alert, Button, Card, Col, Flex, Popconfirm, Row, Spin, message } from 'antd'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useCatalog } from '../api/hooks'
 import type { Condition } from '../api/types'
@@ -13,6 +13,7 @@ import {
   CUSTOM_CATEGORY,
   categoriesOf,
   filterItems,
+  partitionLoadable,
   summarize,
   toItems,
   type Filters,
@@ -30,6 +31,7 @@ export function ConditionsStep() {
   const catalog = useCatalog()
   const [filters, setFilters] = useState<Filters>(NO_FILTER)
   const [dialog, setDialog] = useState<CustomDialog>({ mode: 'closed' })
+  const [messageApi, contextHolder] = message.useMessage()
   // 絞り込みで隠れていた行へ移動するとき、行が現れるのを待つための id
   const pendingJump = useRef<string | null>(null)
 
@@ -99,6 +101,7 @@ export function ConditionsStep() {
 
   return (
     <>
+      {contextHolder}
       <Row gutter={[24, 24]}>
         <Col xs={24} lg={17}>
           <Card>
@@ -106,7 +109,14 @@ export function ConditionsStep() {
               conditions={buildConditions(catalog.data, state)}
               canSave={isConditionsComplete(state)}
               onLoad={(conditions) => {
-                dispatch({ type: 'loadConditions', conditions })
+                // いまの一覧にない条件は、読み込まない（見えない条件が、選択に残らないように）
+                const { loadable, skipped } = partitionLoadable(conditions, catalog.data)
+                dispatch({ type: 'loadConditions', conditions: loadable })
+                if (skipped.length > 0) {
+                  void messageApi.warning(
+                    `${String(skipped.length)} 件の条件は、いまの一覧にないため、読み込めませんでした`,
+                  )
+                }
               }}
             />
             <ConditionFilters

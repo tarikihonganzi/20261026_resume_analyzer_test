@@ -558,6 +558,15 @@ export interface operations {
                     "application/json": components["schemas"]["ConditionSet"];
                 };
             };
+            /** @description リクエストの本文を読み取れない */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description 入力が正しくない */
             422: {
                 headers: {
@@ -593,6 +602,24 @@ export interface operations {
                     "application/json": components["schemas"]["ConditionSet"];
                 };
             };
+            /** @description リクエストの本文を読み取れない */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 条件セットがない */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description 入力が正しくない */
             422: {
                 headers: {
@@ -621,6 +648,15 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description 条件セットがない */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
             };
             /** @description 入力が正しくない */
             422: {
@@ -653,6 +689,15 @@ export interface operations {
                 };
                 content: {
                     "text/event-stream": unknown;
+                };
+            };
+            /** @description リクエストの本文を読み取れない */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description ファイルサイズが上限を超えた */
@@ -719,6 +764,15 @@ export interface operations {
                     "application/json": components["schemas"]["ResumeCheck"];
                 };
             };
+            /** @description リクエストの本文を読み取れない */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description 入力が正しくない */
             422: {
                 headers: {
@@ -772,6 +826,15 @@ export interface operations {
                     "application/json": components["schemas"]["SettingsView"];
                 };
             };
+            /** @description リクエストの本文を読み取れない */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description 入力が正しくない */
             422: {
                 headers: {
@@ -803,6 +866,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ConnectionTestResponse"];
+                };
+            };
+            /** @description リクエストの本文を読み取れない */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description 入力が正しくない */

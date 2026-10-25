@@ -6,6 +6,7 @@ import {
   categoriesOf,
   filterItems,
   groupByCategory,
+  partitionLoadable,
   summarize,
   toItems,
   type ConditionItem,
@@ -173,5 +174,48 @@ describe('補足説明（toItems）', () => {
       null,
       '診断報告書の作成までを数える',
     ])
+  })
+})
+
+describe('partitionLoadable（保存した条件セットの読み込み）', () => {
+  const catalog = [
+    { id: 'q1', label: '1級建築施工管理技士', kind: 'boolean', unit: null, category: '資格' },
+    { id: 's1', label: 'Revit', kind: 'number', unit: '年', category: 'スキル' },
+  ] as const
+
+  const condition = (id: string, source: 'preset' | 'custom'): Condition => ({
+    id,
+    label: id,
+    kind: 'boolean',
+    required: false,
+    min_value: null,
+    unit: null,
+    source,
+    category: null,
+    description: null,
+  })
+
+  it('いまの一覧にあるプリセットと、自由記述は、読み込める', () => {
+    const conditions = [condition('q1', 'preset'), condition('c1', 'custom')]
+
+    const result = partitionLoadable(conditions, catalog)
+
+    expect(result.loadable).toEqual(conditions)
+    expect(result.skipped).toEqual([])
+  })
+
+  it('いまの一覧にないプリセットは、読み込めない条件として、分ける', () => {
+    const gone = condition('removed-preset', 'preset')
+
+    const result = partitionLoadable([condition('q1', 'preset'), gone], catalog)
+
+    expect(result.loadable.map((c) => c.id)).toEqual(['q1'])
+    expect(result.skipped).toEqual([gone])
+  })
+
+  it('自由記述は、一覧になくても、読み込める（自分で作った条件なので）', () => {
+    const result = partitionLoadable([condition('custom-not-in-catalog', 'custom')], catalog)
+
+    expect(result.skipped).toEqual([])
   })
 })

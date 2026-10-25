@@ -1,5 +1,5 @@
 import { SearchOutlined } from '@ant-design/icons'
-import { Checkbox, Flex, Input, Segmented } from 'antd'
+import { Button, Checkbox, Flex, Input } from 'antd'
 import type { Filters } from '../lib/conditionItems'
 
 interface ConditionFiltersProps {
@@ -25,14 +25,24 @@ export function ConditionFilters({ filters, categories, onChange }: ConditionFil
         }}
       />
       <Flex align="center" justify="space-between" gap={12} wrap>
-        <Segmented<string>
-          aria-label="カテゴリ"
-          options={[{ label: 'すべて', value: ALL }, ...categories]}
-          value={filters.category ?? ALL}
-          onChange={(value) => {
-            onChange({ ...filters, category: value === ALL ? null : value })
-          }}
-        />
+        {/* 幅が固定のタブ（Segmented）だと、狭い画面で、ページが横にはみ出す。折り返すボタンにする */}
+        <Flex role="group" aria-label="カテゴリ" gap={8} wrap>
+          {[ALL, ...categories].map((category) => {
+            const selected = (filters.category ?? ALL) === category
+            return (
+              <Button
+                key={category}
+                type={selected ? 'primary' : 'default'}
+                aria-pressed={selected}
+                onClick={() => {
+                  onChange({ ...filters, category: category === ALL ? null : category })
+                }}
+              >
+                {category === ALL ? 'すべて' : category}
+              </Button>
+            )
+          })}
+        </Flex>
         <Checkbox
           checked={filters.selectedOnly}
           onChange={(event) => {

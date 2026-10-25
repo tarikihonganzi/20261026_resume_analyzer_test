@@ -130,3 +130,35 @@ def test_the_default_validation_error_types_are_not_published(spec: dict[str, An
 
     assert "HTTPValidationError" not in schemas
     assert "ValidationError" not in schemas
+
+
+ERROR_BODY = {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}
+
+
+def operations(spec: dict[str, Any]) -> list[tuple[str, str, dict[str, Any]]]:
+    return [
+        (path, method, operation)
+        for path, item in spec["paths"].items()
+        for method, operation in item.items()
+        if method in ("get", "post", "put", "delete")
+    ]
+
+
+def test_a_malformed_body_is_documented_as_400_for_every_endpoint_with_a_body(
+    spec: dict[str, Any],
+) -> None:
+    # JSON・multipart として読めない本文は、400 を、同じ形（ErrorResponse）で返す。ファズで確認
+    with_body = [(p, m, o) for p, m, o in operations(spec) if "requestBody" in o]
+
+    assert len(with_body) >= 6
+    for path, method, operation in with_body:
+        response = operation["responses"].get("400")
+        assert response is not None, f"{method.upper()} {path} に 400 がない"
+        assert response["content"] == ERROR_BODY
+
+
+def test_an_unknown_condition_set_is_documented_as_404(spec: dict[str, Any]) -> None:
+    item = spec["paths"]["/api/condition-sets/{set_id}"]
+
+    for method in ("put", "delete"):
+        assert item[method]["responses"]["404"]["content"] == ERROR_BODY
