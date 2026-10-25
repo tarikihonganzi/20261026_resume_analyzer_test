@@ -4,11 +4,11 @@ export type MarkKind = 'clear' | 'unmet' | 'unknown'
 // 色は控えめにし、色だけに頼らず、記号と名前（読み上げ用）でも判別できるようにする
 const MARKS: Record<MarkKind, { glyph: string; label: string; color: string }> = {
   clear: { glyph: '○', label: 'クリア', color: '#237804' },
-  unmet: { glyph: '×', label: '未達', color: '#cf1322' },
+  unmet: { glyph: '×', label: 'NG', color: '#cf1322' },
   unknown: { glyph: '△', label: '不明', color: '#595959' },
 }
 
-/** 判定の記号（○ クリア、× 未達、△ 不明）。 */
+/** 判定の記号（○ クリア、× NG、△ 不明）。「未達」という言葉は、画面に出さない。 */
 export function ResultMark({ kind }: { kind: MarkKind }) {
   const mark = MARKS[kind]
   return (

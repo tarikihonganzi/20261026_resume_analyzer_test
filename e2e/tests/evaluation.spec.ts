@@ -11,7 +11,7 @@ test.beforeEach(async ({ request }) => {
 })
 
 // シナリオ 2: 職歴書をアップロードして評価し、結果が表示される
-test('職歴書を評価すると、スコア・必須未達・判定表・根拠・Markdown が表示される', async ({
+test('職歴書を評価すると、スコア・必須条件の NG・判定・根拠・Markdown が表示される', async ({
   page,
 }) => {
   const failedRequests: string[] = []
@@ -35,7 +35,7 @@ test('職歴書を評価すると、スコア・必須未達・判定表・根�
   await expect(page.getByText('最終スコア（AI 算出）')).toBeVisible({ timeout: 20_000 })
   await expect(page.getByText('マッチ度合い（スキルの充足度）')).toBeVisible()
 
-  // 必須条件の未達が、赤い文字で示される（偽の LLM は、年数の条件を未達にする）
+  // 必須条件の NG が、赤い文字で示される（偽の LLM は、年数の条件を NG にする）
   await expect(page.getByText(/必須条件 1 件が NG: 現場監督（施工管理）の経験年数/)).toBeVisible()
 
   // 条件別の判定: 必須と任意に分かれ、それぞれ「クリア」「NG」の列に並ぶ
