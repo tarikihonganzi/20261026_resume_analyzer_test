@@ -40,7 +40,7 @@ npm run start
 画面右上の「設定」で、API キー・ベース URL・モデル名を登録します（保存先は `data/config.json`。所有者だけが読み書きできる設定で、Git には入りません）。「接続テスト」で、保存する前に確かめられます。
 
 - API キーは、画面にはマスク（末尾 4 文字）でしか表示されません。変更するときだけ入力します。
-- 環境変数 `OPENAI_API_KEY`・`OPENAI_BASE_URL`・`OPENAI_MODEL` は、設定ファイルにまだ値がないときの初期値です。設定ページで保存した値が優先されます。
+- 環境変数 `OPENAI_API_KEY`・`OPENAI_BASE_URL`・`OPENAI_MODEL` は、設定ファイルにまだ値がないときの初期値です。設定ページで保存した値が優先されます。どれもないときは、社内の API（ベース URL `https://kjm-kong.kajima.co.jp/openai/v1`、モデル `response-standard`）を使います。
 - 変更は、アプリを再起動せずに、次の評価から反映されます。
 
 ## 使い方

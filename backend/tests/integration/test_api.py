@@ -163,14 +163,14 @@ def test_corrupted_condition_set_file_is_a_500_without_its_content(
 # --- 設定（受け入れ基準 10） ---
 
 
-def test_settings_default_to_unset(make_app: MakeApp) -> None:
+def test_settings_default_to_the_company_endpoint(make_app: MakeApp) -> None:
     response = make_app().get("/api/settings")
 
     assert response.status_code == 200
     assert response.json() == {
         "openai_api_key_masked": "",
-        "openai_base_url": "",
-        "model": "gpt-5.5",
+        "openai_base_url": "https://kjm-kong.kajima.co.jp/openai/v1",
+        "model": "response-standard",
         "max_file_size_mb": 0,
     }
 

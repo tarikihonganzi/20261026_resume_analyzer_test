@@ -395,7 +395,7 @@ GitHub などの CI は使わず、`npm run check`（lint・型検査・単体�
 - `uv` のインストール、Python 3.14 の用意。`git init`、`.gitignore`。
 - `backend/` と `frontend/` の雛形、ルートの `package.json`（npm scripts）、`.gitattributes`、ruff・pyright・ESLint・Prettier・pytest・Vitest の設定。
 - **スパイクのスクリプト**（`backend/tests/live/spike_connectivity.py`）で次を確認する。
-  1. 設定した `base_url`・モデル（`gpt-5.5`）で `responses.parse` が通る。`temperature` を指定しなくて問題ない。
+  1. 設定した `base_url`・モデル（既定は社内の `https://kjm-kong.kajima.co.jp/openai/v1`・`response-standard`）で `responses.parse` が通る。`temperature` を指定しなくて問題ない。
   2. `Quote`／`ConditionExtraction`／`ExtractionResult` のスキーマ（`float | None`、入れ子、`Field` の制約）が strict で受け付けられる。
   3. `input_file`（`data:` URL、`filename`、`detail: high`）で、**デジタル PDF とスキャン PDF** を読める。
   4. `store=false` が通る。

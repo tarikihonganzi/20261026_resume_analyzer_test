@@ -21,7 +21,7 @@ from app.domain.errors import (
     LlmResponseError,
     LlmUnavailableError,
 )
-from app.domain.models import Config
+from app.domain.models import DEFAULT_BASE_URL, Config
 from app.llm.prompts import (
     EVALUATE_SYSTEM_PROMPT,
     EXTRACT_SYSTEM_PROMPT,
@@ -36,9 +36,6 @@ logger = logging.getLogger("app.llm")
 
 # 推論モデルは、出力トークンに推論の分も含まれる。途中で切れないよう、十分に大きくする
 MAX_OUTPUT_TOKENS = 32_000
-# ベース URL が空のとき。None を渡すと、SDK が環境変数 OPENAI_BASE_URL を読んでしまい、設定
-# （保存した空文字は環境変数より優先する。仕様 4.1）と違う宛先に、職歴書と API キーを送ってしまう
-DEFAULT_BASE_URL = "https://api.openai.com/v1"
 
 
 def _json_schema_format(model: type[BaseModel]) -> ResponseFormatTextJSONSchemaConfigParam:
@@ -80,6 +77,9 @@ class OpenAIClient:
         if self._sdk is None:
             self._sdk = AsyncOpenAI(
                 api_key=self._config.openai_api_key,
+                # 空のときも、必ず既定の宛先を明示する。None を渡すと SDK が環境変数
+                # OPENAI_BASE_URL を読み、保存した空文字を優先する設定（仕様 4.1）と違う宛先に
+                # 書類と API キーを送ってしまう
                 base_url=self._config.openai_base_url or DEFAULT_BASE_URL,
                 timeout=self._config.request_timeout_sec,
                 max_retries=self._max_retries,
