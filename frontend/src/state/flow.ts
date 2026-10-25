@@ -4,6 +4,7 @@
  * 規則はすべて、このリデューサーに集約する。画面（コンポーネント）は、状態を表示して、
  * アクションを送るだけにする。状態はブラウザのメモリだけに持つ（再読み込みで消える）。
  */
+import type { ResumeSource } from '../api/sse'
 import type {
   CatalogItem,
   Condition,
@@ -29,21 +30,25 @@ export interface Selection {
   minValue: number | null
 }
 
-export type ResumeSource = { kind: 'file'; file: File } | { kind: 'text'; text: string }
+export type { ResumeSource }
 
 export type ResumeCheckState =
   | { status: 'checking' }
   | { status: 'ok'; result: ResumeCheck }
   | { status: 'error'; error: FlowError }
 
-export interface ResumeState {
+/** 1 回の評価に渡せる書類の数（仕様 5.3）。 */
+export const MAX_RESUMES = 5
+
+/** アップロード済みの書類 1 件（ファイル、または貼り付けテキスト）。 */
+export interface ResumeItem {
+  /**
+   * 追加するたびに、リデューサーが付ける、一意な ID。検証の結果は、この ID が一致するときだけ
+   * 採用する（名前では、同名のファイルの選び直しや、貼り付けテキスト同士を区別できない）。
+   */
+  id: number
   source: ResumeSource
   name: string
-  /**
-   * 選ぶたびに、リデューサーが付ける、一意な検証の要求の ID。検証の結果は、この ID が一致する
-   * ときだけ採用する（名前では、同名のファイルの選び直しや、貼り付けテキスト同士を区別できない）。
-   */
-  checkId: number
   check: ResumeCheckState
 }
 
@@ -60,7 +65,8 @@ export interface FlowState {
   furthest: Step
   selections: Record<string, Selection>
   customConditions: Condition[]
-  resume: ResumeState | null
+  /** アップロード済みの書類（1 人の応募者の分。最大 5 件）。 */
+  resumes: ResumeItem[]
   evaluation: EvaluationState
   /** ID の採番用。増えるだけで、戻らない（古い通知の ID と、新しい要求の ID が重ならないように）。 */
   counters: { check: number; run: number }
@@ -71,7 +77,7 @@ export const initialState: FlowState = {
   furthest: 0,
   selections: {},
   customConditions: [],
-  resume: null,
+  resumes: [],
   evaluation: { status: 'idle' },
   counters: { check: 0, run: 0 },
 }
@@ -86,10 +92,10 @@ export type Action =
   | { type: 'next' }
   | { type: 'back' }
   | { type: 'goTo'; step: Step }
-  | { type: 'resumeSelected'; source: ResumeSource; name: string }
-  | { type: 'resumeChecked'; check: ResumeCheck; checkId: number }
-  | { type: 'resumeCheckFailed'; error: FlowError; checkId: number }
-  | { type: 'clearResume' }
+  | { type: 'resumeAdded'; source: ResumeSource; name: string }
+  | { type: 'resumeRemoved'; id: number }
+  | { type: 'resumeChecked'; check: ResumeCheck; id: number }
+  | { type: 'resumeCheckFailed'; error: FlowError; id: number }
   | { type: 'startEvaluation' }
   | { type: 'stageChanged'; stage: Stage; runId: number }
   | { type: 'evaluationSucceeded'; result: EvaluationResult; runId: number }
@@ -125,10 +131,18 @@ export function isConditionsComplete(state: FlowState): boolean {
   )
 }
 
+/** 書類全体の状態。1 件でも確認中なら checking、使えないものがあれば error、すべて使えれば ok。 */
+export function resumesStatus(state: FlowState): 'empty' | 'checking' | 'error' | 'ok' {
+  if (state.resumes.length === 0) return 'empty'
+  if (state.resumes.some((item) => item.check.status === 'error')) return 'error'
+  if (state.resumes.some((item) => item.check.status === 'checking')) return 'checking'
+  return 'ok'
+}
+
 /** ② で「評価する」を押せる: 職歴書の検証に成功していて、条件がそろっている。 */
 export function canEvaluate(state: FlowState): boolean {
   return (
-    state.resume?.check.status === 'ok' &&
+    resumesStatus(state) === 'ok' &&
     isConditionsComplete(state) &&
     state.evaluation.status !== 'running'
   )
@@ -167,10 +181,11 @@ export function buildConditions(catalog: readonly CatalogItem[], state: FlowStat
 export function stepStatuses(state: FlowState): [StepStatus, StepStatus, StepStatus] {
   const conditions: StepStatus = state.step === 0 ? 'process' : 'finish'
 
+  const resumes = resumesStatus(state)
   let resume: StepStatus = 'wait'
-  if (state.resume?.check.status === 'error') resume = 'error'
+  if (resumes === 'error') resume = 'error'
   else if (state.step === 1) resume = 'process'
-  else if (state.resume?.check.status === 'ok') resume = 'finish'
+  else if (resumes === 'ok') resume = 'finish'
 
   let result: StepStatus = 'wait'
   switch (state.evaluation.status) {
@@ -217,9 +232,16 @@ function selectionFromCondition(condition: Condition): Selection {
   }
 }
 
-/** 検証の結果が、いま選ばれている職歴書のもので、まだ検証中か。 */
-function isCurrentCheck(state: FlowState, checkId: number): boolean {
-  return state.resume?.checkId === checkId && state.resume.check.status === 'checking'
+/** 検証の結果が、いま一覧にある書類のもので、まだ検証中か。 */
+function isCurrentCheck(state: FlowState, id: number): boolean {
+  return state.resumes.some((item) => item.id === id && item.check.status === 'checking')
+}
+
+function withCheck(state: FlowState, id: number, check: ResumeCheckState): FlowState {
+  return {
+    ...state,
+    resumes: state.resumes.map((item) => (item.id === id ? { ...item, check } : item)),
+  }
 }
 
 /** 評価の通知が、いま実行中の評価のものか（キャンセルした評価や、前の評価の通知を無視する）。 */
@@ -334,47 +356,46 @@ export function reducer(state: FlowState, action: Action): FlowState {
       return { ...state, step: action.step }
     }
 
-    case 'resumeSelected': {
+    case 'resumeAdded': {
       if (state.evaluation.status === 'running') return state
-      const checkId = state.counters.check + 1
+      // 貼り付けテキストは 1 件だけ。入力し直すと、前のテキストを置き換える
+      const kept =
+        action.source.kind === 'text'
+          ? state.resumes.filter((item) => item.source.kind !== 'text')
+          : state.resumes
+      if (kept.length >= MAX_RESUMES) return state
+      const id = state.counters.check + 1
       return {
         ...discardEvaluation(state),
-        resume: {
-          source: action.source,
-          name: action.name,
-          checkId,
-          check: { status: 'checking' },
-        },
-        counters: { ...state.counters, check: checkId },
+        resumes: [
+          ...kept,
+          { id, source: action.source, name: action.name, check: { status: 'checking' } },
+        ],
+        counters: { ...state.counters, check: id },
+      }
+    }
+
+    case 'resumeRemoved': {
+      if (state.evaluation.status === 'running') return state
+      return {
+        ...discardEvaluation(state),
+        resumes: state.resumes.filter((item) => item.id !== action.id),
       }
     }
 
     case 'resumeChecked':
-      if (!isCurrentCheck(state, action.checkId)) return state
-      return {
-        ...state,
-        resume: state.resume && { ...state.resume, check: { status: 'ok', result: action.check } },
-      }
+      if (!isCurrentCheck(state, action.id)) return state
+      return withCheck(state, action.id, { status: 'ok', result: action.check })
 
     case 'resumeCheckFailed':
-      if (!isCurrentCheck(state, action.checkId)) return state
-      return {
-        ...state,
-        resume: state.resume && {
-          ...state.resume,
-          check: { status: 'error', error: action.error },
-        },
-      }
-
-    case 'clearResume':
-      if (state.evaluation.status === 'running') return state
-      return { ...discardEvaluation(state), resume: null }
+      if (!isCurrentCheck(state, action.id)) return state
+      return withCheck(state, action.id, { status: 'error', error: action.error })
 
     case 'startEvaluation': {
       const canStart =
         state.evaluation.status !== 'running' &&
         (state.step === 1 || state.evaluation.status === 'error') &&
-        state.resume?.check.status === 'ok' &&
+        resumesStatus(state) === 'ok' &&
         isConditionsComplete(state)
       if (!canStart) return state
       const runId = state.counters.run + 1
@@ -412,6 +433,6 @@ export function reducer(state: FlowState, action: Action): FlowState {
 
     // 「別の応募者を評価」: 職歴書だけを捨てて、条件を残して ② に戻る
     case 'newApplicant':
-      return { ...state, step: 1, furthest: 1, resume: null, evaluation: { status: 'idle' } }
+      return { ...state, step: 1, furthest: 1, resumes: [], evaluation: { status: 'idle' } }
   }
 }

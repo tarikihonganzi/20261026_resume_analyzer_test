@@ -20,8 +20,8 @@ export function useEvaluationRun(): void {
 
   // 効果の依存は runId だけにしたいので、最新の条件・職歴書は、イベント関数から読む
   const start = useEffectEvent(async (id: number, signal: AbortSignal) => {
-    const resume = state.resume
-    if (!catalog.data || !resume) {
+    const resumes = state.resumes.map((item) => item.source)
+    if (!catalog.data || resumes.length === 0) {
       dispatch({
         type: 'evaluationFailed',
         error: {
@@ -34,7 +34,7 @@ export function useEvaluationRun(): void {
     }
     try {
       const events = streamEvaluation(
-        { conditions: buildConditions(catalog.data, state), resume: resume.source },
+        { conditions: buildConditions(catalog.data, state), resumes },
         signal,
       )
       for await (const event of events) {

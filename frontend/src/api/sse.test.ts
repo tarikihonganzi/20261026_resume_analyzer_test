@@ -19,7 +19,7 @@ const condition: Condition = {
 }
 const input: EvaluationInput = {
   conditions: [condition],
-  resume: { kind: 'text', text: '職歴の本文です。' },
+  resumes: [{ kind: 'text', text: '職歴の本文です。' }],
 }
 
 const result = makeResult({ score: 80 })
@@ -166,7 +166,7 @@ describe('streamEvaluation', () => {
 
     const events: EvaluationEvent[] = []
     for await (const event of streamEvaluation(
-      { conditions: [condition], resume: { kind: 'file', file } },
+      { conditions: [condition], resumes: [{ kind: 'file', file }] },
       new AbortController().signal,
     )) {
       events.push(event)

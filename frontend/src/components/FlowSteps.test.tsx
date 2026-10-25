@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { FlowSteps, type FlowStepItem } from './FlowSteps'
@@ -39,14 +39,31 @@ describe('FlowSteps', () => {
     expect(onSelect).not.toHaveBeenCalled()
   })
 
-  it('評価中（locked）は、どこへも移動できない', async () => {
+  it('評価中（locked）は、どこへも移動できない（マウスの操作を止め、押されても通知しない）', () => {
     const onSelect = vi.fn()
-    render(<FlowSteps items={items()} current={2} reachable={2} locked onSelect={onSelect} />)
+    const { container } = render(
+      <FlowSteps items={items()} current={2} reachable={2} locked onSelect={onSelect} />,
+    )
 
-    await userEvent.click(screen.getByText('条件'))
-    await userEvent.click(screen.getByText('職歴書'))
+    expect(container.firstElementChild).toHaveStyle({ pointerEvents: 'none' })
+    fireEvent.click(screen.getByText('条件'))
+    fireEvent.click(screen.getByText('職歴書'))
 
     expect(onSelect).not.toHaveBeenCalled()
+  })
+
+  it('評価中でも、完了済みのステップは、無効の見た目にしない（① と ② の色をそろえる）', () => {
+    const { container } = render(
+      <FlowSteps
+        items={items([{ status: 'finish' }, { status: 'finish' }, { status: 'process' }])}
+        current={2}
+        reachable={2}
+        locked
+        onSelect={vi.fn()}
+      />,
+    )
+
+    expect(container.querySelectorAll('.ant-steps-item-disabled')).toHaveLength(0)
   })
 
   it('エラーのステップを、エラー状態で表示する', () => {

@@ -14,15 +14,17 @@ test('読めないファイルはその場でエラーになり、条件を保�
 
   await page.locator('input[type=file]').setInputFiles(fixture('broken.docx'))
 
-  await expect(page.getByText('「broken.docx」を使えません')).toBeVisible()
+  await expect(page.getByText(/使えません: /)).toBeVisible()
+  await expect(page.getByRole('button', { name: 'broken.docxを削除' })).toBeVisible()
   await expect(page.getByRole('button', { name: '評価する' })).toBeDisabled()
   // 条件は、そのまま
-  await expect(page.getByText('必須 2', { exact: true })).toBeVisible()
-  await expect(page.getByText('任意 1', { exact: true })).toBeVisible()
+  await expect(page.getByText('必須 2 件・任意 1 件')).toBeVisible()
 
+  // 読めないファイルを削除して、別のファイルを選び直す
+  await page.getByRole('button', { name: 'broken.docxを削除' }).click()
   await page.locator('input[type=file]').setInputFiles(fixture('resume.docx'))
 
-  await expect(page.getByText('この職歴書を評価に使えます')).toBeVisible()
+  await expect(page.getByText('1 件の職歴書を評価に使えます')).toBeVisible()
   await expect(page.getByRole('button', { name: '評価する' })).toBeEnabled()
 
   // ① に戻っても、選んだ条件が残っている（受け入れ基準 11）

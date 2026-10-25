@@ -24,13 +24,12 @@ test('「別の応募者を評価」で、条件を残したまま ② に戻り
   await page.getByRole('button', { name: '別の応募者を評価' }).click()
 
   await expect(page.getByText('評価する条件:')).toBeVisible()
-  await expect(page.getByText('必須 2', { exact: true })).toBeVisible()
-  await expect(page.getByText('任意 1', { exact: true })).toBeVisible()
-  await expect(page.getByText('この職歴書を評価に使えます')).toHaveCount(0)
+  await expect(page.getByText('必須 2 件・任意 1 件')).toBeVisible()
+  await expect(page.getByRole('region', { name: 'アップロード済みの職歴書' })).toHaveCount(0)
   await expect(page.getByRole('button', { name: '評価する' })).toBeDisabled()
 
   await page.locator('input[type=file]').setInputFiles(fixture('resume.txt'))
-  await expect(page.getByText('この職歴書を評価に使えます')).toBeVisible()
+  await expect(page.getByText('1 件の職歴書を評価に使えます')).toBeVisible()
   await startEvaluation(page)
 
   await expect(page.getByText('最終スコア')).toBeVisible({ timeout: 20_000 })
@@ -52,7 +51,7 @@ test('「条件を変えて再評価」で ① に戻り、職歴書は残って
   await expect(page.getByText('必須（2）')).toBeVisible()
   await page.getByRole('button', { name: /次へ/ }).click()
 
-  await expect(page.getByText('この職歴書を評価に使えます')).toBeVisible()
+  await expect(page.getByText('1 件の職歴書を評価に使えます')).toBeVisible()
   await startEvaluation(page)
   await expect(page.getByText('最終スコア')).toBeVisible({ timeout: 20_000 })
 })
