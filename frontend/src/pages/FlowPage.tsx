@@ -7,9 +7,9 @@ import { ConditionsStep } from './ConditionsStep'
 import { ResultStep } from './ResultStep'
 import { ResumeStep } from './ResumeStep'
 
-const STEP_LABELS = ['① 条件', '② 職歴書', '③ 結果'] as const
+const STEP_LABELS = ['① 条件', '② 書類', '③ 結果'] as const
 
-/** 評価フロー（① 条件 → ② 職歴書 → ③ 結果）。Steps と、現在のステップの内容。 */
+/** 評価フロー（① 条件 → ② 書類 → ③ 結果）。Steps と、現在のステップの内容。 */
 export function FlowPage() {
   const { state, dispatch } = useFlow()
   const [conditions, resume, result] = stepStatuses(state)
@@ -36,7 +36,7 @@ export function FlowPage() {
           : undefined,
     },
     {
-      title: '職歴書',
+      title: '書類',
       status: resume,
       // ファイル名は並べない（複数のファイルや、長い名前でも、表示が崩れないように。仕様 6.2）
       summary: resume === 'finish' ? 'ファイルアップロード完了' : undefined,

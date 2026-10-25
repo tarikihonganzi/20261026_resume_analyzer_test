@@ -24,7 +24,7 @@ test('読めないファイルはその場でエラーになり、条件を保�
   await page.getByRole('button', { name: 'broken.docxを削除' }).click()
   await page.locator('input[type=file]').setInputFiles(fixture('resume.docx'))
 
-  await expect(page.getByText('1 件の職歴書を評価に使えます')).toBeVisible()
+  await expect(page.getByText('1 件の書類を評価に使えます')).toBeVisible()
   await expect(page.getByRole('button', { name: '評価する' })).toBeEnabled()
 
   // ① に戻っても、選んだ条件が残っている（受け入れ基準 11）

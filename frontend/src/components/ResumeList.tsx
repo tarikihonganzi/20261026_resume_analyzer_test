@@ -89,16 +89,16 @@ interface ResumeListProps {
   onRemove: (id: number) => void
 }
 
-/** アップロード済みの職歴書の一覧と、削除ボタン（仕様 5.3、6.1）。形式や文字数は出さない。 */
+/** アップロード済みの書類の一覧と、削除ボタン（仕様 5.3、6.1）。形式や文字数は出さない。 */
 export function ResumeList({ items, onRemove }: ResumeListProps) {
   const { state } = useFlow()
   const status = resumesStatus(state)
   if (items.length === 0) return null
 
   return (
-    <section aria-label="アップロード済みの職歴書">
+    <section aria-label="アップロード済みの書類">
       <Typography.Text strong>
-        アップロード済みの職歴書（{items.length} / {MAX_RESUMES}）
+        アップロード済みの書類（{items.length} / {MAX_RESUMES}）
       </Typography.Text>
       <ul
         style={{
@@ -117,12 +117,12 @@ export function ResumeList({ items, onRemove }: ResumeListProps) {
       <div aria-live="polite" style={{ marginTop: 8, minHeight: 22 }}>
         {status === 'ok' ? (
           <Typography.Text type="secondary">
-            {items.length} 件の職歴書を評価に使えます
+            {items.length} 件の書類を評価に使えます
           </Typography.Text>
         ) : null}
         {status === 'error' ? (
           <Typography.Text type="secondary">
-            使えない職歴書を削除すると、評価できます（条件の入力は、そのまま残っています）
+            使えない書類を削除すると、評価できます（条件の入力は、そのまま残っています）
           </Typography.Text>
         ) : null}
       </div>

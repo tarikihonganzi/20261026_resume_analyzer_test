@@ -25,7 +25,7 @@ test('評価中にキャンセルすると、② に戻り、職歴書は残っ�
   await page.getByRole('button', { name: 'キャンセル' }).click()
 
   await expect(page.getByText('評価する条件:')).toBeVisible()
-  await expect(page.getByText('1 件の職歴書を評価に使えます')).toBeVisible()
+  await expect(page.getByText('1 件の書類を評価に使えます')).toBeVisible()
   // 取り消した評価の結果は、あとから現れない
   await page.waitForTimeout(3_000)
   await expect(page.getByText('最終スコア（AI 算出）')).toHaveCount(0)

@@ -107,7 +107,7 @@ export function JudgementSections({ conditions }: { conditions: readonly JudgedC
           [
             ['clear', 'クリア'],
             ['unmet', 'NG'],
-            ['unknown', '不明（職歴書から確認できなかった。NG の列に入ります）'],
+            ['unknown', '不明（書類から確認できなかった。NG の列に入ります）'],
           ] as const
         ).map(([kind, label]) => (
           <Typography.Text key={kind} type="secondary" style={{ fontSize: 12 }}>

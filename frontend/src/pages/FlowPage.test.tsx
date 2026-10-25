@@ -37,16 +37,29 @@ describe('画面の切り替えと、フォーカス', () => {
 
     await userEvent.click(screen.getByRole('button', { name: /次へ/ }))
 
-    expect(await screen.findByRole('region', { name: '② 職歴書' })).toHaveFocus()
+    expect(await screen.findByRole('region', { name: '② 書類' })).toHaveFocus()
   })
 
   it('「戻る」で ① に戻ると、① の領域にフォーカスが移る', async () => {
     await renderFlow()
     await userEvent.click(screen.getByRole('button', { name: /次へ/ }))
-    await screen.findByRole('region', { name: '② 職歴書' })
+    await screen.findByRole('region', { name: '② 書類' })
 
     await userEvent.click(screen.getByRole('button', { name: '戻る' }))
 
     expect(await screen.findByRole('region', { name: '① 条件' })).toHaveFocus()
+  })
+
+  it('画面に「職歴書」という言葉を出さない（Steps・① ②）。「書類」と言う', async () => {
+    await renderFlow()
+    expect(document.body.textContent).not.toContain('職歴書')
+
+    await userEvent.click(screen.getByRole('button', { name: /次へ（書類を選ぶ）/ }))
+    await screen.findByRole('region', { name: '② 書類' })
+
+    expect(document.body.textContent).not.toContain('職歴書')
+    await userEvent.click(screen.getByRole('tab', { name: 'テキストを貼り付ける' }))
+    expect(screen.getByRole('textbox', { name: '書類のテキスト' })).toBeInTheDocument()
+    expect(document.body.textContent).not.toContain('職歴書')
   })
 })

@@ -260,7 +260,7 @@ describe('結果画面', () => {
       render(<ResultView result={result} />)
 
       expect(screen.getByText('3.3年（必要: 5.0年以上）')).toBeInTheDocument()
-      expect(screen.getByText('職歴書から確認できませんでした')).toBeInTheDocument()
+      expect(screen.getByText('書類から確認できませんでした')).toBeInTheDocument()
     })
 
     it('必須の条件が 1 つもなければ、「必須条件」のセクションを出さない', () => {

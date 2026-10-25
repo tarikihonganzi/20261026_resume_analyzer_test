@@ -298,7 +298,7 @@ def check_document_count(file_count: int, pasted_text: str | None) -> None:
     """
     count = file_count + (1 if _uses_pasted_text(file_count, pasted_text) else 0)
     if count == 0:
-        raise InvalidResumeInputError("職歴書を 1 件以上指定してください。")
+        raise InvalidResumeInputError("書類を 1 件以上指定してください。")
     if count > MAX_RESUMES:
         raise TooManyResumesError(MAX_RESUMES)
 

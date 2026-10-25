@@ -122,7 +122,7 @@ export function SelectionSummary({
           disabled={nextDisabledReason !== null}
           onClick={onNext}
         >
-          次へ（職歴書を選ぶ）
+          次へ（書類を選ぶ）
           <ArrowRightOutlined />
         </Button>
         {nextDisabledReason ? (

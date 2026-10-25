@@ -22,21 +22,21 @@ test('複数の書類（docx・PDF・txt）を上げ、間違えた 1 件を削�
       fixture('resume_injection.txt'),
     ])
 
-  await expect(page.getByText('3 件の職歴書を評価に使えます')).toBeVisible()
-  const list = page.getByRole('region', { name: 'アップロード済みの職歴書' })
+  await expect(page.getByText('3 件の書類を評価に使えます')).toBeVisible()
+  const list = page.getByRole('region', { name: 'アップロード済みの書類' })
   await expect(list.getByRole('listitem')).toHaveCount(3)
-  await expect(page.getByText('アップロード済みの職歴書（3 / 5）')).toBeVisible()
+  await expect(page.getByText('アップロード済みの書類（3 / 5）')).toBeVisible()
 
   // 間違えて上げたファイルを削除する
   await page.getByRole('button', { name: 'resume_injection.txtを削除' }).click()
-  await expect(page.getByText('2 件の職歴書を評価に使えます')).toBeVisible()
+  await expect(page.getByText('2 件の書類を評価に使えます')).toBeVisible()
   await expect(list.getByRole('listitem')).toHaveCount(2)
 
   // 上の Steps には、ファイル名を並べない
   await page.getByRole('button', { name: '変更' }).click()
   await expect(page.getByText('ファイルアップロード完了')).toBeVisible()
   await page.getByRole('button', { name: /次へ/ }).click()
-  await expect(page.getByText('2 件の職歴書を評価に使えます')).toBeVisible()
+  await expect(page.getByText('2 件の書類を評価に使えます')).toBeVisible()
 
   await startEvaluation(page)
 
@@ -62,11 +62,11 @@ test('上限（5 件）を超える分は、追加しない。削除すると、
     fixture('resume_injection.txt'),
   ])
 
-  await expect(page.getByText('5 件の職歴書を評価に使えます')).toBeVisible()
+  await expect(page.getByText('5 件の書類を評価に使えます')).toBeVisible()
   await expect(page.getByText(/最大 5 件までです。超える分は、追加しませんでした/)).toBeVisible()
 
   await page.getByRole('button', { name: 'resume.docxを削除' }).click()
   await input.setInputFiles(fixture('resume_injection.txt'))
 
-  await expect(page.getByText('5 件の職歴書を評価に使えます')).toBeVisible()
+  await expect(page.getByText('5 件の書類を評価に使えます')).toBeVisible()
 })

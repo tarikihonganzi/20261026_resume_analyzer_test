@@ -49,7 +49,7 @@ export function summarizeJudgements(conditions: readonly JudgedCondition[]): {
  * number は、年数（小数第 1 位）と、必要な最低値。不明は、確認できなかった旨。
  */
 export function valueLine(judged: JudgedCondition): string | null {
-  if (judged.status === 'unknown') return '職歴書から確認できませんでした'
+  if (judged.status === 'unknown') return '書類から確認できませんでした'
   const { kind, unit, min_value } = judged.condition
   if (kind !== 'number') return null
   if (judged.years === null) return '年数の記載なし'

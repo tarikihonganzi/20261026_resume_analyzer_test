@@ -88,9 +88,9 @@ afterEach(() => {
 })
 
 const evaluateButton = () => screen.getByRole('button', { name: '評価する' })
-const list = () => screen.queryByRole('region', { name: 'アップロード済みの職歴書' })
+const list = () => screen.queryByRole('region', { name: 'アップロード済みの書類' })
 const listNames = () =>
-  within(screen.getByRole('region', { name: 'アップロード済みの職歴書' }))
+  within(screen.getByRole('region', { name: 'アップロード済みの書類' }))
     .getAllByRole('listitem')
     .map((item) => item.querySelector('.ant-typography')?.textContent)
 
@@ -103,7 +103,7 @@ async function uploadFiles(...names: string[]) {
   )
 }
 
-describe('② 職歴書', () => {
+describe('② 書類', () => {
   describe('見出し・戻る', () => {
     it('選んだ条件の件数を、タグではなく、ふつうの文で出し、「変更」で ① に戻れる（入力は残る）', async () => {
       await reachResumeStep()
@@ -139,9 +139,9 @@ describe('② 職歴書', () => {
 
       await uploadFiles('田中.docx')
 
-      expect(await screen.findByText('1 件の職歴書を評価に使えます')).toBeInTheDocument()
+      expect(await screen.findByText('1 件の書類を評価に使えます')).toBeInTheDocument()
       expect(listNames()).toEqual(['田中.docx'])
-      expect(screen.getByText('アップロード済みの職歴書（1 / 5）')).toBeInTheDocument()
+      expect(screen.getByText('アップロード済みの書類（1 / 5）')).toBeInTheDocument()
       expect(screen.queryByText(/文字/)).not.toBeInTheDocument()
       expect(screen.queryByText(/形式/)).not.toBeInTheDocument()
       expect(evaluateButton()).toBeEnabled()
@@ -154,21 +154,21 @@ describe('② 職歴書', () => {
       await uploadFiles('職務経歴書.pdf', '履歴書.docx')
       await uploadFiles('別紙.xlsx')
 
-      expect(await screen.findByText('3 件の職歴書を評価に使えます')).toBeInTheDocument()
+      expect(await screen.findByText('3 件の書類を評価に使えます')).toBeInTheDocument()
       expect(listNames()).toEqual(['職務経歴書.pdf', '履歴書.docx', '別紙.xlsx'])
-      expect(screen.getByText('アップロード済みの職歴書（3 / 5）')).toBeInTheDocument()
+      expect(screen.getByText('アップロード済みの書類（3 / 5）')).toBeInTheDocument()
     })
 
     it('削除ボタンで、1 件だけ取り除ける。0 件になると、評価できない', async () => {
       stubChecks()
       await reachResumeStep()
       await uploadFiles('a.pdf', 'b.docx')
-      await screen.findByText('2 件の職歴書を評価に使えます')
+      await screen.findByText('2 件の書類を評価に使えます')
 
       await userEvent.click(screen.getByRole('button', { name: 'a.pdfを削除' }))
 
       expect(listNames()).toEqual(['b.docx'])
-      expect(await screen.findByText('1 件の職歴書を評価に使えます')).toBeInTheDocument()
+      expect(await screen.findByText('1 件の書類を評価に使えます')).toBeInTheDocument()
       await userEvent.click(screen.getByRole('button', { name: 'b.docxを削除' }))
       expect(list()).toBeNull()
       expect(evaluateButton()).toBeDisabled()
@@ -183,7 +183,7 @@ describe('② 職歴書', () => {
       expect(await screen.findByText('確認中…')).toBeInTheDocument()
       expect(evaluateButton()).toBeDisabled()
       checks.requests[0]?.respond(okResponse('田中.docx'))
-      await screen.findByText('1 件の職歴書を評価に使えます')
+      await screen.findByText('1 件の書類を評価に使えます')
       expect(screen.queryByText('確認中…')).not.toBeInTheDocument()
       expect(evaluateButton()).toBeEnabled()
     })
@@ -195,7 +195,7 @@ describe('② 職歴書', () => {
 
       await uploadFiles('田中\n太郎の\r\n職務経歴書.docx', long)
 
-      await screen.findByText('2 件の職歴書を評価に使えます')
+      await screen.findByText('2 件の書類を評価に使えます')
       expect(listNames()).toEqual(['田中 太郎の 職務経歴書.docx', long])
       expect(
         screen.getByRole('button', { name: '田中 太郎の 職務経歴書.docxを削除' }),
@@ -220,11 +220,11 @@ describe('② 職歴書', () => {
       ).toBeInTheDocument()
       expect(listNames()).toEqual(['田中.docx', '壊れた.bin'])
       expect(evaluateButton()).toBeDisabled()
-      expect(screen.getByText(/使えない職歴書を削除すると、評価できます/)).toBeInTheDocument()
+      expect(screen.getByText(/使えない書類を削除すると、評価できます/)).toBeInTheDocument()
 
       await userEvent.click(screen.getByRole('button', { name: '壊れた.binを削除' }))
 
-      expect(await screen.findByText('1 件の職歴書を評価に使えます')).toBeInTheDocument()
+      expect(await screen.findByText('1 件の書類を評価に使えます')).toBeInTheDocument()
       expect(evaluateButton()).toBeEnabled()
     })
 
@@ -280,7 +280,7 @@ describe('② 職歴書', () => {
       expect(checks.requests.map((request) => request.signal?.aborted)).toEqual([true, false])
       checks.requests[0]?.respond(errorResponse('conversion_failed', '読み取れません'))
       checks.requests[1]?.respond(okResponse('b.docx'))
-      expect(await screen.findByText('1 件の職歴書を評価に使えます')).toBeInTheDocument()
+      expect(await screen.findByText('1 件の書類を評価に使えます')).toBeInTheDocument()
       expect(screen.queryByText(/読み取れません/)).not.toBeInTheDocument()
     })
 
@@ -309,13 +309,13 @@ describe('② 職歴書', () => {
 
       await uploadFiles('1.pdf', '2.pdf', '3.pdf', '4.pdf', '5.pdf', '6.pdf', '7.pdf')
 
-      await screen.findByText('5 件の職歴書を評価に使えます')
+      await screen.findByText('5 件の書類を評価に使えます')
       expect(listNames()).toEqual(['1.pdf', '2.pdf', '3.pdf', '4.pdf', '5.pdf'])
       expect(
         await screen.findAllByText(/最大 5 件までです。超える分は、追加しませんでした/),
       ).toHaveLength(1)
       expect(
-        screen.getByText(/職歴書は、最大 5 件までです（削除すると、追加できます）/),
+        screen.getByText(/書類は、最大 5 件までです（削除すると、追加できます）/),
       ).toBeInTheDocument()
     })
 
@@ -323,12 +323,12 @@ describe('② 職歴書', () => {
       stubChecks()
       await reachResumeStep()
       await uploadFiles('1.pdf', '2.pdf', '3.pdf', '4.pdf', '5.pdf')
-      await screen.findByText('5 件の職歴書を評価に使えます')
+      await screen.findByText('5 件の書類を評価に使えます')
 
       await userEvent.click(screen.getByRole('button', { name: '1.pdfを削除' }))
       await uploadFiles('6.pdf')
 
-      expect(await screen.findByText('5 件の職歴書を評価に使えます')).toBeInTheDocument()
+      expect(await screen.findByText('5 件の書類を評価に使えます')).toBeInTheDocument()
       expect(listNames()).toEqual(['2.pdf', '3.pdf', '4.pdf', '5.pdf', '6.pdf'])
     })
   })
@@ -336,7 +336,7 @@ describe('② 職歴書', () => {
   describe('テキストの貼り付け', () => {
     const paste = async (text: string) => {
       await userEvent.click(screen.getByRole('tab', { name: 'テキストを貼り付ける' }))
-      await userEvent.type(screen.getByRole('textbox', { name: '職歴書のテキスト' }), text)
+      await userEvent.type(screen.getByRole('textbox', { name: '書類のテキスト' }), text)
     }
 
     it('入力が止まってから検証し、「貼り付けテキスト」として一覧に並べる。ファイルと併用できる', async () => {
@@ -352,16 +352,16 @@ describe('② 職歴書', () => {
         },
         { timeout: 3000 },
       )
-      expect(await screen.findByText('2 件の職歴書を評価に使えます')).toBeInTheDocument()
+      expect(await screen.findByText('2 件の書類を評価に使えます')).toBeInTheDocument()
     })
 
     it('テキストを全部消すと、一覧から取り除かれる', async () => {
       stubChecks()
       await reachResumeStep()
       await paste('abc')
-      await screen.findByText('1 件の職歴書を評価に使えます', undefined, { timeout: 3000 })
+      await screen.findByText('1 件の書類を評価に使えます', undefined, { timeout: 3000 })
 
-      await userEvent.clear(screen.getByRole('textbox', { name: '職歴書のテキスト' }))
+      await userEvent.clear(screen.getByRole('textbox', { name: '書類のテキスト' }))
 
       await waitFor(
         () => {
@@ -376,11 +376,11 @@ describe('② 職歴書', () => {
       stubChecks()
       await reachResumeStep()
       await paste('abc')
-      await screen.findByText('1 件の職歴書を評価に使えます', undefined, { timeout: 3000 })
+      await screen.findByText('1 件の書類を評価に使えます', undefined, { timeout: 3000 })
 
       await userEvent.click(screen.getByRole('button', { name: '貼り付けテキストを削除' }))
 
-      expect(screen.getByRole('textbox', { name: '職歴書のテキスト' })).toHaveValue('')
+      expect(screen.getByRole('textbox', { name: '書類のテキスト' })).toHaveValue('')
       expect(list()).toBeNull()
     })
   })
@@ -391,7 +391,7 @@ describe('② 職歴書', () => {
       await reachResumeStep({ keyUnset: true })
 
       await uploadFiles('田中.docx')
-      await screen.findByText('1 件の職歴書を評価に使えます')
+      await screen.findByText('1 件の書類を評価に使えます')
 
       expect(evaluateButton()).toBeDisabled()
     })
@@ -400,12 +400,12 @@ describe('② 職歴書', () => {
       stubChecks()
       await reachResumeStep()
       await uploadFiles('a.pdf', 'b.docx')
-      await screen.findByText('2 件の職歴書を評価に使えます')
+      await screen.findByText('2 件の書類を評価に使えます')
 
       await userEvent.click(screen.getByRole('button', { name: '変更' }))
       await userEvent.click(await screen.findByRole('button', { name: /次へ/ }))
 
-      expect(await screen.findByText('2 件の職歴書を評価に使えます')).toBeInTheDocument()
+      expect(await screen.findByText('2 件の書類を評価に使えます')).toBeInTheDocument()
       expect(listNames()).toEqual(['a.pdf', 'b.docx'])
       expect(evaluateButton()).toBeEnabled()
     })
@@ -414,7 +414,7 @@ describe('② 職歴書', () => {
       stubChecks()
       await reachResumeStep()
       await uploadFiles('田中\n太郎.docx', 'b.docx')
-      await screen.findByText('2 件の職歴書を評価に使えます')
+      await screen.findByText('2 件の書類を評価に使えます')
 
       await userEvent.click(screen.getByRole('button', { name: '変更' }))
 
@@ -426,7 +426,7 @@ describe('② 職歴書', () => {
       stubChecks()
       await reachResumeStep()
       await uploadFiles('田中.docx')
-      await screen.findByText('1 件の職歴書を評価に使えます')
+      await screen.findByText('1 件の書類を評価に使えます')
 
       await userEvent.click(evaluateButton())
 

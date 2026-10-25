@@ -84,7 +84,7 @@ async function reachEvaluation() {
     return element
   })
   await userEvent.upload(input, new File(['x'], '田中.docx'))
-  await screen.findByText('1 件の職歴書を評価に使えます')
+  await screen.findByText('1 件の書類を評価に使えます')
 }
 
 const startEvaluation = () => userEvent.click(screen.getByRole('button', { name: '評価する' }))
@@ -129,7 +129,7 @@ describe('③ 評価の進捗とエラー', () => {
     await userEvent.click(screen.getByRole('button', { name: 'キャンセル' }))
 
     expect(evaluation.requests[0]?.signal?.aborted).toBe(true)
-    expect(await screen.findByText('1 件の職歴書を評価に使えます')).toBeInTheDocument()
+    expect(await screen.findByText('1 件の書類を評価に使えます')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '評価する' })).toBeEnabled()
   })
 
@@ -142,7 +142,7 @@ describe('③ 評価の進捗とエラー', () => {
     await new Promise((resolve) => setTimeout(resolve, 50))
 
     expect(screen.queryByText(/最終スコア/)).not.toBeInTheDocument()
-    expect(screen.getByText('1 件の職歴書を評価に使えます')).toBeInTheDocument()
+    expect(screen.getByText('1 件の書類を評価に使えます')).toBeInTheDocument()
   })
 
   it('結果を受け取ると、結果を表示する', async () => {
@@ -285,9 +285,7 @@ describe('③ 結果からの操作（受け入れ基準 13）', () => {
 
     expect(await screen.findByText('評価する条件:')).toBeInTheDocument()
     expect(screen.getByText('必須 1 件・任意 0 件')).toBeInTheDocument()
-    expect(
-      screen.queryByRole('region', { name: 'アップロード済みの職歴書' }),
-    ).not.toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'アップロード済みの書類' })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: '評価する' })).toBeDisabled()
     expect(screen.queryByText('最終スコア（AI 算出）')).not.toBeInTheDocument()
   })
@@ -305,7 +303,7 @@ describe('③ 結果からの操作（受け入れ基準 13）', () => {
       within(screen.getByRole('group', { name: '2級建築士' })).getByText('任意'),
     )
     await userEvent.click(screen.getByRole('button', { name: /次へ/ }))
-    expect(await screen.findByText('1 件の職歴書を評価に使えます')).toBeInTheDocument()
+    expect(await screen.findByText('1 件の書類を評価に使えます')).toBeInTheDocument()
     await startEvaluation()
 
     await waitFor(() => {

@@ -84,7 +84,7 @@ def _to_sse(event: PipelineEvent) -> ServerSentEvent:
     response_class=EventSourceResponse,
     responses={
         413: {"model": ErrorResponse, "description": "ファイルサイズが上限を超えた"},
-        422: {"model": ErrorResponse, "description": "入力（条件・職歴書）が正しくない"},
+        422: {"model": ErrorResponse, "description": "入力（条件・書類）が正しくない"},
     },
 )
 async def evaluate(

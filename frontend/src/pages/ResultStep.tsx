@@ -26,7 +26,7 @@ export function ResultStep() {
           <Steps
             size="small"
             current={STAGES.indexOf(evaluation.stage)}
-            items={[{ title: '職歴書から条件を抽出中' }, { title: '最終評価中' }]}
+            items={[{ title: '書類から条件を抽出中' }, { title: '最終評価中' }]}
             style={{ maxWidth: 480 }}
           />
           <Typography.Text type="secondary">
