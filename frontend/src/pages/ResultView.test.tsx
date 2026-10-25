@@ -230,11 +230,30 @@ describe('結果画面', () => {
       expect(container.querySelector('.ant-tag')).toBeNull()
       const judgement = section('条件別の判定')
       expect(judgement.getAllByRole('img', { name: 'クリア' }).length).toBeGreaterThan(0)
-      expect(judgement.getAllByRole('img', { name: '未達' }).length).toBeGreaterThan(0)
+      expect(judgement.getAllByRole('img', { name: 'NG' }).length).toBeGreaterThan(0)
       expect(judgement.getAllByRole('img', { name: '不明' }).length).toBeGreaterThan(0)
       expect(screen.getAllByText('○').length).toBeGreaterThan(0)
       expect(screen.getAllByText('×').length).toBeGreaterThan(0)
       expect(screen.getAllByText('△').length).toBeGreaterThan(0)
+    })
+
+    it('画面に「未達」という言葉を出さない（クリア・NG・不明で表す）', () => {
+      const { container } = render(<ResultView result={result} />)
+
+      expect(container.textContent).not.toContain('未達')
+      expect(section('条件別の判定').getByText('NG')).toBeInTheDocument()
+    })
+
+    it('「クリア」「NG」の見出しは、条件名より大きく太い文字で、条件名と見分けがつく', () => {
+      render(<ResultView result={result} />)
+
+      const heading = section('条件別の判定').getAllByTestId('column-heading')[0]
+      const item = screen.getByText('必須の達成')
+      expect(Number.parseInt(heading?.style.fontSize ?? '0', 10)).toBeGreaterThan(
+        Number.parseInt(item.style.fontSize || '14', 10),
+      )
+      expect(heading?.style.fontWeight).toBe('700')
+      expect(item.style.fontWeight).not.toBe('700')
     })
 
     it('number の条件には、年数と必要な最低値を、不明には、確認できなかった旨を添える', () => {
