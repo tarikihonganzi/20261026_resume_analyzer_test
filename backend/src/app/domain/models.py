@@ -87,6 +87,10 @@ class ConditionSet(BaseModel):
         return self
 
 
+# 社内の Responses API の宛先とモデル。設定ファイルと環境変数のどちらにも値がないときに使う
+DEFAULT_BASE_URL = "https://kjm-kong.kajima.co.jp/openai/v1"
+DEFAULT_MODEL = "response-standard"
+
 PdfDetail = Literal["auto", "low", "high"]
 _Text = Annotated[str, StringConstraints(strip_whitespace=True)]
 
@@ -98,8 +102,8 @@ class Config(BaseModel):
 
     # repr に出さない（ログやエラーメッセージに全文が出ないようにする）
     openai_api_key: str = Field(default="", repr=False)
-    openai_base_url: str = ""
-    model: str = Field(default="gpt-5.5", min_length=1)
+    openai_base_url: str = DEFAULT_BASE_URL
+    model: str = Field(default=DEFAULT_MODEL, min_length=1)
     # 0 は無制限
     max_file_size_mb: int = Field(default=0, ge=0)
     pdf_detail: PdfDetail = "high"

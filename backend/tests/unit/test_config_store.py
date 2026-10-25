@@ -17,8 +17,8 @@ def test_missing_file_gives_the_defaults(tmp_path: Path) -> None:
 
     assert config == Config(
         openai_api_key="",
-        openai_base_url="",
-        model="gpt-5.5",
+        openai_base_url="https://kjm-kong.kajima.co.jp/openai/v1",
+        model="response-standard",
         max_file_size_mb=0,
         pdf_detail="high",
         request_timeout_sec=180,
@@ -75,7 +75,8 @@ def test_partial_file_is_completed_with_defaults(tmp_path: Path) -> None:
     config = ConfigStore(path, environ={}).load()
 
     assert config.openai_api_key == API_KEY
-    assert config.model == "gpt-5.5"
+    assert config.openai_base_url == "https://kjm-kong.kajima.co.jp/openai/v1"
+    assert config.model == "response-standard"
     assert config.request_timeout_sec == 180
 
 
@@ -155,7 +156,7 @@ def test_update_on_a_missing_file_starts_from_the_defaults(tmp_path: Path) -> No
     updated = store.update(ConfigUpdate(openai_api_key=API_KEY))
 
     assert updated.openai_api_key == API_KEY
-    assert updated.model == "gpt-5.5"
+    assert updated.model == "response-standard"
 
 
 @pytest.mark.parametrize(
@@ -220,7 +221,11 @@ def test_blank_environment_variables_are_ignored(tmp_path: Path) -> None:
 
     config = ConfigStore(tmp_path / "config.json", environ=environ).load()
 
-    assert (config.openai_api_key, config.openai_base_url, config.model) == ("", "", "gpt-5.5")
+    assert (config.openai_api_key, config.openai_base_url, config.model) == (
+        "",
+        "https://kjm-kong.kajima.co.jp/openai/v1",
+        "response-standard",
+    )
 
 
 def test_update_does_not_write_environment_values_into_the_file(tmp_path: Path) -> None:

@@ -153,7 +153,7 @@ async def test_extract_sends_a_responses_api_request_with_the_documented_shape()
     assert str(request.url) == f"{BASE_URL}/responses"
     assert request.headers["authorization"] == f"Bearer {API_KEY}"
     body = recorder.body
-    assert body["model"] == "gpt-5.5"
+    assert body["model"] == "response-standard"
     assert body["instructions"] == prompts.EXTRACT_SYSTEM_PROMPT
     assert body["store"] is False
     assert body["max_output_tokens"] == MAX_OUTPUT_TOKENS
@@ -216,13 +216,13 @@ async def test_configured_model_is_used() -> None:
     assert recorder.body["model"] == "gpt-5.5-mini"
 
 
-async def test_empty_base_url_uses_the_sdk_default() -> None:
+async def test_empty_base_url_uses_the_company_endpoint() -> None:
     recorder = Recorder(ok(EXTRACTION_RESULT))
     config = Config(openai_api_key=API_KEY, openai_base_url="")
 
     await make_client(recorder, config=config).extract(extract_request())
 
-    assert str(recorder.requests[0].url) == "https://api.openai.com/v1/responses"
+    assert str(recorder.requests[0].url) == "https://kjm-kong.kajima.co.jp/openai/v1/responses"
 
 
 async def test_empty_base_url_ignores_the_sdk_environment_variable(
@@ -235,7 +235,7 @@ async def test_empty_base_url_ignores_the_sdk_environment_variable(
 
     await make_client(recorder, config=config).extract(extract_request())
 
-    assert str(recorder.requests[0].url) == "https://api.openai.com/v1/responses"
+    assert str(recorder.requests[0].url) == "https://kjm-kong.kajima.co.jp/openai/v1/responses"
 
 
 async def test_configured_timeout_is_applied() -> None:

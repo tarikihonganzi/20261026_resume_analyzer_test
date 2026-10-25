@@ -83,7 +83,7 @@ def test_forbidden_request_has_no_effect(make_app: MakeApp) -> None:
         "/api/settings", json={"model": "hacked"}, headers={"Origin": "https://evil.example"}
     )
 
-    assert client.get("/api/settings").json()["model"] == "gpt-5.5"
+    assert client.get("/api/settings").json()["model"] == "response-standard"
 
 
 @pytest.mark.parametrize(
