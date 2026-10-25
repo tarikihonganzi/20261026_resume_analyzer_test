@@ -250,4 +250,38 @@ describe('設定ページ', () => {
       expect(screen.queryByText('API キーが設定されていません')).not.toBeInTheDocument()
     })
   })
+
+  it('接続テストは、ベース URL やモデル名が正しくないときは、サーバーに送らず、理由を示す', async () => {
+    await renderPage()
+    let sent = 0
+    server.use(
+      http.post('*/api/settings/test', () => {
+        sent += 1
+        return HttpResponse.json({ ok: true, message: '' })
+      }),
+    )
+    await userEvent.clear(urlInput())
+    await userEvent.type(urlInput(), 'llm.example.invalid')
+
+    await userEvent.click(testButton())
+
+    expect(
+      await screen.findByText('http:// または https:// で始まる URL を入力してください'),
+    ).toBeInTheDocument()
+    expect(sent).toBe(0)
+  })
+
+  it('読み込みに失敗したときは、設定のフォームを出さない（上部のバナーに任せる）', async () => {
+    server.use(
+      http.get('*/api/settings', () =>
+        HttpResponse.json({ code: 'storage_error', message: '読めません' }, { status: 500 }),
+      ),
+    )
+    renderWithProviders(<SettingsPage />)
+
+    await waitFor(() => {
+      expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    })
+    expect(screen.queryByLabelText('モデル名')).not.toBeInTheDocument()
+  })
 })

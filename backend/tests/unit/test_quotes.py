@@ -105,3 +105,16 @@ def test_no_source_text_is_skipped() -> None:
 
 def test_no_source_text_is_skipped_even_for_an_empty_quote() -> None:
     assert verify("", None) == "skipped"
+
+
+def test_a_standalone_dakuten_matches_the_composed_character_in_the_source() -> None:
+    # 単独の濁点（゛ U+309B）は、NFKC で「空白 + 結合濁点」になる。空白を除いたあと、結合濁点が
+    # 取り残されると、原文の「が」と一致しない（性質テストで見つかった不具合）
+    assert normalize("か゛") == normalize("が") == "が"
+    assert verify("か゛", "経歴: が 取得") == "match"
+
+
+def test_normalize_is_idempotent_for_the_cedilla_case() -> None:
+    once = normalize("R¸")
+
+    assert normalize(once) == once

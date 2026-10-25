@@ -6,11 +6,14 @@ HTTP を `httpx2.MockTransport` に差し替えるので、ネットワークも
 import asyncio
 import json
 import logging
+import time
 from collections.abc import Callable, Coroutine
 from datetime import date
 from typing import Any
+from unittest.mock import MagicMock
 
 import httpx2
+import openai
 import pytest
 
 from app.domain.errors import (
@@ -462,3 +465,27 @@ async def test_client_does_not_log_or_expose_the_key_in_repr() -> None:
 
     assert API_KEY not in repr(client)
     assert API_KEY not in repr(client._config)  # pyright: ignore[reportPrivateUsage]
+
+
+# --- SDK の例外の対応づけ（`_translate`）。HTTP 経由で再現しにくいものを、直接確かめる ---
+
+
+def translated(error: openai.OpenAIError) -> Exception:
+    return OpenAIClient._translate("extract", error, time.perf_counter())  # pyright: ignore[reportPrivateUsage]
+
+
+def test_a_truncated_completion_is_an_incomplete_response_error() -> None:
+    error = openai.LengthFinishReasonError(completion=MagicMock())
+
+    result = translated(error)
+
+    assert isinstance(result, LlmResponseError)
+    assert result.reason == "incomplete"
+
+
+def test_an_unknown_sdk_error_is_an_invalid_response_error_without_its_message() -> None:
+    result = translated(openai.OpenAIError("sk-secret-key-0000 と、職歴書の一部"))
+
+    assert isinstance(result, LlmResponseError)
+    assert result.reason == "invalid"
+    assert "sk-secret" not in str(result)

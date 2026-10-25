@@ -101,3 +101,19 @@ def test_posix_mode_is_0600(tmp_path: Path) -> None:
     restrict_to_owner(target)
 
     assert target.stat().st_mode & 0o777 == 0o600
+
+
+def test_posix_restriction_sets_owner_only_mode(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Windows では実際の権限を確かめられないので、呼び出しの内容を確かめる（POSIX の分岐）
+    calls: list[tuple[Path, int]] = []
+
+    def fake_chmod(path: str | os.PathLike[str], mode: int) -> None:
+        calls.append((Path(path), mode))
+
+    monkeypatch.setattr(os, "chmod", fake_chmod)
+
+    permissions._restrict_posix(tmp_path / "config.json")  # pyright: ignore[reportPrivateUsage]
+
+    assert calls == [(tmp_path / "config.json", 0o600)]

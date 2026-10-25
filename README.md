@@ -66,6 +66,7 @@ npm run start:demo
 | コマンド | 内容 |
 |---|---|
 | `npm run check` | lint・型検査・バックエンドとフロントのテスト。**ネットワークと API 費用を使いません。** コミットの前に実行します |
+| `npm run coverage` | カバレッジの測定（バックエンドは行と分岐の 99%、フロントは文 99%・分岐 95%）。しきい値を下回ると失敗します。詳しい表は `coverage/` に出ます |
 | `npm run e2e` | Playwright。偽の LLM（`APP_LLM_MODE=fake`）で、開発用とは別のポート（API 8100・画面 5273）にサーバーを自動で起動して通します。API 費用はかかりません |
 
 実 API のテスト（`backend/tests/live`）は、費用がかかるので、通常は実行しません。

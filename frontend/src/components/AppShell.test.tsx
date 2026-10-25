@@ -106,3 +106,32 @@ describe('AppShell', () => {
     expect(screen.queryByText('設定を読み込めませんでした')).not.toBeInTheDocument()
   })
 })
+
+describe('AppShell: 設定を読み込めないとき', () => {
+  it('理由と「再試行」を出し、押すと、もう一度読み込む', async () => {
+    let fails = true
+    server.use(
+      http.get('*/api/settings', () =>
+        fails
+          ? HttpResponse.json(
+              { code: 'storage_error', message: '設定を読めません' },
+              { status: 500 },
+            )
+          : HttpResponse.json({ ...defaultSettings, openai_api_key_masked: '' }),
+      ),
+    )
+    renderWithProviders(
+      <AppShell view="flow" onNavigate={vi.fn()}>
+        <p>本文</p>
+      </AppShell>,
+    )
+    expect(await screen.findByText('設定を読み込めませんでした')).toBeInTheDocument()
+    expect(screen.getByText('設定を読めません')).toBeInTheDocument()
+    fails = false
+
+    await userEvent.click(screen.getByRole('button', { name: '再試行' }))
+
+    expect(await screen.findByText('API キーが設定されていません')).toBeInTheDocument()
+    expect(screen.queryByText('設定を読み込めませんでした')).not.toBeInTheDocument()
+  })
+})

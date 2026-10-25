@@ -23,11 +23,13 @@ module-name = "app"
 [dependency-groups]
 dev = [
     "httpx>=0.28.1",
+    "hypothesis>=6.170.9",
     "openpyxl>=3.1.5",
     "pillow>=13.0.0",
     "pyright>=1.1.414",
     "pytest>=9.1.1",
     "pytest-asyncio>=1.4.0",
+    "pytest-cov>=7.1.0",
     "python-docx>=1.2.0",
     "python-pptx>=1.0.2",
     "reportlab>=5.1.0",
@@ -68,3 +70,13 @@ markers = ["live: 実 API を呼ぶテスト（費用がかかる。通常は実
 [tool.uv]
 # キャッシュとプロジェクトが別ドライブでも、ハードリンクの警告が出ないようにする
 link-mode = "copy"
+
+[tool.coverage.run]
+source = ["app"]
+branch = true
+
+[tool.coverage.report]
+exclude_also = [
+    # `python -m` で動かすときの入口だけ（中身は main() のテストで確かめている）
+    'if __name__ == "__main__":',
+]

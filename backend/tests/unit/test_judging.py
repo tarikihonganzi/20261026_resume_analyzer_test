@@ -315,3 +315,22 @@ def test_zero_and_fractional_years_are_not_problems() -> None:
         )
         == []
     )
+
+
+def test_two_extractions_for_the_same_condition_are_an_error() -> None:
+    # 同じ条件の結果が 2 件あると、どちらを採るかが決まらない。黙って片方を捨てない
+    with pytest.raises(ConditionMismatchError):
+        judge(
+            [boolean("a")],
+            [Extracted("a", has_skill=True), Extracted("a", has_skill=False)],
+        )
+
+
+def test_an_extraction_for_a_condition_that_was_not_asked_is_ignored() -> None:
+    # 条件にない抽出結果（LLM が余分に返したもの）は、無視する。判定を、狂わせない
+    result = judge(
+        [boolean("a")],
+        [Extracted("a", has_skill=True), Extracted("zzz", has_skill=False)],
+    )
+
+    assert [(j.condition_id, j.status) for j in result] == [("a", "achieved")]

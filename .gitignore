@@ -35,3 +35,6 @@ backend/tests/fixtures/out/
 # E2E の生成物（データ・架空の職歴書・レポート）
 e2e/.data/
 e2e/.fixtures/
+
+# hypothesis の実行記録
+.hypothesis/

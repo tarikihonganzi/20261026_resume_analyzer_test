@@ -232,3 +232,69 @@ describe('条件セット（受け入れ基準 8）', () => {
     expect(await screen.findByText('保存ファイルを書き込めません')).toBeInTheDocument()
   })
 })
+
+describe('条件セットの失敗と、キーボード', () => {
+  const failing = (method: 'put' | 'delete') =>
+    http[method]('*/api/condition-sets/:id', () =>
+      HttpResponse.json({ code: 'storage_error', message: '書き込めません' }, { status: 500 }),
+    )
+
+  it('上書きに失敗したら、サーバーのメッセージを出す', async () => {
+    renderPage()
+    await loadSavedSet()
+    server.use(failing('put'))
+    await userEvent.click(within(row('2級建築士')).getByText('任意'))
+
+    await userEvent.click(screen.getByRole('button', { name: '上書き保存' }))
+    await userEvent.click(await screen.findByRole('button', { name: '上書き' }))
+
+    expect(await screen.findByText('書き込めません')).toBeInTheDocument()
+  })
+
+  it('削除に失敗したら、サーバーのメッセージを出し、読み込んだセットは、そのまま残る', async () => {
+    renderPage()
+    await loadSavedSet()
+    server.use(failing('delete'))
+
+    await userEvent.click(screen.getByRole('button', { name: '条件セットを削除' }))
+    await userEvent.click(await screen.findByRole('button', { name: '削除' }))
+
+    expect(await screen.findByText('書き込めません')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '条件セットを削除' })).toBeInTheDocument()
+  })
+
+  it('名前の入力で Enter を押すと、保存する。名前が空なら、何もしない', async () => {
+    const calls = renderPage()
+    await userEvent.click(
+      within(await screen.findByRole('group', { name: '1級建築施工管理技士' })).getByText('任意'),
+    )
+    await userEvent.click(screen.getByRole('button', { name: /名前を付けて保存/ }))
+    const input = await dialogTextbox()
+
+    await userEvent.type(input, '   {Enter}')
+    expect(calls.created).toHaveLength(0)
+
+    await userEvent.clear(input)
+    await userEvent.type(input, '新しいセット{Enter}')
+
+    await waitFor(() => {
+      expect(calls.created).toHaveLength(1)
+    })
+  })
+
+  it('保存の画面を、キャンセルすると、何も保存しない', async () => {
+    const calls = renderPage()
+    await userEvent.click(
+      within(await screen.findByRole('group', { name: '1級建築施工管理技士' })).getByText('任意'),
+    )
+    await userEvent.click(screen.getByRole('button', { name: /名前を付けて保存/ }))
+    await userEvent.type(await dialogTextbox(), '途中の名前')
+
+    await userEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', { name: 'キャンセル' }),
+    )
+
+    // 閉じる動き（アニメーション）は、jsdom では終わらないので、保存されていないことだけを確かめる
+    expect(calls.created).toHaveLength(0)
+  })
+})

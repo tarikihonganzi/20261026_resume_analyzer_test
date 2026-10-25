@@ -44,8 +44,6 @@ def _status_for(error: DomainError) -> int:
         return 413
     if isinstance(error, ResumeError | NoConditionsError | LlmAuthError | InvalidConditionsError):
         return 422
-    if isinstance(error, ConditionSetNotFoundError):
-        return 404
     if isinstance(error, LlmError):
         return 502
     return 500
@@ -99,6 +97,19 @@ def register_exception_handlers(app: FastAPI) -> None:
             response.headers.update(error.headers)
         return response
 
+    async def handle_unexpected(request: Request, error: Exception) -> JSONResponse:  # pyright: ignore[reportUnusedFunction]
+        # 想定外の失敗も、同じ形で返す。例外のメッセージ・スタックは、利用者に返さず、ログにも、
+        # 型の名前だけを残す（API キーや職歴書の内容が、メッセージに紛れ込むのを避ける）
+        logger.error("unexpected error type=%s", type(error).__name__)
+        return _json(
+            500,
+            ErrorResponse(
+                code="internal_error",
+                message="予期しないエラーが起きました。もう一度お試しください。",
+            ),
+        )
+
+    app.add_exception_handler(Exception, handle_unexpected)
     app.add_exception_handler(StarletteHTTPException, handle_http_exception)  # pyright: ignore[reportArgumentType]
     app.add_exception_handler(RequestValidationError, handle_invalid_request)  # pyright: ignore[reportArgumentType]
     app.add_exception_handler(ValidationError, handle_invalid_request)  # pyright: ignore[reportArgumentType]

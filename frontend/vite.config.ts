@@ -26,5 +26,21 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
+    // `npm run coverage` で測る。しきい値は、下回ったら失敗にして、テストが減るのを防ぐ
+    coverage: {
+      provider: 'v8',
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: [
+        'src/**/*.test.{ts,tsx}',
+        'src/test/**',
+        // OpenAPI から生成した型（手で書いていない）
+        'src/api/types.gen.ts',
+        // 起動の配線だけ（React を画面に取り付ける）。ここに、ロジックは置かない
+        'src/main.tsx',
+      ],
+      reporter: ['text-summary', 'text', 'html', 'lcov'],
+      reportsDirectory: '../coverage/frontend',
+      thresholds: { statements: 98, branches: 94, functions: 98, lines: 98 },
+    },
   },
 })

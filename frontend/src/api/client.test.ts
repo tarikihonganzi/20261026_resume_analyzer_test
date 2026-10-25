@@ -110,3 +110,32 @@ describe('api client', () => {
     fetchSpy.mockRestore()
   })
 })
+
+describe('サーバーのエラーの形が、想定と違うとき', () => {
+  it('code・message が文字列でなければ、汎用のメッセージにして、HTTP の番号を添える', async () => {
+    server.use(
+      http.get('*/api/catalog', () =>
+        HttpResponse.json({ code: 5, message: null }, { status: 502 }),
+      ),
+    )
+
+    await expect(api.catalog()).rejects.toMatchObject({
+      status: 502,
+      code: 'unexpected_response',
+      message: expect.stringContaining('HTTP 502') as string,
+    })
+  })
+
+  it('fields が配列でなければ、空として扱う', async () => {
+    server.use(
+      http.get('*/api/catalog', () =>
+        HttpResponse.json(
+          { code: 'invalid_request', message: '入力が正しくありません', fields: 'x' },
+          { status: 422 },
+        ),
+      ),
+    )
+
+    await expect(api.catalog()).rejects.toMatchObject({ code: 'invalid_request', fields: [] })
+  })
+})

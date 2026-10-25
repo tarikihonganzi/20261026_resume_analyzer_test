@@ -1,6 +1,6 @@
 """ローカル API の保護（仕様 10、13.1 #20）: Host と Origin の検査。CORS は有効にしない。"""
 
-from collections.abc import Callable
+from collections.abc import Callable, MutableMapping
 from pathlib import Path
 from typing import Any
 
@@ -268,3 +268,23 @@ def test_broken_multipart_is_a_json_error(make_app: MakeApp) -> None:
     assert response.status_code == 400
     assert response.json()["code"] == "http_400"
     assert set(response.json()) == {"code", "message"}
+
+
+async def test_non_http_scopes_pass_through_untouched() -> None:
+    # lifespan（起動・終了）などの、HTTP でない通信は、Host・Origin の検査の対象外
+    from app.api.security import LocalOnlyMiddleware
+
+    seen: list[str] = []
+
+    async def inner(scope: Any, receive: Any, send: Any) -> None:
+        seen.append(scope["type"])
+
+    async def receive() -> dict[str, Any]:
+        return {}
+
+    async def send(message: MutableMapping[str, Any]) -> None:
+        raise AssertionError("応答を返してはいけない")
+
+    await LocalOnlyMiddleware(inner)({"type": "lifespan"}, receive, send)
+
+    assert seen == ["lifespan"]

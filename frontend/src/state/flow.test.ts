@@ -998,3 +998,60 @@ describe('複数の職歴書', () => {
     expect(state.step).toBe(1)
   })
 })
+
+describe('リデューサーの端の挙動', () => {
+  it('評価中でないときの「キャンセル」は、何もしない（同じ状態を返す）', () => {
+    const state = atResume()
+
+    expect(reducer(state, { type: 'cancelEvaluation' })).toBe(state)
+  })
+
+  it('評価中に、条件が変わっても、実行中の評価は、そのまま続く（リデューサーが勝手に捨てない）', () => {
+    const running = reducer(withCheckedResume(), { type: 'startEvaluation' })
+
+    const state = reducer(running, { type: 'setMinValue', id: 'skill-revit', minValue: 3 })
+
+    // 選択のないステップへの最低値の指定は、無視する
+    expect(state).toBe(running)
+    const changed = reducer(running, select('qual-2', 'boolean', 'optional'))
+    expect(changed.evaluation).toEqual(running.evaluation)
+  })
+
+  it('年数の自由記述は、評価に送る条件に、最低値つきで入る。使わないものは入らない', () => {
+    const years: Condition = { ...custom, id: 'custom-years', kind: 'number', unit: '年' }
+    const state = run([
+      { type: 'addCustom', condition: years },
+      { type: 'setMinValue', id: 'custom-years', minValue: 4 },
+      { type: 'setMode', id: 'custom-years', kind: 'number', mode: 'required' },
+      { type: 'addCustom', condition: { ...custom, id: 'custom-off' } },
+      { type: 'setMode', id: 'custom-off', kind: 'boolean', mode: 'off' as never },
+    ])
+
+    const conditions = buildConditions([], state)
+
+    expect(conditions.map((c) => c.id)).toEqual(['custom-years'])
+    expect(conditions[0]).toMatchObject({ required: true, min_value: 4, kind: 'number' })
+  })
+
+  it('選択のない自由記述を編集しても、任意として選ばれる', () => {
+    // 選択が、何かの理由で、失われていても、編集で、壊れた状態にならない
+    const state = reducer(
+      { ...initialState, customConditions: [custom] },
+      { type: 'updateCustom', condition: { ...custom, label: '改名' } },
+    )
+
+    expect(state.selections[custom.id]).toMatchObject({ mode: 'optional' })
+    expect(state.customConditions[0]?.label).toBe('改名')
+  })
+
+  it('年数の自由記述を、編集して年数の条件にすると、最低値は、編集した値になる', () => {
+    const added = reducer(initialState, { type: 'addCustom', condition: custom })
+
+    const edited = reducer(added, {
+      type: 'updateCustom',
+      condition: { ...custom, kind: 'number', min_value: 3, unit: '年' },
+    })
+
+    expect(edited.selections[custom.id]).toMatchObject({ kind: 'number', minValue: 3 })
+  })
+})
