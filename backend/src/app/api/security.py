@@ -44,6 +44,7 @@ class LocalOnlyMiddleware:
 
         origin = headers.get("origin")
         if origin is not None and scope["method"] not in _SAFE_METHODS:
+            # Origin は「スキーム://ホスト:ポート」。ブラウザが送る値と同じ形に組み立てて、比べる
             own_origin = f"{scope['scheme']}://{host.strip()}".lower()
             if origin.strip().lower() != own_origin:
                 await self._reject(

@@ -114,6 +114,7 @@ export function ResumeList({ items, onRemove }: ResumeListProps) {
           <ResumeRow key={item.id} item={item} onRemove={onRemove} />
         ))}
       </ul>
+      {/* 状態の文が出たり消えたりしても、下の部品の位置がずれないよう、1 行分の高さを確保する */}
       <div aria-live="polite" style={{ marginTop: 8, minHeight: 22 }}>
         {status === 'ok' ? (
           <Typography.Text type="secondary">

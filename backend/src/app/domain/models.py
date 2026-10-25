@@ -12,6 +12,7 @@ from pydantic import (
     model_validator,
 )
 
+# 補足説明の最大文字数（仕様 5.1）。プロンプトに入る量を抑えるための上限
 DESCRIPTION_MAX_LENGTH = 500
 # 前後の空白を除く。空なら、補足説明なし（None）として扱う
 Description = Annotated[
@@ -74,6 +75,7 @@ class ConditionSet(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     id: str = Field(min_length=1)
+    # 条件セットの名前の最大文字数（仕様 5.2）。画面の入力欄の上限と同じ
     name: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=100)]
     conditions: list[Condition]
     created_at: AwareDatetime
@@ -106,7 +108,9 @@ class Config(BaseModel):
     model: str = Field(default=DEFAULT_MODEL, min_length=1)
     # 0 は無制限
     max_file_size_mb: int = Field(default=0, ge=0)
+    # PDF を LLM に渡すときの解像度。スキャン画像の小さな文字も読めるよう、既定は high（仕様 5.3）
     pdf_detail: PdfDetail = "high"
+    # LLM の 1 回の呼び出しを待つ秒数。推論に時間がかかるので長めにする（仕様 8.1）
     request_timeout_sec: int = Field(default=180, gt=0)
 
 

@@ -14,6 +14,7 @@ import type {
   Stage,
 } from '../api/types'
 
+/** 画面の段階。0 = ① 条件、1 = ② 書類、2 = ③ 結果。 */
 export type Step = 0 | 1 | 2
 export type Mode = 'off' | 'optional' | 'required'
 export type StepStatus = 'wait' | 'process' | 'finish' | 'error'
@@ -335,12 +336,14 @@ export function reducer(state: FlowState, action: Action): FlowState {
         ),
       })
 
+    // ① から ② へ。条件がそろっているときだけ進める
     case 'next':
       if (state.step === 0 && isConditionsComplete(state)) {
         return { ...state, step: 1, furthest: Math.max(state.furthest, 1) as Step }
       }
       return state
 
+    // 1 つ前の段階へ。評価中は戻れない（戻ると評価の要求が取り消されるため）
     case 'back':
       if (state.evaluation.status === 'running' || state.step === 0) return state
       return reducer(state, { type: 'goTo', step: (state.step - 1) as Step })
@@ -395,6 +398,8 @@ export function reducer(state: FlowState, action: Action): FlowState {
       if (!isCurrentCheck(state, action.id)) return state
       return withCheck(state, action.id, { status: 'error', error: action.error })
 
+    // 評価を始める。② から押したとき、または失敗した ③ からの再実行のときだけ。
+    // 書類がすべて使える状態で、条件がそろっていることも必要（二重の開始も防ぐ）
     case 'startEvaluation': {
       const canStart =
         state.evaluation.status !== 'running' &&
@@ -427,6 +432,7 @@ export function reducer(state: FlowState, action: Action): FlowState {
       if (!isCurrentRun(state, action.runId)) return state
       return { ...state, evaluation: { status: 'error', error: action.error } }
 
+    // 評価の取り消し。② に戻る（結果がないので ③ へは進めない状態に戻す）
     case 'cancelEvaluation':
       if (state.evaluation.status !== 'running') return state
       return { ...state, step: 1, furthest: 1, evaluation: { status: 'idle' } }

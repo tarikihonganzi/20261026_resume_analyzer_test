@@ -44,6 +44,7 @@ const child = spawn(
   },
 )
 
+// uvicorn が終わったら、このスクリプトも終わる。Playwright が止めるときは、uvicorn も止める
 child.on('exit', (code) => process.exit(code ?? 0))
 for (const signal of ['SIGINT', 'SIGTERM']) {
   process.on(signal, () => child.kill())

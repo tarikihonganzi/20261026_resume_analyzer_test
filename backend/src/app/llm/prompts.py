@@ -168,6 +168,10 @@ def build_extract_input(request: ExtractRequest, *, pdf_detail: PdfDetail) -> In
 def _by_condition_id[T](
     conditions: Sequence[Condition], items: Sequence[T], id_of: Callable[[T], str], what: str
 ) -> dict[str, T]:
+    """条件の id で引ける辞書にする。条件に対応するものがなければ `ConditionMismatchError`。
+
+    `what` は、エラーの文面に入れる名前（「抽出結果」「判定」）。
+    """
     by_id: dict[str, T] = {}
     for item in items:
         by_id[id_of(item)] = item

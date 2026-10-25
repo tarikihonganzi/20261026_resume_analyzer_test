@@ -61,7 +61,7 @@ class OpenAIClient:
         config: Config,
         *,
         http_client: httpx2.AsyncClient | None = None,
-        max_retries: int = 2,
+        max_retries: int = 2,  # SDK の自動再試行の回数（接続の失敗・429・5xx のとき）
     ) -> None:
         self._config = config
         self._http_client = http_client
