@@ -1,5 +1,7 @@
 # マッチング評価
 
+バージョン 1.0
+
 採用担当者が、1 人の応募者の職歴書（PDF・Word・Excel・PowerPoint・テキスト。複数の書類を合わせて）を、選んだ条件（資格・スキル・経験年数）に照らして評価する、ローカルで動く Web アプリです。
 
 - 条件ごとの有無・年数を LLM が読み取り、**マッチ度合いはコードで計算**し、最終スコアと根拠つきの評価文を LLM が作ります。
@@ -16,7 +18,7 @@
 | OS | Windows（開発・動作確認は Windows 11） |
 | [uv](https://docs.astral.sh/uv/) | `winget install --id=astral-sh.uv -e`。入れたあとは、新しいターミナルを開く。Python 3.14 は uv が用意する |
 | Node.js | 24.x（npm を使う） |
-| OpenAI API | API キー（社内のエンドポイントなら、そのベース URL も）。評価のときだけ必要 |
+| OpenAI 互換の Responses API | API キー。評価のときだけ必要（画面を試すだけなら、下の「API キーなしで画面を試す」で足りる）。ベース URL とモデル名は、社内の API が既定値 |
 
 ## セットアップ
 
@@ -31,7 +33,7 @@ npm run install:browsers --prefix e2e    # E2E を実行する場合だけ（Chr
 npm run start
 ```
 
-フロントをビルドし、FastAPI が画面と API を **1 つのプロセス**で配信します。ブラウザで <http://127.0.0.1:8000> を開きます。`127.0.0.1` だけで待ち受けるので、他の PC からは開けません。止めるときは `Ctrl+C` です。
+フロントをビルドし、FastAPI が画面と API を **1 つのプロセス**で配信します。ブラウザで <http://127.0.0.1:8000> を開きます。`127.0.0.1` だけで待ち受けるので、他の PC からは開けません。止めるときは `Ctrl+C` です（ウィンドウを閉じるなどで強制終了すると、裏の `uvicorn` が残ることがあります。次の起動が「ポートが使用中」で失敗するときは、`Get-NetTCPConnection -LocalPort 8000` で確かめて止めます）。
 
 開発するときは、`npm run dev`（バックエンド 8000 と Vite 5173。画面は <http://127.0.0.1:5173>）を使います。
 
@@ -43,6 +45,18 @@ npm run start
 - 環境変数 `OPENAI_API_KEY`・`OPENAI_BASE_URL`・`OPENAI_MODEL` は、設定ファイルにまだ値がないときの初期値です。設定ページで保存した値が優先されます。どれもないときは、社内の API（ベース URL `https://kjm-kong.kajima.co.jp/openai/v1`、モデル `response-standard`）を使います。
 - 変更は、アプリを再起動せずに、次の評価から反映されます。
 
+### API キーなしで画面を試す
+
+偽の LLM（固定の規則で結果を返す）で起動すると、API キーも通信もなしに、画面の操作を一通り試せます。結果の内容は、本物の評価ではありません（画面の確認用です）。
+
+```powershell
+$env:APP_LLM_MODE = 'fake'      # 偽の LLM を使う
+$env:APP_FAKE_DELAY_SEC = '1'   # 段階ごとに 1 秒待つ（進捗の表示とキャンセルを見られる）
+npm run start
+```
+
+ブラウザで <http://127.0.0.1:8000> を開き、画面右上の「設定」で、API キーに**適当な文字列**（例: `demo-key-0000`。`bad` で始まる文字列は、接続テストが失敗する例になります）を保存すると、「評価する」が押せます。試すための架空の書類（`resume.docx`・`resume_digital.pdf` など）は、`uv run --directory backend python tests/fixtures/resume_factory.py <出力先のフォルダ>` で作れます。同じ PowerShell で本物の LLM に戻すときは、`Remove-Item Env:APP_LLM_MODE, Env:APP_FAKE_DELAY_SEC` を実行します。
+
 ## 使い方
 
 1. **① 条件** … プリセット（75 件）から、条件ごとに「使わない・任意・必須」を選びます。年数の条件は最低年数も入れます。自由記述の条件（補足説明つき）も足せます。条件セットとして保存し、あとで読み込めます。
@@ -53,7 +67,7 @@ npm run start
 
 ## デモモード（他の PC から開く）
 
-デモのときだけ、同じネットワークの他の PC から開けるようにできます。
+デモのときだけ、同じネットワークの他の PC から開けるようにできます。上の「API キーなしで画面を試す」と組み合わせると、API キーなしでデモができます。
 
 ```powershell
 npm run start:demo
