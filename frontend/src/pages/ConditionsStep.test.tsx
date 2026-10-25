@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { FlowProvider } from '../state/flow-context'
 import { renderWithProviders } from '../test/render'
 import { server } from '../test/server'
@@ -190,5 +190,81 @@ describe('① 自由記述と要約パネル（受け入れ基準 2）', () => {
       expect(screen.queryByRole('group', { name: '耐震改修' })).not.toBeInTheDocument()
     })
     expect(screen.getByText(/使う条件を「任意」か「必須」にしてください/)).toBeInTheDocument()
+  })
+})
+
+describe('① 要約パネルからの操作', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  function stubScroll() {
+    // jsdom には、scrollIntoView がない
+    const spy = vi.fn()
+    window.HTMLElement.prototype.scrollIntoView = spy
+    return spy
+  }
+
+  it('要約の項目を押すと、一覧のその行へ移動する', async () => {
+    const scroll = stubScroll()
+    renderPage()
+    await choose('2級建築士', '必須')
+
+    await userEvent.click(screen.getByRole('button', { name: '2級建築士' }))
+
+    expect(scroll).toHaveBeenCalledWith({ behavior: 'smooth', block: 'center' })
+    expect(scroll.mock.contexts[0]).toBe(document.getElementById('condition-q2'))
+  })
+
+  it('絞り込みで隠れている行は、絞り込みを外して、現れてから移動する', async () => {
+    const scroll = stubScroll()
+    renderPage()
+    await choose('2級建築士', '必須')
+    await userEvent.type(screen.getByRole('textbox', { name: '条件を検索' }), 'revit')
+    expect(screen.queryByRole('group', { name: '2級建築士' })).not.toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: '2級建築士' }))
+
+    expect(screen.getByRole('textbox', { name: '条件を検索' })).toHaveValue('')
+    expect(await screen.findByRole('group', { name: '2級建築士' })).toBeInTheDocument()
+    await waitFor(() => {
+      expect(scroll.mock.contexts.at(-1)).toBe(document.getElementById('condition-q2'))
+    })
+  })
+
+  it('「自由記述で条件を追加」を押すと、入力の画面が開く。キャンセルで、何も足さずに閉じる', async () => {
+    renderPage()
+    await screen.findByText('1級建築施工管理技士')
+    const panel = screen.getByText('選択中の条件').closest('.ant-card') as HTMLElement
+
+    await userEvent.click(within(panel).getByRole('button', { name: /自由記述で条件を追加/ }))
+    await userEvent.type(await screen.findByRole('textbox', { name: '条件の名前' }), '耐震診断')
+    await userEvent.click(screen.getByRole('button', { name: 'キャンセル' }))
+
+    // 閉じる動き（アニメーション）は、jsdom では終わらないので、条件が足されていないことだけを確かめる
+    expect(screen.queryByRole('group', { name: '耐震診断' })).not.toBeInTheDocument()
+    expect(screen.getByText(/使う条件を「任意」か「必須」にしてください/)).toBeInTheDocument()
+  })
+
+  it('読み込みに失敗したあと、「再読み込み」を押すと、もう一度読み込んで、一覧を出す', async () => {
+    let fails = true
+    server.use(
+      http.get('*/api/catalog', () =>
+        fails
+          ? HttpResponse.json({ code: 'storage_error', message: '読み込めません' }, { status: 500 })
+          : HttpResponse.json({ items: catalog }),
+      ),
+    )
+    renderWithProviders(
+      <FlowProvider>
+        <FlowPage />
+      </FlowProvider>,
+    )
+    await screen.findByText('条件の一覧を読み込めませんでした')
+    fails = false
+
+    await userEvent.click(screen.getByRole('button', { name: '再読み込み' }))
+
+    expect(await screen.findByRole('group', { name: '2級建築士' })).toBeInTheDocument()
   })
 })

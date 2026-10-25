@@ -552,3 +552,33 @@ async def test_the_size_limit_applies_to_each_file() -> None:
 
     with pytest.raises(FileTooLargeError):
         await load_many([("経歴.txt", TEXT.encode()), big], max_size_mb=1)
+
+
+# --- 取り込みの異常系（変換器の失敗・壊れた zip） ---
+
+
+async def test_a_converter_that_cannot_handle_the_format_is_an_unsupported_format_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from markitdown import UnsupportedFormatException
+
+    class Unsupported:
+        def convert_stream(self, *args: object, **kwargs: object) -> None:
+            raise UnsupportedFormatException("内部の情報")
+
+    monkeypatch.setattr(resume, "_markitdown", lambda: Unsupported())
+
+    with pytest.raises(UnsupportedFormatError) as excinfo:
+        await load_file("経歴.docx", factory.make_docx())
+
+    assert "内部の情報" not in str(excinfo.value)
+    assert "docx" in str(excinfo.value)
+
+
+async def test_a_corrupted_zip_without_an_extension_cannot_be_identified() -> None:
+    corrupted = b"PK\x03\x04" + b"\x00" * 64
+
+    with pytest.raises(ConversionFailedError) as excinfo:
+        await load_file("経歴", corrupted)
+
+    assert "拡張子" in str(excinfo.value)

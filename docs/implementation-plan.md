@@ -376,6 +376,8 @@ type FlowState = {
 
 GitHub などの CI は使わず、`npm run check`（lint・型検査・単体・統合・フロントのテスト）をローカルのコミット前に実行する。E2E（`npm run e2e`）と実 API（`npm run live`）は手動で実行する。
 
+**カバレッジ（T-M9-10）:** `npm run coverage`（バックエンド: pytest-cov の行＋分岐、しきい値 98%。フロント: Vitest の v8、文 98%・分岐 94% など）。測定結果は、バックエンド 99.7%（改善前 98%）、フロントは文 99.0%・分岐 95.4%（改善前 94.5%・91.2%）。除外は、生成した型（`types.gen.ts`）、起動の配線（`main.tsx`）、`python -m` の入口だけ。純粋なロジックには、性質テスト（hypothesis。マッチ度合いの四捨五入・補正・引用の正規化と照合・出典名の一意化）を置く。性質テストは、引用の正規化が冪等でない不具合（13.1 #35）を見つけた。
+
 **E2E の構成（T-M8-01）:** `e2e/` に Playwright（`@playwright/test` を Playwright のブラウザのバージョンに固定）。`playwright.config.ts` の `webServer` が、`APP_LLM_MODE=fake`・`APP_FAKE_DELAY_SEC=1.0` のバックエンド（127.0.0.1:8100。`start-backend.mjs` が、起動のたびに `e2e/.data` を空にする）と、Vite（127.0.0.1:5273。`APP_API_PORT`・`APP_WEB_PORT` で転送先とポートを切り替える）を起動する。開発用の 8000・5173 とぶつからない。画面は Vite 経由で開くので、`/api` の転送と `Origin` の確認も通る。架空の職歴書は、`global-setup.ts` がバックエンドの `resume_factory.py` で生成する（Git に入れない）。サーバーのデータを共有するため、`workers: 1`。
 
 ---

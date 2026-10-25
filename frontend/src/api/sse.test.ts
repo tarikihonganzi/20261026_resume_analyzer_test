@@ -235,3 +235,31 @@ describe('streamEvaluation', () => {
     await expect(collect(controller.signal)).rejects.toMatchObject({ name: 'AbortError' })
   })
 })
+
+describe('streamEvaluation の想定外の応答', () => {
+  it('応答に本文がなければ、読み取れない旨のエラーにする', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(null, { status: 200 }))
+
+    await expect(collect()).rejects.toMatchObject({ code: 'invalid_stream' })
+  })
+
+  it('データが、JSON のオブジェクトでなければ（数値・文字列）、エラーにする', async () => {
+    respondWith('event: stage\ndata: 5\n\n')
+    await expect(collect()).rejects.toMatchObject({ code: 'invalid_stream' })
+
+    respondWith('event: stage\ndata: "extracting"\n\n')
+    await expect(collect()).rejects.toMatchObject({ code: 'invalid_stream' })
+  })
+
+  it('イベント名のないデータ（message）は、知らないイベントとして無視する', async () => {
+    respondWith('data: {"x":1}\n\n' + sse('result', result))
+
+    expect((await collect()).map((e) => e.event)).toEqual(['result'])
+  })
+
+  it('接続できなければ、アプリの確認を促すエラーにする', async () => {
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('Failed to fetch'))
+
+    await expect(collect()).rejects.toMatchObject({ code: 'network' })
+  })
+})

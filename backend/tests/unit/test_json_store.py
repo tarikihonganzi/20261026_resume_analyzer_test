@@ -225,3 +225,22 @@ def test_private_file_has_owner_only_access(
     write_json(path, {"openai_api_key": "sk-other"}, private=True)  # 上書きしても維持される
 
     assert_owner_only(path)
+
+
+def test_a_path_that_cannot_be_read_is_a_storage_error_without_the_directory(
+    tmp_path: Path,
+) -> None:
+    # ファイルのはずの場所がディレクトリのとき（読めない）。ファイルがない場合（MISSING）とは別
+    directory = tmp_path / "data.json"
+    directory.mkdir()
+
+    with pytest.raises(StorageError) as excinfo:
+        read_json(directory)
+
+    assert "data.json を読み込めません" in str(excinfo.value)
+    assert str(tmp_path) not in str(excinfo.value)
+
+
+def test_missing_is_falsy_looking_but_distinct_from_none() -> None:
+    assert repr(MISSING) == "MISSING"
+    assert MISSING is not None

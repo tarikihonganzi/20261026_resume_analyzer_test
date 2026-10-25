@@ -67,6 +67,7 @@
 - `npm run dev`: バックエンド（127.0.0.1:8000）と Vite（5173）を `concurrently` で起動。Vite が `/api` をバックエンドへ転送する。**止めるときは、`uvicorn --reload` が起動する子プロセス（Python の `multiprocessing` のワーカー）が残ることがある。残るとポートと `backend/.venv` のファイルを掴み続けるので、`Get-CimInstance Win32_Process` で親 PID を確認して止める。**
 - `npm run check`: lint・型検査・単体・統合・フロントのテスト。`check:backend`（ruff・pyright・pytest）と `check:frontend`（ESLint・Prettier・tsc・Vitest）に分けて実行もできる。**ネットワークと API 費用を使わない。**
 - `npm run e2e`: Playwright（偽の LLM で起動したサーバーに対して実行）。開発用とは別のポート（API 8100・Vite 5273）で、バックエンドと Vite を自動で起動・停止し、データは毎回まっさらにする。ブラウザは初回だけ `npm run install:browsers --prefix e2e` で入れる。`npm run check` には含めない。
+- `npm run coverage`: カバレッジの測定（バックエンドは pytest-cov、行＋分岐。フロントは Vitest の v8）。しきい値（バックエンド 98%、フロントは文 98%・分岐 94%）を下回ると失敗する。HTML は `coverage/` に出る（Git に入れない）。`npm run check` には含めない。
 - `npm run live`: 実 API のテスト。**費用がかかるので、ユーザーが依頼したときだけ実行する。**
 - `npm run build`: フロントを型検査してビルドする。
 - `npm run start`: ビルドして、FastAPI が画面と API を 1 プロセスで配信する（127.0.0.1:8000。`scripts/start.mjs`）。`npm run start:demo` は、他の PC からのアクセスを許す**デモモード**（0.0.0.0・`APP_ALLOW_REMOTE=1`。デモのときだけ）。
