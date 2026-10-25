@@ -5,6 +5,7 @@ HTTP を知らない。進捗と結果を、イベントの非同期ジェネレ
 """
 
 import logging
+import time
 from collections.abc import AsyncIterator, Sequence
 from dataclasses import dataclass
 from datetime import date
@@ -55,6 +56,10 @@ class ErrorEvent:
 
 
 PipelineEvent = StageEvent | ResultEvent | ErrorEvent
+
+
+def _elapsed_ms(started: float) -> int:
+    return int((time.perf_counter() - started) * 1000)
 
 
 async def _extract(
@@ -159,9 +164,14 @@ async def run(
     if not conditions:
         raise NoConditionsError("評価する条件がありません")
 
+    # ログには、件数・段階・所要時間だけを残す。書類の名前・内容、条件の名前は、残さない（仕様 8.3）
+    logger.info("evaluation start documents=%d conditions=%d", len(resumes), len(conditions))
+    started = time.perf_counter()
+
     try:
         yield StageEvent("extracting")
         extractions = await _extract(client, resumes, conditions, today)
+        logger.info("stage=extracting done duration_ms=%d", _elapsed_ms(started))
 
         judgements = judge(conditions, list(extractions.values()))
         rate = match_rate(judgements)
@@ -169,6 +179,7 @@ async def run(
         status_by_id = {j.condition_id: j.status for j in judgements}
 
         yield StageEvent("scoring")
+        scoring_started = time.perf_counter()
         evaluation = await client.evaluate(
             EvaluateRequest(
                 resumes=resumes,
@@ -180,11 +191,21 @@ async def run(
                 missing_required=missing,
             )
         )
+        logger.info("stage=scoring done duration_ms=%d", _elapsed_ms(scoring_started))
     except (LlmError, ExtractionInconsistentError) as e:
+        logger.warning("evaluation failed code=%s", e.code)
         yield ErrorEvent(code=e.code, message=str(e))
         return
 
     clipped = clip_score(evaluation.score, rate)
+    logger.info(
+        "evaluation done score=%d match_rate=%d clipped=%s missing_required=%d duration_ms=%d",
+        clipped.score,
+        rate,
+        clipped.clipped,
+        len(missing),
+        _elapsed_ms(started),
+    )
     yield ResultEvent(
         EvaluationResult(
             score=clipped.score,

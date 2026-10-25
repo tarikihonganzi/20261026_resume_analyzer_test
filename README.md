@@ -79,6 +79,7 @@ npm run start:demo
 |---|---|
 | `OPENAI_API_KEY`・`OPENAI_BASE_URL`・`OPENAI_MODEL` | 設定の初期値（設定ページで保存した値が優先） |
 | `APP_DATA_DIR` | データの置き場所（既定は、リポジトリの `data/`） |
+| `APP_LOG_DIR`・`APP_LOG_LEVEL` | ログの出力先（既定は、リポジトリ直下の `log/`）と、レベル（既定は INFO）。`log/app.log` に、5 MB ごとのローテーションで残る |
 | `APP_PORT` | `npm run start` の待ち受けポート（既定 8000） |
 | `APP_STATIC_DIR` | 配信する、ビルド済みのフロント（既定は `frontend/dist`。なければ API だけ） |
 | `APP_ALLOW_REMOTE` | `1` のときだけ、他の PC からのアクセスを許す。`npm run start:demo` が指定する |
@@ -87,6 +88,7 @@ npm run start:demo
 ## 個人情報の扱い
 
 - 職歴書の内容は、サーバーのディスクにもログにも残しません。評価のたびに、ブラウザから送り直します（再読み込みすると、画面の状態は消えます）。
+- ログ（`log/app.log`）には、リクエスト ID・所要時間・件数・トークン使用量・エラーの種類だけを記録します。API キーや、書類の名前・内容は、記録しません。
 - LLM への送信は `store=false` です。PDF は、手元でテキストにせず、そのまま LLM に渡します。
 - ローカルの API は `127.0.0.1` だけで待ち受け、`Host` と `Origin` を検査します（CORS は無効）。
 
@@ -99,4 +101,5 @@ e2e/        Playwright
 scripts/    起動スクリプト
 docs/       仕様書・実装計画
 data/       設定・条件セット（実行時に作られる。Git に入れない）
+log/        ログ（app.log。実行時に作られる。Git に入れない）
 ```

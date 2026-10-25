@@ -1,5 +1,6 @@
 # 実行時データ・秘密情報
 /data/
+/log/
 .env
 .env.*
 CLAUDE.local.md
@@ -38,3 +39,4 @@ e2e/.fixtures/
 
 # hypothesis の実行記録
 .hypothesis/
+e2e/.log/

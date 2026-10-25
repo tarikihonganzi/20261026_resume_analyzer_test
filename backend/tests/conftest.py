@@ -2,12 +2,17 @@ import os
 import re
 import subprocess
 import sys
+import tempfile
 from collections.abc import Callable, Mapping
 from pathlib import Path
 from typing import Any, Literal
 
 import pytest
 from fastapi.testclient import TestClient
+
+# `app.main` は、読み込むときに、アプリ（`app`）を作り、ログのファイルを用意する。テストが、
+# リポジトリの `log/` に書かないよう、読み込む前に、出力先を、一時フォルダに向ける
+os.environ.setdefault("APP_LOG_DIR", tempfile.mkdtemp(prefix="app-test-log-"))
 
 from app.main import create_app
 from app.settings import AppSettings

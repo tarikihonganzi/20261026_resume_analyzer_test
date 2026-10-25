@@ -449,3 +449,39 @@ async def test_the_single_document_rule_is_kept() -> None:
     quote = Quote(source_name="別のファイル.pdf", location=None, text="資格: 1級建築施工管理技士")
 
     assert await quote_verdict(quote, [LICENSE_DOC]) == ("履歴書.docx", "match")
+
+
+# --- ログ（仕様 8.3）。段階と件数だけを残し、内容は残さない ---
+
+
+async def test_stages_and_the_outcome_are_logged_without_any_content(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    caplog.set_level("INFO", logger="app")
+
+    await collect(FakeClient(), resumes=[TEXT_RESUME, PDF_RESUME])
+
+    messages = [r.getMessage() for r in caplog.records if r.name == "app.pipeline"]
+    assert messages[0] == "evaluation start documents=2 conditions=4"
+    assert any(m.startswith("stage=extracting done duration_ms=") for m in messages)
+    assert any(m.startswith("stage=scoring done duration_ms=") for m in messages)
+    assert any(
+        m.startswith("evaluation done score=") and "match_rate=50" in m and "clipped=" in m
+        for m in messages
+    )
+    everything = " ".join(r.getMessage() for r in caplog.records)
+    assert "田中.docx" not in everything
+    assert TEXT.splitlines()[0] not in everything
+
+
+async def test_a_failed_evaluation_is_logged_with_the_error_code_only(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    caplog.set_level("INFO", logger="app")
+    client = FakeClient(fail_with=LlmUnavailableError("rate_limit"))
+
+    events = await collect(client)
+
+    assert isinstance(events[-1], ErrorEvent)
+    messages = [r.getMessage() for r in caplog.records if r.name == "app.pipeline"]
+    assert "evaluation failed code=llm_unavailable" in messages

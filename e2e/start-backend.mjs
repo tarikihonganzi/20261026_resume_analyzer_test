@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const dataDir = resolve(here, '.data')
+const logDir = resolve(here, '.log')
 const port = process.env.APP_API_PORT ?? '8100'
 
 // 前回の設定・条件セットが残っていると、テストの前提が崩れる
@@ -34,6 +35,8 @@ const child = spawn(
       // 進捗の表示とキャンセルを確かめられるよう、段階ごとに待つ
       APP_FAKE_DELAY_SEC: process.env.APP_FAKE_DELAY_SEC ?? '1.0',
       APP_DATA_DIR: dataDir,
+      // 開発用の log/ に、E2E のログを混ぜない
+      APP_LOG_DIR: logDir,
       // 実際のキー・URL が環境にあっても、E2E には持ち込まない
       OPENAI_API_KEY: '',
       OPENAI_BASE_URL: '',
