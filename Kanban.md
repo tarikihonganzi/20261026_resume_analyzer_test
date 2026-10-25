@@ -48,8 +48,16 @@
 ### M8: 仕上げ
 - **T-M8-02** 実 API での通し確認とコスト・待ち時間の実測 [M] — `npm run live`（ユーザーの依頼時のみ）
 
+### M9: UI 改善と複数の職歴書
+- **T-M9-02** 設定のベース URL の文言を直す [S] — 「空のときは、OpenAI の既定の URL を使います」を削除（仕様 6.3 は T-M9-01 で反映済み）
+- **T-M9-03** ① の改善（トグルの高さ・要約の色・「次へ」を右の固定列へ） [M] — 仕様 6.1・13.1 #32
+- **T-M9-04** 複数の職歴書（バックエンド） [L] — 仕様 5.3・5.4・7・13.1 #30。AC: 16。`pipeline`・`prompts`・`openai_client`・`/api/evaluations`・出典名の一意化・引用の照合・上限 5 件
+- **T-M9-05** 複数の職歴書（画面 ②・Steps） [L] — 依存: T-M9-04。AC: 12・13・16。アップロード済みの一覧と削除、Steps の「ファイルアップロード完了」、見出しのタグ廃止、評価中の Steps の色
+- **T-M9-06** 結果画面の再設計 [L] — 仕様 5.5・13.1 #31。AC: 5・6・14・15
+
 ## Done
 
+- **T-M9-01** 仕様の改訂（複数の職歴書・結果画面・① の「次へ」・ベース URL） — 2026-10-25。branch: `docs/T-M9-01-spec-update`。仕様 v0.16: 複数の職歴書（最大 5 件。13.1 #30）、結果画面の再設計（5.5・#31）、① の「次へ」を右の固定列へ（6.1・#32）、設定のベース URL の文言（6.3）、AC 12・13・15 の更新と AC 16 の追加。実装計画に M9 を追加。コードの変更なし（ドキュメントのみ）
 - **T-M8-03** エラー表示の網羅確認とアクセシビリティの基本 — 2026-10-25。branch: `feat/T-M8-03-errors-a11y`。仕様 5.6 の各エラーの表示をテストで網羅（再実行・条件に戻る・設定リンク）。E2E に axe（WCAG 2.1 A・AA）を追加し 6 画面で違反 0（原因: 薄い文字・青・タグの色のコントラスト不足 → theme.ts のトークンと TAG_STYLES で解消）。画面の切り替わりで region へフォーカスを移す（キーボード利用者のため）。キーボードだけの操作を E2E で確認。check 通過（pytest 623・vitest 284）・e2e 9 passed。【要確認】設定ページへのリンクを、仕様 5.6（認証エラーのみ）に加えて、リクエスト拒否（llm_request。モデル名・ベース URL の誤り）にも出した。主色の青を #1677ff → #0958d9 に変えた（コントラスト）
 - **T-M8-04** `npm run build`／`npm run start` と README — 2026-10-25。branch: `feat/T-M8-04-start`。npm run start（ビルド→ FastAPI が画面と API を 1 プロセスで配信。127.0.0.1:8000）と npm run start:demo（デモモード。0.0.0.0・APP_ALLOW_REMOTE=1・他の PC 用 URL を表示）。scripts/start.mjs（cmd.exe でも動くよう Node で環境変数を指定）。AppSettings.static_dir（APP_STATIC_DIR）と StaticFiles（API のルートのあと）。テスト 10 件（配信・優先順位・/api の未定義は JSON の 404・パストラバーサル・Host 検査・dist なし）。実機: ビルド済みで評価〜設定、LAN アドレス経由（デモ）で GET 200・同一 Origin の PUT 200・他サイトの Origin 403・通常モードでは別の Host が 400。ホイールに catalog.json が入ることを確認。README を追加。check 通過（pytest 623・vitest 275）・e2e 7 passed
 - **T-M8-01** Playwright の E2E（仕様 7.3 章の 6 シナリオ） — 2026-10-25。branch: `test/T-M8-01-e2e`。Playwright の E2E 7 本（計画 7.3 の 6 シナリオ＋条件を変えて再評価）。偽の LLM のバックエンド（8100）と Vite（5273）を webServer で自動起動し、データは毎回まっさら・架空の職歴書は resume_factory で生成。開発用ポートとぶつからないよう vite.config.ts を環境変数で切替可能に（strictPort）。画面は Vite 経由なので /api の転送と Origin の確認も通る。npm run e2e 7 passed、npm run check 通過（pytest 613・vitest 275）。AC1・2・6・7・8・10・11・12・13・14・15 を通しで確認
