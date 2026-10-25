@@ -50,11 +50,11 @@ test('① 条件・② 職歴書・③ 進捗・③ 結果・設定ページに�
   await expect(page.getByText('評価しています')).toBeVisible()
   await expectNoViolations(page, '③ 進捗')
 
-  await expect(page.getByText('最終スコア')).toBeVisible({ timeout: 20_000 })
-  await page
-    .getByRole('button', { name: /引用を見る/ })
-    .first()
-    .click()
+  await expect(page.getByText('最終スコア（AI 算出）')).toBeVisible({ timeout: 20_000 })
+  // 根拠を、いくつか開いた状態でも検査する
+  // （開くと、ボタンの名前が変わり、一覧から外れるので、先頭を押し続ける）
+  const closed = page.getByRole('button', { name: '根拠を見る' })
+  while ((await closed.count()) > 0) await closed.first().click()
   await expectNoViolations(page, '③ 結果')
 
   await page.getByRole('button', { name: /設定/ }).click()

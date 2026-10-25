@@ -1,36 +1,77 @@
-import { Card, Flex, Statistic, Tag, Typography } from 'antd'
+import { Card, Col, Row, Typography, theme } from 'antd'
 import type { EvaluationResult } from '../api/types'
-import { TAG_STYLES } from './tagStyles'
+import { requiredStatus, summarizeJudgements } from '../lib/result'
+import { ResultMark } from './ResultMark'
 
-/** 最終スコアとマッチ度合い。補正があったときは、元のスコアと補正の理由を併記する（仕様 5.5）。 */
+function RequiredLine({ result }: { result: EvaluationResult }) {
+  const status = requiredStatus(result)
+  switch (status.kind) {
+    case 'none':
+      return <Typography.Text type="secondary">必須条件は設定されていません</Typography.Text>
+    case 'clear':
+      return (
+        <Typography.Text>
+          <ResultMark kind="clear" /> 必須条件はすべてクリア
+        </Typography.Text>
+      )
+    case 'ng':
+      // 全幅のアラートにはせず、赤い文字で、条件名を示す（仕様 5.5）
+      return (
+        <Typography.Text style={{ color: '#cf1322', fontWeight: 600 }}>
+          <ResultMark kind="unmet" /> 必須条件 {status.count} 件が NG: {status.labels.join('、')}
+        </Typography.Text>
+      )
+  }
+}
+
+/**
+ * 最終スコア（AI 算出）を、青地の大きな数字で示し、隣に、マッチ度合い（スキルの充足度）と、
+ * 必須条件の状況を並べる（仕様 5.5、13.1 #31）。補正があったときは、元のスコアと理由を併記する。
+ */
 export function ScoreCard({ result }: { result: EvaluationResult }) {
+  const { token } = theme.useToken()
+  const { achieved, total } = summarizeJudgements(result.conditions)
+
   return (
-    <Card>
-      <Flex gap={48} align="flex-start" wrap>
-        <Flex vertical gap={4}>
-          <Statistic
-            title="最終スコア"
-            value={result.score}
-            suffix="/ 100"
-            styles={{ content: { fontSize: 48, fontWeight: 600 } }}
-          />
+    <Row gutter={[16, 16]}>
+      <Col xs={24} md={12}>
+        <div
+          style={{
+            background: token.colorPrimary,
+            color: '#fff',
+            borderRadius: 8,
+            padding: '20px 24px',
+            height: '100%',
+          }}
+        >
+          <div style={{ fontSize: 15 }}>最終スコア（AI 算出）</div>
+          <div style={{ lineHeight: 1.1, marginTop: 4 }}>
+            <span style={{ fontSize: 72, fontWeight: 700 }}>{result.score}</span>
+            <span style={{ fontSize: 20, marginLeft: 6 }}>/ 100</span>
+          </div>
           {result.clipped ? (
-            <Flex gap={8} align="center" wrap>
-              <Tag style={TAG_STYLES.warning}>補正あり</Tag>
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                AI の元のスコアは {result.original_score} 点。マッチ度合いから ±20
-                点の範囲に収めました。
-              </Typography.Text>
-            </Flex>
+            <div style={{ fontSize: 13, marginTop: 8 }}>
+              補正あり: AI の元のスコアは {result.original_score} 点。マッチ度合いから ±20
+              点の範囲に収めました。
+            </div>
           ) : null}
-        </Flex>
-        <Statistic
-          title="マッチ度合い"
-          value={result.match_rate}
-          suffix="%"
-          styles={{ content: { fontSize: 48 } }}
-        />
-      </Flex>
-    </Card>
+        </div>
+      </Col>
+      <Col xs={24} md={12}>
+        <Card style={{ height: '100%' }} styles={{ body: { padding: '20px 24px' } }}>
+          <Typography.Text type="secondary">マッチ度合い（スキルの充足度）</Typography.Text>
+          <div style={{ lineHeight: 1.1, marginTop: 4 }}>
+            <span style={{ fontSize: 40, fontWeight: 600 }}>{result.match_rate}</span>
+            <span style={{ fontSize: 18, marginLeft: 4 }}>%</span>
+          </div>
+          <Typography.Text type="secondary" style={{ display: 'block', marginTop: 4 }}>
+            {total} 件の条件のうち、{achieved} 件をクリア
+          </Typography.Text>
+          <div style={{ marginTop: 12 }}>
+            <RequiredLine result={result} />
+          </div>
+        </Card>
+      </Col>
+    </Row>
   )
 }
