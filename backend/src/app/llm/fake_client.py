@@ -25,6 +25,8 @@ _PDF_QUOTE = "（PDF の内容の引用）"
 
 
 class FakeClient:
+    """`LlmClient` を満たす偽物。呼び出された内容を `extract_calls`・`evaluate_calls` に残す。"""
+
     def __init__(
         self,
         *,
@@ -42,6 +44,7 @@ class FakeClient:
         """閉じるものはない（`ClosableLlmClient` に合わせるため）。"""
 
     async def _simulate(self) -> None:
+        """本物の呼び出しに近づけるための待ち時間と、指定された失敗。"""
         if self._delay_sec > 0:
             await asyncio.sleep(self._delay_sec)
         if self._fail_with is not None:

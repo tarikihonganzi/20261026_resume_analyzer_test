@@ -130,7 +130,7 @@ def test_source_and_test_files_are_not_ignored_by_git() -> None:
 
 
 def test_every_preset_has_a_description_that_defines_what_to_count() -> None:
-    """補足説明がないと、「品質管理」のような名前だけでは、LLM の判定がぶれる（仕様 13.1 #27）。"""
+    """補足説明がないと、「品質管理」のような名前だけでは、LLM の判定がぶれる（仕様 5.1）。"""
     for item in load_catalog():
         assert item.description, f"{item.label} に補足説明がありません"
         assert len(item.description) <= 500

@@ -7,7 +7,7 @@ interface SelectionSummaryProps {
   /** 項目をクリックしたときに、一覧の該当行へ移動する。 */
   onJump: (id: string) => void
   onAddCustom: () => void
-  /** ② へ進む。この列に置くので、一覧を最下部までスクロールしなくても押せる（仕様 6.1・13.1 #32）。 */
+  /** ② へ進む。この列に置くので、一覧を最下部までスクロールしなくても押せる（仕様 6.1）。 */
   onNext: () => void
   /** 進めない理由。進めるときは null。 */
   nextDisabledReason: string | null

@@ -1,4 +1,4 @@
-"""ローカル API の保護（仕様 10、13.1 #20）: Host と Origin の検査。CORS は有効にしない。"""
+"""ローカル API の保護（仕様 10）: Host と Origin の検査。CORS は有効にしない。"""
 
 from collections.abc import Callable, MutableMapping
 from pathlib import Path
@@ -163,7 +163,7 @@ def test_the_check_of_a_streaming_request_happens_before_the_body_is_read(
     assert response.status_code == 403
 
 
-# --- デモモード（APP_ALLOW_REMOTE=1。仕様 13.1 #26） ---
+# --- デモモード（APP_ALLOW_REMOTE=1。仕様 10） ---
 
 
 def make_demo_app(tmp_path: Path) -> TestClient:

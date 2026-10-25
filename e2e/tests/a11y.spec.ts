@@ -7,7 +7,7 @@ import {
   startEvaluation,
 } from './helpers'
 
-// アクセシビリティの基本（T-M8-03）。axe で、WCAG 2.1 A・AA の自動検査を、主な画面に行う。
+// アクセシビリティの基本。axe で、WCAG 2.1 A・AA の自動検査を、主な画面に行う。
 // 自動検査で分かるのは一部なので、キーボード操作とフォーカスの移動は、別のテストで確かめる。
 
 async function expectNoViolations(page: Page, label: string): Promise<void> {

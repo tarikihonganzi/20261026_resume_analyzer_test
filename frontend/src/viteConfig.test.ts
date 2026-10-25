@@ -5,7 +5,7 @@ describe('vite.config（開発時の API の転送）', () => {
   it('/api を、元の Host を保ったまま、バックエンドへ転送する', () => {
     // 文字列で書く（`'/api': 'http://...'`）と、changeOrigin が有効になり、Host がバックエンドの
     // ものに書き換わる。Origin は画面のままなので、バックエンドの Origin の確認で、POST・PUT・
-    // DELETE が 403 になる（Copilot のレビュー: PR#18。実機で再現して確認した）
+    // DELETE が 403 になる
     const proxy = config.server?.proxy?.['/api']
 
     expect(proxy).toBeTypeOf('object')

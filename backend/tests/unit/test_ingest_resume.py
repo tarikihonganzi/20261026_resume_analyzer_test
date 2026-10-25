@@ -474,7 +474,7 @@ async def test_check_contains_nothing_but_the_summary() -> None:
     assert set(check.model_dump()) == {"format", "source_name", "char_count"}
 
 
-# --- 複数の書類（仕様 5.3。13.1 #30） ---
+# --- 複数の書類（仕様 5.3） ---
 
 TEXT = factory.make_text()
 

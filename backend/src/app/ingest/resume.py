@@ -45,9 +45,9 @@ from app.domain.quotes import normalize
 from app.domain.source_name import PASTED_TEXT_NAME, make_unique, sanitize
 
 # 変換結果が、空白と Markdown の記号を除いてこの文字数に満たなければ「極端に短い」
-# とする（仕様 13.1 #24）
+# とする（仕様 5.3）
 MIN_TEXT_CHARS = 20
-# 1 回の評価に渡せる書類の数（仕様 5.3、13.1 #30）
+# 1 回の評価に渡せる書類の数（仕様 5.3）
 MAX_RESUMES = 5
 
 # Office 形式。拡張子と内容（zip・旧 Office の署名）が一致するはずの形式
@@ -217,6 +217,11 @@ def _office_format_of_zip(content: bytes) -> str | None:
 
 
 async def _load_file(filename: str, content: bytes, max_size_mb: int) -> ResumeInput:
+    """ファイル 1 件を検証して、評価に使う形にする。
+
+    形式は、拡張子だけでなく内容でも確かめる（拡張子と内容が食い違うファイルや、zip を
+    取りこぼさず、変換器に壊れたものを渡さないため）。
+    """
     _check_size(len(content), max_size_mb)
     source_name = sanitize(filename)
     extension = _extension_of(source_name)

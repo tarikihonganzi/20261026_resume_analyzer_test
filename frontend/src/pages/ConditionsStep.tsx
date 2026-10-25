@@ -107,6 +107,7 @@ export function ConditionsStep() {
           <Card>
             <ConditionSetBar
               conditions={buildConditions(catalog.data, state)}
+              // 条件が 1 件以上あり、最低年数がそろっているときだけ保存できる
               canSave={isConditionsComplete(state)}
               onLoad={(conditions) => {
                 // いまの一覧にない条件は、読み込まない（見えない条件が、選択に残らないように）
@@ -179,6 +180,7 @@ export function ConditionsStep() {
                   </Button>
                 ) : null
               }
+              // 自由記述の「追加」ボタンは、条件が 1 件もなくても、絞り込みで隠れていても、押せるようにする
               alwaysShow={
                 filters.category === null || filters.category === CUSTOM_CATEGORY
                   ? [CUSTOM_CATEGORY]

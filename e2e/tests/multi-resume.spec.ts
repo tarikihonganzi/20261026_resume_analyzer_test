@@ -6,7 +6,7 @@ test.beforeEach(async ({ request }) => {
   await registerApiKey(request)
 })
 
-// 仕様 13.1 #30: 1 人の応募者の複数の書類を、1 回の評価で渡せる。間違えて上げたものは、削除できる
+// 仕様 5.3: 1 人の応募者の複数の書類を、1 回の評価で渡せる。間違えて上げたものは、削除できる
 test('複数の書類（docx・PDF・txt）を上げ、間違えた 1 件を削除して、評価できる', async ({
   page,
 }) => {

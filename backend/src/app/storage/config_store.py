@@ -12,7 +12,7 @@ from app.domain.errors import StorageCorruptedError
 from app.domain.models import Config, ConfigUpdate
 from app.storage.json_store import MISSING, read_json, write_json
 
-# これより短いキーは、末尾 4 文字でも大半が分かってしまうので、一切見せない（仕様 13.1 #23）
+# これより短いキーは、末尾 4 文字でも大半が分かってしまうので、一切見せない（仕様 6.3）
 _MIN_LENGTH_TO_SHOW_SUFFIX = 12
 _MASK = "****"
 

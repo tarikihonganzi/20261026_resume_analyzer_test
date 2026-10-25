@@ -37,8 +37,8 @@ class Condition(BaseModel):
     unit: str | None
     source: ConditionSource
     category: str | None
-    # 何をこの条件として数えるかの、補足説明（任意）。LLM の判定の基準になる（仕様 5.1・13.1 #27）。
-    # 以前に保存したファイルにはないので、省略できる
+    # 何をこの条件として数えるかの、補足説明（任意）。LLM の判定の基準になる（仕様 5.1）。
+    # 省略できる（補足説明を持たない保存ファイルも読める）
     description: Description | None = None
 
     @field_validator("description", mode="after")

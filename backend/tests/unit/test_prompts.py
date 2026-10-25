@@ -394,7 +394,7 @@ def test_evaluate_input_also_carries_the_resume() -> None:
     assert items[0]["content"][1]["detail"] == "low"
 
 
-# --- 補足説明（description。仕様 5.1・13.1 #27） ---
+# --- 補足説明（description。仕様 5.1） ---
 
 
 def test_extract_conditions_carry_the_description_only_when_it_is_set() -> None:
@@ -440,7 +440,7 @@ def test_description_with_special_characters_is_kept_as_is() -> None:
     assert listed[0]["description"] == hostile  # JSON として正しくエスケープされ、構造を壊さない
 
 
-# --- 複数の書類（仕様 5.4。13.1 #30） ---
+# --- 複数の書類（仕様 5.4） ---
 
 MULTI = [
     PDF_RESUME,

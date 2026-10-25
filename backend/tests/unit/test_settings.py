@@ -42,7 +42,7 @@ def test_an_unknown_llm_mode_is_rejected(value: str) -> None:
     [("1", True), (" 1 ", True), ("true", False), ("yes", False), ("0", False), ("", False)],
 )
 def test_remote_access_is_enabled_only_by_exactly_one(value: str, expected: bool) -> None:
-    # 公開範囲を変える設定なので、曖昧な値（true・yes など）では、有効にしない（仕様 13.1 #26）
+    # 公開範囲を変える設定なので、曖昧な値（true・yes など）では、有効にしない（仕様 10）
     assert AppSettings.from_env({"APP_ALLOW_REMOTE": value}).allow_remote is expected
 
 

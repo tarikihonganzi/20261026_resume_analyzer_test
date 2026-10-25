@@ -134,7 +134,7 @@ def test_uploaded_docx_uses_its_file_name_as_the_source_name(make_app: MakeApp) 
     assert "田中_職務経歴書.docx" in result["conditions"][0]["reason"]
 
 
-# --- 複数の書類（仕様 5.3。13.1 #30） ---
+# --- 複数の書類（仕様 5.3） ---
 
 
 def test_several_files_and_a_pasted_text_are_passed_to_the_llm_in_order(

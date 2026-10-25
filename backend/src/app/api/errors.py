@@ -40,6 +40,7 @@ def _json(status: int, body: ErrorResponse) -> JSONResponse:
 
 
 def _status_for(error: DomainError) -> int:
+    """利用者の入力の問題は 413・422、外部（AI サービス）の失敗は 502、それ以外は 500。"""
     if isinstance(error, FileTooLargeError):
         return 413
     if isinstance(error, ResumeError | NoConditionsError | LlmAuthError | InvalidConditionsError):
@@ -50,6 +51,7 @@ def _status_for(error: DomainError) -> int:
 
 
 def _fields_of(error: RequestValidationError | ValidationError) -> list[str]:
+    """検証に失敗した項目名を、重複なしで並べる。入力値は、返さない。"""
     fields: list[str] = []
     for item in error.errors():
         location = ".".join(str(part) for part in item["loc"] if part not in ("body", "form"))
@@ -61,6 +63,7 @@ def _fields_of(error: RequestValidationError | ValidationError) -> list[str]:
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(DomainError)
     async def handle_domain_error(request: Request, error: DomainError) -> JSONResponse:  # pyright: ignore[reportUnusedFunction]
+        # 保存ファイルの問題は、利用者が直せないので、500 にして、ファイル名だけを知らせる
         if isinstance(error, StorageError):
             logger.error("storage error: %s", error)
             return _json(500, ErrorResponse(code="storage_error", message=str(error)))

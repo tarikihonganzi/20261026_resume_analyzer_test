@@ -41,7 +41,7 @@ def test_catalog_returns_the_presets(make_app: MakeApp) -> None:
     assert response.status_code == 200
     items = response.json()["items"]
     assert len(items) == 75
-    description = items[0].pop("description")  # 何をその条件として数えるか（仕様 13.1 #27）
+    description = items[0].pop("description")  # 何をその条件として数えるか（仕様 5.1）
     assert items[0] == {
         "id": "qual-kenchiku-sekou-1",
         "label": "1級建築施工管理技士",
@@ -458,7 +458,7 @@ def test_check_does_not_leave_anything_on_disk(make_app: MakeApp, tmp_path: Path
     assert not (tmp_path / "data").exists()
 
 
-# --- 補足説明（description。仕様 13.1 #27） ---
+# --- 補足説明（description。仕様 5.1） ---
 
 
 def test_condition_set_keeps_the_description_of_custom_conditions(make_app: MakeApp) -> None:
@@ -486,7 +486,7 @@ def test_condition_set_keeps_the_description_of_custom_conditions(make_app: Make
 
 def test_condition_without_a_description_field_is_still_accepted(make_app: MakeApp) -> None:
     legacy = condition("a")
-    del legacy["description"]  # 以前のフロント・以前に保存したファイルには、この項目がない
+    del legacy["description"]  # description を持たない形式でも、受け付ける
 
     response = make_app().post(
         "/api/condition-sets", json={"name": "古い形式", "conditions": [legacy]}

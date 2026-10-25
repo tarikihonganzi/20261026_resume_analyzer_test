@@ -34,7 +34,7 @@ def create_app(
     settings = settings or AppSettings.from_env()
     if settings.log_dir is not None:
         configure_logging(settings.log_dir, level=settings.log_level)
-    app = FastAPI(title="マッチング評価")
+    app = FastAPI(title="マッチング評価", version="1.0.0")
     app.state.services = Services(
         settings=settings,
         config_store=ConfigStore(settings.data_dir / "config.json", environ=environ),
@@ -46,7 +46,7 @@ def create_app(
     register_exception_handlers(app)
     install_openapi(app)
     app.add_middleware(LocalOnlyMiddleware, allow_remote=settings.allow_remote)
-    # いちばん外側にして、Host・Origin で断った要求も、記録する
+    # あとから追加したものが外側になる。いちばん外側にして、Host・Origin で断った要求も、記録する
     app.add_middleware(RequestLogMiddleware)
     if settings.allow_remote:
         logger.warning(
@@ -68,4 +68,5 @@ def create_app(
     return app
 
 
+# `uvicorn app.main:app` で起動するための、実際の設定（環境変数）で作ったアプリ
 app = create_app()

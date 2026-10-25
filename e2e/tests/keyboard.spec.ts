@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { conditionRow, registerApiKey } from './helpers'
 
-// アクセシビリティの基本（T-M8-03）: マウスを使わずに、条件を選んで先へ進める
+// アクセシビリティの基本: マウスを使わずに、条件を選んで先へ進める
 
 test.beforeEach(async ({ request }) => {
   await registerApiKey(request)

@@ -24,6 +24,7 @@ export class ApiError extends Error {
   }
 }
 
+/** 相対パスを、いまのページを基準にした絶対 URL にする（`fetch` に渡す形をそろえる）。 */
 function absolute(path: string): string {
   return new URL(path, window.location.href).toString()
 }
@@ -51,6 +52,7 @@ export async function fetchOrThrow(path: string, init?: RequestInit): Promise<Re
   try {
     response = await fetch(absolute(path), init)
   } catch (error) {
+    // 取り消し（キャンセル）は、通信の失敗ではないので、そのまま投げて、呼び出し側が見分けられるようにする
     if (error instanceof DOMException && error.name === 'AbortError') throw error
     throw new ApiError(
       0,
