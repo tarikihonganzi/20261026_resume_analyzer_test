@@ -110,7 +110,7 @@ function SettingsForm({ saved }: { saved: SettingsView }) {
         <Form.Item
           name="baseUrl"
           label="ベース URL"
-          extra="社内エンドポイントの URL。空のときは、OpenAI の既定の URL を使います。"
+          extra="社内エンドポイントの URL。"
           rules={[
             {
               validator: (_, value: string | undefined) =>
