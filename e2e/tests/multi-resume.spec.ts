@@ -40,9 +40,11 @@ test('複数の書類（docx・PDF・txt）を上げ、間違えた 1 件を削�
 
   await startEvaluation(page)
 
-  await expect(page.getByText('最終スコア')).toBeVisible({ timeout: 20_000 })
+  await expect(page.getByText('最終スコア（AI 算出）')).toBeVisible({ timeout: 20_000 })
   // 引用の出典名は、実際にアップロードした書類の名前になる（受け入れ基準 14・16）
-  await expect(page.getByRole('table')).toContainText('resume.docx')
+  const judgement = page.getByRole('region', { name: '条件別の判定' })
+  await judgement.getByRole('button', { name: '根拠を見る' }).first().click()
+  await expect(judgement).toContainText('resume.docx')
 })
 
 test('上限（5 件）を超える分は、追加しない。削除すると、また追加できる', async ({ page }) => {

@@ -274,7 +274,7 @@ describe('③ 結果からの操作（受け入れ基準 13）', () => {
     const evaluation = controlEvaluation()
     await startAndWaitForRequest(evaluation)
     evaluation.send(0, 'result', result)
-    await screen.findByText('最終スコア')
+    await screen.findByText('最終スコア（AI 算出）')
     return evaluation
   }
 
@@ -289,7 +289,7 @@ describe('③ 結果からの操作（受け入れ基準 13）', () => {
       screen.queryByRole('region', { name: 'アップロード済みの職歴書' }),
     ).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: '評価する' })).toBeDisabled()
-    expect(screen.queryByText('最終スコア')).not.toBeInTheDocument()
+    expect(screen.queryByText('最終スコア（AI 算出）')).not.toBeInTheDocument()
   })
 
   it('「条件を変えて再評価」で ① に戻り、選んだ条件が残っている。職歴書も残り、再評価で、もう一度送る', async () => {
@@ -299,7 +299,7 @@ describe('③ 結果からの操作（受け入れ基準 13）', () => {
 
     const row = await screen.findByRole('group', { name: '1級建築施工管理技士' })
     expect(row.querySelector('.ant-segmented-item-selected')?.textContent).toBe('必須')
-    expect(screen.queryByText('最終スコア')).not.toBeInTheDocument()
+    expect(screen.queryByText('最終スコア（AI 算出）')).not.toBeInTheDocument()
 
     await userEvent.click(
       within(screen.getByRole('group', { name: '2級建築士' })).getByText('任意'),

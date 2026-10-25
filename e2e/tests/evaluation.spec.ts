@@ -31,35 +31,38 @@ test('職歴書を評価すると、スコア・必須未達・判定表・根�
   await expect(page.getByText('評価しています')).toBeVisible()
   await expect(page.getByText('職歴書から条件を抽出中')).toBeVisible()
 
-  // 結果
-  await expect(page.getByText('最終スコア')).toBeVisible({ timeout: 20_000 })
-  await expect(page.getByText('マッチ度合い', { exact: true })).toBeVisible()
+  // 結果: 最終スコア（AI 算出）とマッチ度合い（スキルの充足度）
+  await expect(page.getByText('最終スコア（AI 算出）')).toBeVisible({ timeout: 20_000 })
+  await expect(page.getByText('マッチ度合い（スキルの充足度）')).toBeVisible()
 
-  // 必須条件の未達が、目立つアラートで示される（偽の LLM は、年数の条件を未達にする）
-  const alert = page.getByRole('alert').filter({ hasText: '満たしていない必須条件があります' })
-  await expect(alert).toContainText('現場監督（施工管理）の経験年数（未達）')
+  // 必須条件の未達が、赤い文字で示される（偽の LLM は、年数の条件を未達にする）
+  await expect(page.getByText(/必須条件 1 件が NG: 現場監督（施工管理）の経験年数/)).toBeVisible()
 
-  // 条件別の判定表
-  const table = page.getByRole('table')
-  await expect(table.getByRole('row', { name: /1級建築施工管理技士/ })).toContainText('達成')
-  await expect(table.getByRole('row', { name: /現場監督（施工管理）の経験年数/ })).toContainText(
-    '未達',
-  )
-  await expect(table.getByRole('row', { name: /現場監督（施工管理）の経験年数/ })).toContainText(
-    '必要: 5.0年以上',
-  )
+  // 条件別の判定: 必須と任意に分かれ、それぞれ「クリア」「NG」の列に並ぶ
+  const judgement = page.getByRole('region', { name: '条件別の判定' })
+  await expect(judgement.getByText('必須条件（2 件）')).toBeVisible()
+  await expect(judgement.getByText('任意条件（1 件）')).toBeVisible()
+  const columns = judgement.getByRole('region', { name: /^(クリア|NG)$/ })
+  await expect(columns).toHaveCount(4)
+  await expect(columns.nth(0)).toContainText('1級建築施工管理技士') // 必須・クリア
+  await expect(columns.nth(1)).toContainText('現場監督（施工管理）の経験年数') // 必須・NG
+  await expect(columns.nth(1)).toContainText('4.0年（必要: 5.0年以上）')
+  await expect(columns.nth(3)).toContainText('品質管理') // 任意・NG
 
-  // 根拠の文に、元のファイル名が含まれる（受け入れ基準 14）
-  await expect(table.getByRole('row', { name: /1級建築施工管理技士/ })).toContainText('resume.docx')
+  // 根拠は、閉じている。開くと、元のファイル名が含まれる（受け入れ基準 14）
+  await expect(judgement).not.toContainText('resume.docx')
+  await columns.nth(0).getByRole('button', { name: '根拠を見る' }).click()
+  await expect(columns.nth(0)).toContainText('resume.docx')
 
-  // Markdown: 太字（概要）と下線（悪かった点）
-  const summary = page.locator('.ant-card', { hasText: '評価の概要' })
-  await expect(summary.locator('strong', { hasText: '偽の評価' })).toBeVisible()
-  const weaknesses = page.locator('.ant-card', { hasText: '悪かった点' })
+  // 評価コメント: Markdown の太字（総評）と下線（悪かった点）
+  const comments = page.locator('.ant-card', { hasText: 'AI の評価コメント' })
+  await expect(comments.locator('strong', { hasText: '偽の評価' })).toBeVisible()
+  const weaknesses = comments.getByRole('region', { name: '悪かった点' })
   await expect(weaknesses.locator('u', { hasText: '一部の記載' })).toBeVisible()
 
-  // 原文にない引用には「原文で確認できず」が付く（受け入れ基準 15）
-  await weaknesses.getByRole('button', { name: /引用を見る/ }).click()
+  // 原文にない引用には「原文で確認できず」が付く。根拠を開く前から見える（受け入れ基準 15）
+  await expect(weaknesses.getByText('原文で確認できず')).toBeVisible()
+  await weaknesses.getByRole('button', { name: '根拠を見る' }).click()
   await expect(weaknesses.getByText('原文で確認できず')).toBeVisible()
 
   await expect(

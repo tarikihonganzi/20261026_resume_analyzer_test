@@ -28,8 +28,8 @@ test('評価中にキャンセルすると、② に戻り、職歴書は残っ�
   await expect(page.getByText('1 件の職歴書を評価に使えます')).toBeVisible()
   // 取り消した評価の結果は、あとから現れない
   await page.waitForTimeout(3_000)
-  await expect(page.getByText('最終スコア')).toHaveCount(0)
+  await expect(page.getByText('最終スコア（AI 算出）')).toHaveCount(0)
 
   await startEvaluation(page)
-  await expect(page.getByText('最終スコア')).toBeVisible({ timeout: 20_000 })
+  await expect(page.getByText('最終スコア（AI 算出）')).toBeVisible({ timeout: 20_000 })
 })

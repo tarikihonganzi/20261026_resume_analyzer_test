@@ -4,22 +4,30 @@ import { describe, expect, it } from 'vitest'
 import { makeCondition, makeJudged, makeResult } from '../test/fixtures'
 import { ResultView } from './ResultView'
 
-function row(name: string) {
-  const cell = screen.getByRole('cell', { name })
-  const element = cell.closest('tr')
-  if (!element) throw new Error(`${name} の行がありません`)
-  return within(element)
-}
+const section = (name: string) => within(screen.getByRole('region', { name }))
 
 describe('結果画面', () => {
   describe('スコア', () => {
-    it('補正がないときは、スコアとマッチ度合いだけを示す', () => {
+    it('「最終スコア（AI 算出）」と「マッチ度合い（スキルの充足度）」を、別のラベルで示す', () => {
       render(<ResultView result={makeResult({ score: 72, match_rate: 70 })} />)
 
-      expect(screen.getByText('最終スコア')).toBeInTheDocument()
+      expect(screen.getByText('最終スコア（AI 算出）')).toBeInTheDocument()
       expect(screen.getByText('72')).toBeInTheDocument()
+      expect(screen.getByText('マッチ度合い（スキルの充足度）')).toBeInTheDocument()
       expect(screen.getByText('70')).toBeInTheDocument()
-      expect(screen.queryByText('補正あり')).not.toBeInTheDocument()
+    })
+
+    it('最終スコアは、マッチ度合いより大きな文字で示す', () => {
+      render(<ResultView result={makeResult({ score: 72, match_rate: 70 })} />)
+
+      const size = (text: string) => Number.parseInt(screen.getByText(text).style.fontSize, 10)
+      expect(size('72')).toBeGreaterThan(size('70'))
+    })
+
+    it('補正がないときは、補正の説明を出さない', () => {
+      render(<ResultView result={makeResult()} />)
+
+      expect(screen.queryByText(/補正あり/)).not.toBeInTheDocument()
     })
 
     it('補正があったときは、元のスコアを併記する（仕様 5.5・受け入れ基準 5）', () => {
@@ -29,13 +37,28 @@ describe('結果画面', () => {
         />,
       )
 
-      expect(screen.getByText('補正あり')).toBeInTheDocument()
-      expect(screen.getByText(/元のスコアは 95 点/)).toBeInTheDocument()
+      expect(screen.getByText(/補正あり: AI の元のスコアは 95 点/)).toBeInTheDocument()
+    })
+
+    it('達成した条件の数を、全体の数とあわせて示す', () => {
+      render(
+        <ResultView
+          result={makeResult({
+            conditions: [
+              makeJudged({ status: 'achieved' }),
+              makeJudged({ condition: makeCondition({ id: 'b' }), status: 'unmet' }),
+              makeJudged({ condition: makeCondition({ id: 'c' }), status: 'unknown' }),
+            ],
+          })}
+        />,
+      )
+
+      expect(screen.getByText('3 件の条件のうち、1 件をクリア')).toBeInTheDocument()
     })
   })
 
-  describe('必須条件', () => {
-    it('未達があれば、目立つアラートで条件名を列挙する（受け入れ基準 6）', () => {
+  describe('必須条件の状況（受け入れ基準 6）', () => {
+    it('未達があれば、赤い文字で、件数と条件名を示す。全幅のアラートにはしない', () => {
       render(
         <ResultView
           result={makeResult({
@@ -47,15 +70,13 @@ describe('結果画面', () => {
         />,
       )
 
-      const alert = within(screen.getByRole('alert'))
-      expect(alert.getByText(/満たしていない必須条件があります（2 件）/)).toBeInTheDocument()
-      expect(alert.getByText('1級建築施工管理技士（未達）')).toBeInTheDocument()
       expect(
-        alert.getByText('現場監督の経験年数（職歴書から確認できませんでした）'),
+        screen.getByText(/必須条件 2 件が NG: 1級建築施工管理技士、現場監督の経験年数/),
       ).toBeInTheDocument()
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument()
     })
 
-    it('必須の条件があり、すべて達成なら「必須条件はすべて達成」', () => {
+    it('必須の条件があり、すべてクリアなら、「必須条件はすべてクリア」', () => {
       render(
         <ResultView
           result={makeResult({
@@ -64,39 +85,111 @@ describe('結果画面', () => {
         />,
       )
 
-      expect(screen.getByText('必須条件はすべて達成')).toBeInTheDocument()
+      expect(screen.getByText(/必須条件はすべてクリア/)).toBeInTheDocument()
     })
 
-    it('必須の条件が 1 つもなければ、「すべて達成」とは言わない', () => {
+    it('必須の条件が 1 つもなければ、「クリア」とは言わない', () => {
       render(<ResultView result={makeResult()} />)
 
       expect(screen.getByText('必須条件は設定されていません')).toBeInTheDocument()
-      expect(screen.queryByText('必須条件はすべて達成')).not.toBeInTheDocument()
+      expect(screen.queryByText(/必須条件はすべてクリア/)).not.toBeInTheDocument()
     })
   })
 
-  describe('条件別の判定表', () => {
+  describe('AI の評価コメント', () => {
+    it('総評・良かった点・悪かった点を、条件別の判定より先に示す', () => {
+      render(<ResultView result={makeResult()} />)
+
+      const comments = screen.getByText('AI の評価コメント')
+      const judgement = screen.getByRole('region', { name: '条件別の判定' })
+      expect(
+        comments.compareDocumentPosition(judgement) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy()
+      expect(section('総評').getByText(/要件を概ね満たしています/)).toBeInTheDocument()
+      expect(section('良かった点').getByText('大規模現場の経験')).toBeInTheDocument()
+      expect(section('悪かった点').getByText('BIM の経験が少ない')).toBeInTheDocument()
+    })
+
+    it('Markdown（太字・下線・箇条書き）を描画する（受け入れ基準 7）', () => {
+      render(
+        <ResultView
+          result={makeResult({
+            summary: {
+              text: '**重要**な点です。<u>下線</u>\n\n- 項目 A\n- 項目 B',
+              reason: '根拠の文',
+              quotes: [],
+            },
+          })}
+        />,
+      )
+
+      const summary = section('総評')
+      expect(summary.getByText('重要').tagName).toBe('STRONG')
+      expect(summary.getByText('下線').tagName).toBe('U')
+      expect(summary.getAllByRole('listitem').map((item) => item.textContent)).toEqual([
+        '項目 A',
+        '項目 B',
+      ])
+    })
+
+    it('スクリプトや画像は描画しない', () => {
+      const { container } = render(
+        <ResultView
+          result={makeResult({
+            strengths: [
+              {
+                text: '良い<script>window.hacked=1</script><img src="https://example.invalid/x.png" onerror="window.hacked=1">',
+                reason: '',
+                quotes: [],
+              },
+            ],
+          })}
+        />,
+      )
+
+      expect(container.querySelector('script, img')).toBeNull()
+    })
+
+    it('項目が 0 件なら、その旨を示す', () => {
+      render(<ResultView result={makeResult({ strengths: [], weaknesses: [] })} />)
+
+      expect(screen.getAllByText('該当する項目はありません')).toHaveLength(2)
+    })
+
+    it('根拠が出力されなかった項目は、その旨を示す', () => {
+      render(<ResultView result={makeResult()} />)
+
+      // 悪かった点の項目は、reason も quotes も空
+      expect(section('悪かった点').getByText('根拠が出力されませんでした')).toBeInTheDocument()
+    })
+  })
+
+  describe('条件別の判定（必須・任意 × クリア・NG）', () => {
     const result = makeResult({
       conditions: [
         makeJudged({
-          condition: makeCondition({ id: 'q1', label: '1級建築施工管理技士', required: true }),
+          condition: makeCondition({ id: 'o1', label: '任意の達成', required: false }),
           status: 'achieved',
-          has_skill: true,
+        }),
+        makeJudged({
+          condition: makeCondition({ id: 'r1', label: '必須の達成', required: true }),
+          status: 'achieved',
         }),
         makeJudged({
           condition: makeCondition({
-            id: 'q2',
+            id: 'r2',
             label: '現場監督の経験年数',
             kind: 'number',
             unit: '年',
             min_value: 5,
+            required: true,
           }),
           status: 'unmet',
           has_skill: null,
           years: 3.25,
         }),
         makeJudged({
-          condition: makeCondition({ id: 'q3', label: 'Revit の経験' }),
+          condition: makeCondition({ id: 'o2', label: 'Revit の経験', required: false }),
           status: 'unknown',
           has_skill: null,
           reason: '',
@@ -105,53 +198,88 @@ describe('結果画面', () => {
       ],
     })
 
-    it('条件名・必須／任意・判定・抽出値を表示する', () => {
+    it('「必須条件」のセクションが、「任意条件」のセクションより上にある', () => {
       render(<ResultView result={result} />)
 
-      const first = row('1級建築施工管理技士')
-      expect(first.getByText('必須')).toBeInTheDocument()
-      expect(first.getByText('達成')).toBeInTheDocument()
-      expect(first.getByText('あり')).toBeInTheDocument()
-
-      const second = row('現場監督の経験年数')
-      expect(second.getByText('任意')).toBeInTheDocument()
-      expect(second.getByText('未達')).toBeInTheDocument()
-      expect(second.getByText('3.3年')).toBeInTheDocument()
-      expect(second.getByText('必要: 5.0年以上')).toBeInTheDocument()
-
-      const third = row('Revit の経験')
-      expect(third.getByText('不明')).toBeInTheDocument()
-      expect(third.getByText('—')).toBeInTheDocument()
+      const required = screen.getByText('必須条件（2 件）')
+      const optional = screen.getByText('任意条件（2 件）')
+      expect(
+        required.compareDocumentPosition(optional) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy()
     })
 
-    it('根拠が何も出力されなかった条件は、その旨を示す', () => {
+    it('各セクションの「クリア」の列と「NG」の列に、条件を並べる', () => {
+      render(<ResultView result={result} />)
+      const judgement = section('条件別の判定')
+
+      const columns = judgement.getAllByRole('region', { name: /^(クリア|NG)$/ })
+      // 必須: クリア・NG、任意: クリア・NG
+      expect(columns).toHaveLength(4)
+      const [requiredClear, requiredNg, optionalClear, optionalNg] = columns.map((column) =>
+        within(column),
+      )
+      expect(requiredClear?.getByText('必須の達成')).toBeInTheDocument()
+      expect(requiredNg?.getByText('現場監督の経験年数')).toBeInTheDocument()
+      expect(optionalClear?.getByText('任意の達成')).toBeInTheDocument()
+      expect(optionalNg?.getByText('Revit の経験')).toBeInTheDocument()
+    })
+
+    it('判定は、タグではなく、記号（○ × △）で示す', () => {
+      const { container } = render(<ResultView result={result} />)
+
+      expect(container.querySelector('.ant-tag')).toBeNull()
+      const judgement = section('条件別の判定')
+      expect(judgement.getAllByRole('img', { name: 'クリア' }).length).toBeGreaterThan(0)
+      expect(judgement.getAllByRole('img', { name: '未達' }).length).toBeGreaterThan(0)
+      expect(judgement.getAllByRole('img', { name: '不明' }).length).toBeGreaterThan(0)
+      expect(screen.getAllByText('○').length).toBeGreaterThan(0)
+      expect(screen.getAllByText('×').length).toBeGreaterThan(0)
+      expect(screen.getAllByText('△').length).toBeGreaterThan(0)
+    })
+
+    it('number の条件には、年数と必要な最低値を、不明には、確認できなかった旨を添える', () => {
       render(<ResultView result={result} />)
 
-      expect(row('Revit の経験').getByText('根拠が出力されませんでした')).toBeInTheDocument()
+      expect(screen.getByText('3.3年（必要: 5.0年以上）')).toBeInTheDocument()
+      expect(screen.getByText('職歴書から確認できませんでした')).toBeInTheDocument()
+    })
+
+    it('必須の条件が 1 つもなければ、「必須条件」のセクションを出さない', () => {
+      render(<ResultView result={makeResult()} />)
+
+      expect(screen.queryByText(/必須条件（/)).not.toBeInTheDocument()
+      expect(screen.getByText('任意条件（1 件）')).toBeInTheDocument()
+    })
+
+    it('列に条件がなければ、「なし」と出す', () => {
+      render(<ResultView result={makeResult()} />)
+
+      const columns = section('条件別の判定').getAllByRole('region', { name: /^(クリア|NG)$/ })
+      expect(within(columns[1] as HTMLElement).getByText('なし')).toBeInTheDocument()
     })
   })
 
-  describe('根拠と引用', () => {
-    it('reason を示し、引用は「引用を見る」を押すまで隠す。展開すると、出典名と位置と原文を示す', async () => {
+  describe('根拠と引用（受け入れ基準 14・15）', () => {
+    it('既定では閉じていて、「根拠を見る」で、reason と引用（出典名・位置・原文）が開く', async () => {
       render(<ResultView result={makeResult()} />)
-      const table = within(screen.getByRole('table'))
+      const judgement = section('条件別の判定')
 
-      expect(table.getByText('職歴書.docx に資格の記載があります。')).toBeInTheDocument()
-      expect(table.queryByText('1級建築施工管理技士 取得')).not.toBeInTheDocument()
-      const toggle = table.getByRole('button', { name: '引用を見る（1）' })
+      expect(judgement.queryByText('職歴書.docx に資格の記載があります。')).not.toBeInTheDocument()
+      const toggle = judgement.getByRole('button', { name: '根拠を見る' })
       expect(toggle).toHaveAttribute('aria-expanded', 'false')
 
       await userEvent.click(toggle)
 
-      expect(table.getByText('職歴書.docx（資格欄）')).toBeInTheDocument()
-      expect(table.getByText('1級建築施工管理技士 取得')).toBeInTheDocument()
-      expect(table.getByRole('button', { name: '引用を隠す' })).toHaveAttribute(
+      expect(judgement.getByText('職歴書.docx に資格の記載があります。')).toBeInTheDocument()
+      expect(judgement.getByText('職歴書.docx（資格欄）')).toBeInTheDocument()
+      expect(judgement.getByText('1級建築施工管理技士 取得')).toBeInTheDocument()
+      expect(judgement.getByRole('button', { name: '根拠を閉じる' })).toHaveAttribute(
         'aria-expanded',
         'true',
       )
     })
 
-    it('原文で確認できなかった引用には「原文で確認できず」、照合していない引用には「未照合」を付ける（受け入れ基準 15）', async () => {
+    it('原文で確認できなかった引用は、閉じていても「原文で確認できず」が見える。開くと、引用ごとに示す', async () => {
       render(
         <ResultView
           result={makeResult({
@@ -182,13 +310,15 @@ describe('結果画面', () => {
           })}
         />,
       )
+      const judgement = section('条件別の判定')
 
-      await userEvent.click(screen.getByRole('button', { name: '引用を見る（3）' }))
+      expect(judgement.getByText('原文で確認できず')).toBeInTheDocument()
+      await userEvent.click(judgement.getByRole('button', { name: '根拠を見る' }))
 
-      expect(screen.getByText('原文で確認できず')).toBeInTheDocument()
-      expect(screen.getByText('未照合')).toBeInTheDocument()
-      const matched = screen.getByText('確かにある文').closest('li')
-      expect(matched).not.toBeNull()
+      // 開いたあとは、重複しないよう、引用の横にだけ出る
+      expect(judgement.getAllByText('原文で確認できず')).toHaveLength(1)
+      expect(judgement.getByText('未照合')).toBeInTheDocument()
+      const matched = judgement.getByText('確かにある文').closest('li')
       expect(
         within(matched as HTMLElement).queryByText(/確認できず|未照合/),
       ).not.toBeInTheDocument()
@@ -208,69 +338,19 @@ describe('結果画面', () => {
         />,
       )
 
-      await userEvent.click(screen.getByRole('button', { name: '引用を見る（1）' }))
+      await userEvent.click(section('条件別の判定').getByRole('button', { name: '根拠を見る' }))
 
       const quote = screen.getByText(text)
       expect(quote.tagName).toBe('BLOCKQUOTE')
       expect(quote.querySelector('strong, script, u')).toBeNull()
     })
-  })
 
-  describe('概要・良かった点・悪かった点', () => {
-    it('Markdown（太字・下線・箇条書き）を描画する（受け入れ基準 7）', () => {
-      render(
-        <ResultView
-          result={makeResult({
-            summary: {
-              text: '**重要**な点です。<u>下線</u>\n\n- 項目 A\n- 項目 B',
-              reason: '根拠の文',
-              quotes: [],
-            },
-          })}
-        />,
-      )
-
-      const summary = within(screen.getByText('評価の概要').closest('.ant-card') as HTMLElement)
-      expect(summary.getByText('重要').tagName).toBe('STRONG')
-      expect(summary.getByText('下線').tagName).toBe('U')
-      expect(summary.getAllByRole('listitem').map((item) => item.textContent)).toEqual([
-        '項目 A',
-        '項目 B',
-      ])
-    })
-
-    it('スクリプトや画像は描画しない', () => {
-      const { container } = render(
-        <ResultView
-          result={makeResult({
-            strengths: [
-              {
-                text: '良い<script>window.hacked=1</script><img src="https://example.invalid/x.png" onerror="window.hacked=1">',
-                reason: '',
-                quotes: [],
-              },
-            ],
-          })}
-        />,
-      )
-
-      expect(container.querySelector('script, img')).toBeNull()
-    })
-
-    it('項目ごとに根拠（reason）を示す（受け入れ基準 14）', () => {
+    it('総評・良かった点・悪かった点にも、根拠がある', async () => {
       render(<ResultView result={makeResult()} />)
 
-      const strengths = within(screen.getByText('良かった点').closest('.ant-card') as HTMLElement)
-      expect(strengths.getByText('大規模現場の経験')).toBeInTheDocument()
-      expect(strengths.getByText('職歴書.docx に記載があります。')).toBeInTheDocument()
-      const weaknesses = within(screen.getByText('悪かった点').closest('.ant-card') as HTMLElement)
-      expect(weaknesses.getByText('根拠が出力されませんでした')).toBeInTheDocument()
-    })
+      await userEvent.click(section('良かった点').getByRole('button', { name: '根拠を見る' }))
 
-    it('項目が 0 件なら、その旨を示す', () => {
-      render(<ResultView result={makeResult({ strengths: [], weaknesses: [] })} />)
-
-      expect(screen.getAllByText('該当する項目はありません')).toHaveLength(2)
+      expect(section('良かった点').getByText('職歴書.docx に記載があります。')).toBeInTheDocument()
     })
   })
 

@@ -1,23 +1,16 @@
-import { Button, Flex, Tag, Typography } from 'antd'
+import { Button, Flex, Typography } from 'antd'
 import { useId, useState } from 'react'
-import type { CSSProperties } from 'react'
 import type { VerifiedQuote } from '../api/types'
-import { TAG_STYLES } from './tagStyles'
 
 interface EvidenceViewProps {
   reason: string
   quotes: readonly VerifiedQuote[]
 }
 
-const VERIFIED_NOTES: Partial<
-  Record<VerifiedQuote['verified'], { label: string; style: CSSProperties }>
-> = {
-  not_found: { label: '原文で確認できず', style: TAG_STYLES.warning },
-  skipped: { label: '未照合', style: TAG_STYLES.neutral },
-}
+// 原文との照合の注意（色つきのタグにはせず、小さな文字で示す）
+const NOTE_STYLE = { fontSize: 12, color: '#873800' } as const
 
 function QuoteItem({ quote }: { quote: VerifiedQuote }) {
-  const note = VERIFIED_NOTES[quote.verified]
   return (
     <li style={{ marginBottom: 8 }}>
       <Flex gap={8} align="center" wrap>
@@ -25,7 +18,14 @@ function QuoteItem({ quote }: { quote: VerifiedQuote }) {
           {quote.source_name}
           {quote.location ? `（${quote.location}）` : ''}
         </Typography.Text>
-        {note ? <Tag style={note.style}>{note.label}</Tag> : null}
+        {quote.verified === 'not_found' ? (
+          <Typography.Text style={NOTE_STYLE}>原文で確認できず</Typography.Text>
+        ) : null}
+        {quote.verified === 'skipped' ? (
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            未照合
+          </Typography.Text>
+        ) : null}
       </Flex>
       {/* 引用は原文の抜粋。Markdown として解釈せず、そのままの文字で見せる */}
       <blockquote
@@ -43,10 +43,13 @@ function QuoteItem({ quote }: { quote: VerifiedQuote }) {
   )
 }
 
-/** 根拠（仕様 5.5）。`reason` を小さく表示し、「引用を見る」で引用を展開する。 */
+/**
+ * 根拠（仕様 5.5）。結果の幅を取らないよう、既定では閉じておき、「根拠を見る」で `reason` と引用を
+ * 開く。原文で確認できなかった引用がある項目は、閉じていても、その旨を小さく示す。
+ */
 export function EvidenceView({ reason, quotes }: EvidenceViewProps) {
   const [open, setOpen] = useState(false)
-  const listId = useId()
+  const bodyId = useId()
   const hasReason = reason.trim() !== ''
 
   if (!hasReason && quotes.length === 0) {
@@ -57,36 +60,43 @@ export function EvidenceView({ reason, quotes }: EvidenceViewProps) {
     )
   }
 
+  const hasUnverified = quotes.some((quote) => quote.verified === 'not_found')
+
   return (
-    <Flex vertical gap={4} align="flex-start">
-      {hasReason ? (
-        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-          {reason}
-        </Typography.Text>
-      ) : null}
-      {quotes.length > 0 ? (
-        <>
-          <Button
-            type="link"
-            size="small"
-            style={{ padding: 0, height: 'auto' }}
-            aria-expanded={open}
-            aria-controls={listId}
-            onClick={() => {
-              setOpen(!open)
-            }}
-          >
-            {open ? '引用を隠す' : `引用を見る（${String(quotes.length)}）`}
-          </Button>
-          {open ? (
-            <ul id={listId} style={{ margin: 0, paddingLeft: 0, listStyle: 'none' }}>
+    <div>
+      <Flex gap={12} align="center" wrap>
+        <Button
+          type="link"
+          size="small"
+          style={{ padding: 0, height: 'auto', fontSize: 12 }}
+          aria-expanded={open}
+          aria-controls={bodyId}
+          onClick={() => {
+            setOpen(!open)
+          }}
+        >
+          {open ? '根拠を閉じる' : '根拠を見る'}
+        </Button>
+        {hasUnverified && !open ? (
+          <Typography.Text style={NOTE_STYLE}>原文で確認できず</Typography.Text>
+        ) : null}
+      </Flex>
+      {open ? (
+        <div id={bodyId} style={{ marginTop: 4 }}>
+          {hasReason ? (
+            <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginBottom: 8 }}>
+              {reason}
+            </Typography.Paragraph>
+          ) : null}
+          {quotes.length > 0 ? (
+            <ul style={{ margin: 0, paddingLeft: 0, listStyle: 'none' }}>
               {quotes.map((quote, index) => (
                 <QuoteItem key={index} quote={quote} />
               ))}
             </ul>
           ) : null}
-        </>
+        </div>
       ) : null}
-    </Flex>
+    </div>
   )
 }
