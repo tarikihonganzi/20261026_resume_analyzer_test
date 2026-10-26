@@ -145,6 +145,13 @@ describe('③ 評価の進捗とエラー', () => {
     expect(screen.getByText('1 件の書類を評価に使えます')).toBeInTheDocument()
   })
 
+  it('評価中の領域は、文字を選択できない（回転するアイコンに、選択やキャレットが重ならない）', async () => {
+    const evaluation = controlEvaluation()
+    await startAndWaitForRequest(evaluation)
+
+    expect(screen.getByRole('status')).toHaveStyle({ userSelect: 'none' })
+  })
+
   it('結果を受け取ると、結果を表示する', async () => {
     const evaluation = controlEvaluation()
     await startAndWaitForRequest(evaluation)

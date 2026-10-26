@@ -24,6 +24,9 @@ export function FlowPage() {
     if (shownScreen.current === screenKey) return
     shownScreen.current = screenKey
     region.current?.focus()
+    // キャレットブラウジング（F7）が有効なブラウザは、フォーカスを移した領域の先頭にキャレットを置く。
+    // 評価中は、そこが回転するアイコンなので、縦棒がアイコンと一緒に回ってしまう。選択範囲を消す
+    window.getSelection()?.removeAllRanges()
   }, [screenKey])
 
   const items: [FlowStepItem, FlowStepItem, FlowStepItem] = [

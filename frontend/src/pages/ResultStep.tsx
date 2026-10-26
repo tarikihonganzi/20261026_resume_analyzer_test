@@ -19,7 +19,16 @@ export function ResultStep() {
   if (evaluation.status === 'running') {
     return (
       <Card>
-        <Flex vertical gap={24} align="center" role="status" aria-live="polite">
+        {/* 文字を選択できなくする。回転するアイコンの上に、選択の色やキャレットが重なって、
+            見た目が崩れるのを防ぐ */}
+        <Flex
+          vertical
+          gap={24}
+          align="center"
+          role="status"
+          aria-live="polite"
+          style={{ userSelect: 'none' }}
+        >
           <Spin size="large" />
           <Typography.Title level={4} style={{ margin: 0 }}>
             評価しています
