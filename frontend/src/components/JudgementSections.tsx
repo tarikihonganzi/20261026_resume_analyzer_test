@@ -20,9 +20,12 @@ function Item({ judged, first }: { judged: JudgedCondition; first: boolean }) {
       <Flex gap={10} align="flex-start">
         <ResultMark kind={kind} />
         <div style={{ minWidth: 0, flex: 1 }}>
-          <Typography.Text>{judged.condition.label}</Typography.Text>
+          {/* 条件名は、基本の文字（16px）より一回り大きく、やや太くする（一覧の中で、まず目に入るように） */}
+          <Typography.Text style={{ fontSize: 18, fontWeight: 600 }}>
+            {judged.condition.label}
+          </Typography.Text>
           {line ? (
-            <Typography.Text type="secondary" style={{ display: 'block', fontSize: 15 }}>
+            <Typography.Text type="secondary" style={{ display: 'block', fontSize: 16 }}>
               {line}
             </Typography.Text>
           ) : null}
@@ -48,7 +51,7 @@ function Column({
       <div
         data-testid="column-heading"
         style={{
-          fontSize: 19,
+          fontSize: 22,
           fontWeight: 700,
           textAlign: 'center',
           color: HEADING_COLORS[mark],
@@ -74,7 +77,7 @@ function Column({
 }
 
 // 「必須条件」「任意条件」の帯。大きな見出し（青い帯）の中の、小見出しなので、灰色の帯にする
-const SUB_HEADER = { background: '#f0f0f0', color: '#262626' }
+const SUB_HEADER = { background: '#f0f0f0', color: '#262626', fontSize: 18 }
 
 function Section({ title, group }: { title: string; group: JudgementGroup }) {
   const total = group.clear.length + group.ng.length

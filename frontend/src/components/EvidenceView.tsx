@@ -8,7 +8,7 @@ interface EvidenceViewProps {
 }
 
 // 原文との照合の注意（色つきのタグにはせず、小さな文字で示す）
-const NOTE_STYLE = { fontSize: 14, color: '#873800' } as const
+const NOTE_STYLE = { fontSize: 15, color: '#873800' } as const
 
 function QuoteItem({ quote }: { quote: VerifiedQuote }) {
   return (
@@ -68,7 +68,7 @@ export function EvidenceView({ reason, quotes }: EvidenceViewProps) {
         <Button
           type="link"
           size="small"
-          style={{ padding: 0, height: 'auto', fontSize: 14 }}
+          style={{ padding: 0, height: 'auto', fontSize: 16 }}
           aria-expanded={open}
           aria-controls={bodyId}
           onClick={() => {
