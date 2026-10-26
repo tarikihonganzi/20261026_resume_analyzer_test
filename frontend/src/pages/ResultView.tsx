@@ -19,7 +19,8 @@ export function ResultView({ result }: { result: EvaluationResult }) {
       />
       <JudgementSections conditions={result.conditions} />
       <Typography.Text type="secondary" style={{ fontSize: 14 }}>
-        本結果は判断材料です。最終的な判断は人が行ってください。
+        本結果は AI が判断したものです。AI
+        は誤った判断をすることがあります。最終的な判断は人が行ってください。
       </Typography.Text>
     </Flex>
   )

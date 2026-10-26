@@ -56,10 +56,10 @@ test('職歴書を評価すると、スコア・必須条件の NG・判定・�
   await columns.nth(0).getByRole('button', { name: '根拠を見る' }).click()
   await expect(columns.nth(0)).toContainText('resume.docx')
 
-  // 評価コメント: Markdown の太字（総評）と下線（悪かった点）
+  // 評価コメント: Markdown の太字（総評）と下線（気になる点）
   const comments = page.locator('.ant-card', { hasText: 'AI の評価コメント' })
   await expect(comments.locator('strong', { hasText: '偽の評価' })).toBeVisible()
-  const weaknesses = comments.getByRole('region', { name: '悪かった点' })
+  const weaknesses = comments.getByRole('region', { name: '気になる点' })
   await expect(weaknesses.locator('u', { hasText: '一部の記載' })).toBeVisible()
 
   // 原文にない引用には「原文で確認できず」が付く。根拠を開く前から見える（受け入れ基準 15）
@@ -68,7 +68,7 @@ test('職歴書を評価すると、スコア・必須条件の NG・判定・�
   await expect(weaknesses.getByText('原文で確認できず')).toBeVisible()
 
   await expect(
-    page.getByText('本結果は判断材料です。最終的な判断は人が行ってください。'),
+    page.getByText('本結果は AI が判断したものです。AI は誤った判断をすることがあります。最終的な判断は人が行ってください。'),
   ).toBeVisible()
   expect(failedRequests).toEqual([])
 })
