@@ -33,3 +33,19 @@ test('読めないファイルはその場でエラーになり、条件を保�
     conditionRow(page, '現場監督（施工管理）の経験年数').getByRole('spinbutton'),
   ).toHaveValue('5.0')
 })
+
+// 画像（スキャンした紙の職歴書の写真など）も、書類として選べる。PDF と同じく、手元でテキストにしない
+test('画像を書類として選び、そのまま評価できる', async ({ page }) => {
+  await page.goto('/')
+  await selectTypicalConditions(page)
+  await page.getByRole('button', { name: /次へ/ }).click()
+
+  await page.locator('input[type=file]').setInputFiles(fixture('resume_scan.png'))
+
+  await expect(page.getByText('1 件の書類を評価に使えます')).toBeVisible()
+  await page.getByRole('button', { name: '評価する' }).click()
+  await expect(page.getByText('最終スコア（AI 算出）')).toBeVisible({ timeout: 20_000 })
+  // 画像は、原文の照合をしない（PDF と同じ）。「原文で確認できず」とは出さず、未照合になる
+  await page.getByRole('button', { name: '根拠を見る' }).first().click()
+  await expect(page.getByText('未照合').first()).toBeVisible()
+})

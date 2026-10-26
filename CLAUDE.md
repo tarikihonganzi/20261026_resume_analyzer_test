@@ -77,7 +77,7 @@
 ## 設計上の制約（破りやすいもの）
 
 - LLM は **Responses API** だけを使う（Assistants API は終了済み、Chat Completions は使わない）。`store=false`。`temperature` と推論負荷は指定しない。
-- PDF は `input_file`（`data:application/pdf;base64,…`、`detail: high`、`filename` は元のファイル名）で LLM に直接渡す。PDF 以外は MarkItDown の `convert_stream` でテキスト化する。PDF から手元でテキストを取り出さない。
+- PDF は `input_file`（`data:application/pdf;base64,…`、`detail: high`、`filename` は元のファイル名）で、画像（PNG・JPEG・WebP）は `input_image`（`image_url` にデータ URL。`input_file` は画像を受け付けない）で、LLM に直接渡す。それ以外は MarkItDown の `convert_stream` でテキスト化する。PDF・画像から手元でテキストを取り出さない。
 - `backend/src/app/domain/` は純粋な関数だけ。LLM・HTTP・ファイル・時刻に依存させない。LLM は `LlmClient`（Protocol）越しに呼び、テストでは `FakeClient` に差し替える。
 - サーバーは状態を持たない。職歴書・評価結果をサーバーに保持しない。永続化は `data/` の 2 つの JSON ファイルだけ（データベースは使わない）。`data/`・`log/`・`.env` は Git に入れない。
 - ログ（バックエンドだけ。`log/YYYY-MM-DD.log`、仕様 8.3）に出してよいのは、リクエスト ID・所要時間・トークン使用量・処理の段階・件数・エラーの種類だけ。**職歴書の内容・ファイル名・応募者の氏名・条件の名前・API キー・リクエストの本文やクエリは、出さない。**

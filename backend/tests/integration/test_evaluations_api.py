@@ -678,3 +678,40 @@ def test_the_result_carries_the_applicant_name(make_app: MakeApp) -> None:
 
     assert events[-1][0] == "result"
     assert events[-1][1]["applicant_name"] == "架空 太郎"
+
+
+# --- 画像 ---
+
+
+def test_an_image_can_be_checked_and_evaluated(make_app: MakeApp) -> None:
+    client = make_app()
+    png = factory.make_image("PNG")
+
+    check = client.post("/api/resumes/check", files={"file": ("スキャン.png", png)})
+    response = client.post("/api/evaluations", data=form(), files={"files": ("スキャン.png", png)})
+
+    assert check.status_code == 200
+    assert check.json() == {"format": "png", "source_name": "スキャン.png", "char_count": None}
+    assert response.status_code == 200
+    assert parse_sse(response.text)[-1][0] == "result"
+
+
+def test_an_unsupported_image_format_is_rejected_with_the_supported_formats(
+    make_app: MakeApp,
+) -> None:
+    response = make_app().post(
+        "/api/resumes/check", files={"file": ("a.gif", b"GIF89a" + bytes(range(256)))}
+    )
+
+    assert response.status_code == 422
+    assert response.json()["code"] == "unsupported_format"
+    assert "PNG" in response.json()["message"]
+
+
+def test_a_file_named_as_an_image_but_not_an_image_is_rejected(make_app: MakeApp) -> None:
+    response = make_app().post(
+        "/api/resumes/check", files={"file": ("a.png", factory.make_text().encode("utf-8"))}
+    )
+
+    assert response.status_code == 422
+    assert response.json()["code"] == "conversion_failed"

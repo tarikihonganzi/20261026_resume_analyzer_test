@@ -543,3 +543,55 @@ def test_system_prompts_explain_how_to_read_several_documents(prompt: str) -> No
     assert "同一の応募者" in prompt
     assert "通算" in prompt
     assert "その引用を取った書類" in prompt
+
+
+# --- 画像 ---
+
+IMAGE_BYTES = factory.make_image("PNG")
+IMAGE_RESUME = ResumeInput(source_name="スキャン.png", format="png", image=IMAGE_BYTES)
+
+
+@pytest.mark.parametrize("detail", ["auto", "low", "high"])
+def test_an_image_is_attached_as_an_input_image_with_the_detail(detail: str) -> None:
+    items = prompts.build_extract_input(
+        extract_request(IMAGE_RESUME),
+        pdf_detail=detail,  # pyright: ignore[reportArgumentType]
+    )
+
+    parts = items[0]["content"]
+    images = [p for p in parts if p["type"] == "input_image"]
+    assert len(images) == 1
+    encoded = base64.b64encode(IMAGE_BYTES).decode("ascii")
+    assert images[0]["image_url"] == f"data:image/png;base64,{encoded}"
+    assert images[0]["detail"] == detail
+    # 画像は、input_file ではない（input_file は PDF などの文書用）
+    assert all(p["type"] != "input_file" for p in parts)
+
+
+def test_the_mime_type_follows_the_image_format() -> None:
+    for format_, mime in (("jpeg", "image/jpeg"), ("webp", "image/webp")):
+        resume = ResumeInput(source_name=f"a.{format_}", format=format_, image=b"x")
+
+        parts = prompts.build_extract_input(extract_request(resume), pdf_detail="high")[0][
+            "content"
+        ]
+
+        image = next(p for p in parts if p["type"] == "input_image")
+        assert image["image_url"].startswith(f"data:{mime};base64,")
+
+
+def test_an_image_is_preceded_by_a_label_with_its_name() -> None:
+    # input_image には、ファイル名を渡す欄がない。複数の画像でも、どれがどの書類かが分かるよう、
+    # 画像の直前に、書類の名前を示す文を置く
+    parts = prompts.build_extract_input(extract_request(IMAGE_RESUME), pdf_detail="high")[0][
+        "content"
+    ]
+
+    index = next(i for i, p in enumerate(parts) if p["type"] == "input_image")
+    assert parts[index - 1]["type"] == "input_text"
+    assert "スキャン.png" in parts[index - 1]["text"]
+
+
+def test_the_system_prompts_say_that_an_attached_image_is_data() -> None:
+    assert "画像" in prompts.EXTRACT_SYSTEM_PROMPT
+    assert "画像" in prompts.EVALUATE_SYSTEM_PROMPT

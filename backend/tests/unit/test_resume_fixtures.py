@@ -120,3 +120,17 @@ def test_command_line_writes_every_fixture(tmp_path: Path, monkeypatch: pytest.M
 
     written = {p.name for p in tmp_path.iterdir()}
     assert written == {f.filename for f in factory.all_fixtures()}
+
+
+@pytest.mark.parametrize(
+    ("pillow_format", "signature"),
+    [("PNG", b"\x89PNG\r\n\x1a\n"), ("JPEG", b"\xff\xd8\xff"), ("WEBP", b"RIFF")],
+)
+def test_the_generated_images_have_the_right_signature(
+    pillow_format: str, signature: bytes
+) -> None:
+    data = factory.make_image(pillow_format)
+
+    assert data.startswith(signature)
+    if pillow_format == "WEBP":
+        assert data[8:12] == b"WEBP"

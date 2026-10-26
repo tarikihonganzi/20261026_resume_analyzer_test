@@ -100,8 +100,9 @@ export function ResumeInput({
                   : 'ここにファイルをドラッグ、またはクリックして選ぶ（複数可）'}
               </p>
               <Typography.Text type="secondary">
-                PDF、Word（docx）、Excel（xlsx・xls）、PowerPoint（pptx）、テキストに対応しています。
-                スキャン画像の PDF も読み取れます。同じ応募者の書類を、合わせて {MAX_RESUMES}{' '}
+                PDF、Word（docx）、Excel（xlsx・xls）、PowerPoint（pptx）、テキスト、画像（PNG・JPEG・WebP）に
+                対応しています。スキャン画像の PDF
+                や、紙の書類の写真も読み取れます。同じ応募者の書類を、合わせて {MAX_RESUMES}{' '}
                 件まで選べます。
               </Typography.Text>
             </Upload.Dragger>

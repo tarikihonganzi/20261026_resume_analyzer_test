@@ -116,6 +116,12 @@ describe('② 書類', () => {
       expect(screen.getByText('必須（1）')).toBeInTheDocument()
     })
 
+    it('選べる形式として、画像（PNG・JPEG・WebP）も案内する', async () => {
+      await reachResumeStep()
+
+      expect(screen.getByText(/画像（PNG・JPEG・WebP）/)).toBeInTheDocument()
+    })
+
     it('「戻る」で ① に戻れる', async () => {
       await reachResumeStep()
 

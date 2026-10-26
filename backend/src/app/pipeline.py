@@ -103,8 +103,8 @@ def _resolve_quote(quote: Quote, resumes: Sequence[ResumeInput]) -> tuple[str, Q
     for resume in resumes:
         if resume.text is not None and _verify(quote.text, resume) == "match":
             return resume.source_name, "match"
-    has_pdf = any(resume.pdf is not None for resume in resumes)
-    return quote.source_name, "skipped" if has_pdf else "not_found"
+    has_binary = any(resume.pdf is not None or resume.image is not None for resume in resumes)
+    return quote.source_name, "skipped" if has_binary else "not_found"
 
 
 def _verified_quotes(

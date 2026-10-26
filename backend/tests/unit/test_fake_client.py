@@ -227,3 +227,17 @@ async def test_extract_returns_a_fixed_fictional_applicant_name() -> None:
     )
 
     assert result.applicant_name == "架空 太郎"
+
+
+async def test_an_image_resume_is_handled_like_a_pdf() -> None:
+    image = ResumeInput(
+        source_name="スキャン.png", format="png", image=bytes.fromhex("89504e470d0a1a0a")
+    )
+
+    result = await FakeClient().extract(
+        ExtractRequest(
+            resumes=[image], today=date(2026, 10, 25), conditions=[condition("a", "boolean")]
+        )
+    )
+
+    assert result.results[0].quotes[0].source_name == "スキャン.png"
