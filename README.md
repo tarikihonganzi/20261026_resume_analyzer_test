@@ -35,6 +35,8 @@ npm run start
 
 フロントをビルドし、FastAPI が画面と API を **1 つのプロセス**で配信します。ブラウザで <http://127.0.0.1:8000> を開きます。`127.0.0.1` だけで待ち受けるので、他の PC からは開けません。止めるときは `Ctrl+C` です（ウィンドウを閉じるなどで強制終了すると、裏の `uvicorn` が残ることがあります。次の起動が「ポートが使用中」で失敗するときは、`Get-NetTCPConnection -LocalPort 8000` で確かめて止めます）。
 
+ポートを変えるときは、`npm run start -- --port 9000`（`--` の後ろに書きます。画面は <http://127.0.0.1:9000>）か、環境変数 `APP_PORT` で指定します。優先順位は、`--port` ＞ `APP_PORT` ＞ 8000 です。使えない値（数字でない、1〜65535 の外）は、起動せずに理由を表示して終わります。`npm run start:demo -- --port 9000` も同じです。
+
 開発するときは、`npm run dev`（バックエンド 8000 と Vite 5173。画面は <http://127.0.0.1:5173>）を使います。
 
 ### 初回の設定
@@ -94,7 +96,7 @@ npm run start:demo
 | `OPENAI_API_KEY`・`OPENAI_BASE_URL`・`OPENAI_MODEL` | 設定の初期値（設定ページで保存した値が優先） |
 | `APP_DATA_DIR` | データの置き場所（既定は、リポジトリの `data/`） |
 | `APP_LOG_DIR`・`APP_LOG_LEVEL` | ログの出力先（既定は、リポジトリ直下の `log/`）と、レベル（既定は INFO）。`log/` に、その日の日付のファイル（`2026-10-25.log` など）で残る。30 日分を残し、古いものは消える |
-| `APP_PORT` | `npm run start` の待ち受けポート（既定 8000） |
+| `APP_PORT` | `npm run start` の待ち受けポート（既定 8000）。`--port` の指定が優先 |
 | `APP_STATIC_DIR` | 配信する、ビルド済みのフロント（既定は `frontend/dist`。なければ API だけ） |
 | `APP_ALLOW_REMOTE` | `1` のときだけ、他の PC からのアクセスを許す。`npm run start:demo` が指定する |
 | `APP_LLM_MODE`・`APP_FAKE_DELAY_SEC` | `fake` で、偽の LLM を使う（テスト・E2E 用） |
