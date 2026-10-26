@@ -75,7 +75,7 @@ def extraction(condition_id: str, **values: Any) -> ConditionExtraction:
 
 
 EXTRACTIONS = [extraction("c1", has_skill=True), extraction("c2", years=6.0)]
-EXTRACTION_RESULT = ExtractionResult(results=EXTRACTIONS)
+EXTRACTION_RESULT = ExtractionResult(applicant_name=None, results=EXTRACTIONS)
 
 
 def evaluate_request(resume: ResumeInput = TEXT_RESUME) -> EvaluateRequest:
@@ -161,7 +161,7 @@ async def test_extract_sends_a_responses_api_request_with_the_documented_shape()
     assert text_format["type"] == "json_schema"
     assert text_format["strict"] is True
     assert text_format["name"] == "ExtractionResult"
-    assert text_format["schema"]["required"] == ["results"]
+    assert text_format["schema"]["required"] == ["applicant_name", "results"]
 
 
 async def test_request_does_not_set_sampling_or_reasoning_or_chaining_options() -> None:

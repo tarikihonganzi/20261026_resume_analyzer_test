@@ -215,3 +215,15 @@ async def test_configured_error_is_raised() -> None:
         await client.extract(extract_request())
     with pytest.raises(LlmUnavailableError):
         await client.evaluate(await evaluate_request(FakeClient()))
+
+
+async def test_extract_returns_a_fixed_fictional_applicant_name() -> None:
+    result = await FakeClient().extract(
+        ExtractRequest(
+            resumes=[TEXT_RESUME],
+            today=date(2026, 10, 25),
+            conditions=[condition("a", "boolean")],
+        )
+    )
+
+    assert result.applicant_name == "架空 太郎"

@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Literal
 
+from app.domain.applicant import normalize_applicant_name
 from app.domain.clipping import clip_score
 from app.domain.errors import ExtractionInconsistentError, LlmError, NoConditionsError
 from app.domain.judging import find_extraction_problems, judge, match_rate, missing_required
@@ -64,14 +65,14 @@ def _elapsed_ms(started: float) -> int:
 
 async def _extract(
     client: LlmClient, resumes: Sequence[ResumeInput], conditions: Sequence[Condition], today: date
-) -> dict[str, ConditionExtraction]:
-    """抽出し、条件と整合しなければ、1 回だけ再実行する。条件の id で引ける形で返す。"""
+) -> ExtractionResult:
+    """抽出し、条件と整合しなければ、1 回だけ再実行する。整合した結果を返す。"""
     request = ExtractRequest(resumes=resumes, today=today, conditions=conditions)
     for attempt in range(_EXTRACTION_RETRIES + 1):
         result: ExtractionResult = await client.extract(request)
         problems = find_extraction_problems(conditions, result.results)
         if not problems:
-            return {e.condition_id: e for e in result.results}
+            return result
         # 問題の分類だけをログに出す（条件や職歴書の内容は出さない）
         logger.warning("extraction inconsistent attempt=%d problems=%s", attempt + 1, problems)
     raise ExtractionInconsistentError
@@ -173,7 +174,8 @@ async def run(
     try:
         # ステップ 1（LLM）: 条件ごとの有無・年数と根拠を抽出する
         yield StageEvent("extracting")
-        extractions = await _extract(client, resumes, conditions, today)
+        extracted = await _extract(client, resumes, conditions, today)
+        extractions = {e.condition_id: e for e in extracted.results}
         logger.info("stage=extracting done duration_ms=%d", _elapsed_ms(started))
 
         # ステップ 2（コード）: 達成・未達・不明、マッチ度合い、未達の必須条件を決める
@@ -216,6 +218,8 @@ async def run(
     )
     yield ResultEvent(
         EvaluationResult(
+            # 氏名は、画面に出すためだけに使う。最終評価の LLM には渡さず、ログにも出さない
+            applicant_name=normalize_applicant_name(extracted.applicant_name),
             score=clipped.score,
             original_score=clipped.original_score,
             clipped=clipped.clipped,

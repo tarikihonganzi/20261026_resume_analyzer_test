@@ -462,6 +462,17 @@
       "EvaluationResult": {
         "description": "評価の結果。`score` は補正後で、`original_score` が LLM の元のスコア。",
         "properties": {
+          "applicant_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Applicant Name"
+          },
           "clipped": {
             "title": "Clipped",
             "type": "boolean"
@@ -511,6 +522,7 @@
           }
         },
         "required": [
+          "applicant_name",
           "score",
           "original_score",
           "clipped",

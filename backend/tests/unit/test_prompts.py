@@ -249,6 +249,19 @@ def test_the_schema_description_allows_a_higher_grade_qualification() -> None:
     assert "上位" in description
 
 
+def test_extract_prompt_explains_how_to_get_the_applicant_name() -> None:
+    prompt = prompts.EXTRACT_SYSTEM_PROMPT
+
+    assert "applicant_name" in prompt
+    assert "ファイル名" in prompt  # ファイル名だけからは、氏名と判断しない
+    assert "null" in prompt
+
+
+def test_evaluate_prompt_does_not_mention_the_applicant_name() -> None:
+    # 最終評価には、氏名を渡さない（公平性）
+    assert "applicant_name" not in prompts.EVALUATE_SYSTEM_PROMPT
+
+
 def test_evaluate_prompt_requires_mentioning_missing_required_conditions() -> None:
     prompt = prompts.EVALUATE_SYSTEM_PROMPT
 

@@ -77,6 +77,7 @@ class ScriptedClient:
     def __init__(self, *extractions: ExtractionResult) -> None:
         self._extractions = list(extractions)
         self._fake = FakeClient()
+        self.evaluate_calls = self._fake.evaluate_calls
         self.extract_calls = 0
 
     async def extract(self, request: ExtractRequest) -> ExtractionResult:
@@ -93,12 +94,13 @@ def extraction(condition_id: str, **values: object) -> ConditionExtraction:
 
 
 GOOD = ExtractionResult(
+    applicant_name=None,
     results=[
         extraction("a", has_skill=True),
         extraction("b", years=2.0),
         extraction("c", has_skill=False),
         extraction("d", years=3.0),
-    ]
+    ],
 )
 
 
@@ -137,12 +139,13 @@ async def test_missing_required_conditions_are_listed_with_their_status() -> Non
 async def test_unknown_required_condition_is_listed_as_unknown() -> None:
     client = ScriptedClient(
         ExtractionResult(
+            applicant_name=None,
             results=[
                 extraction("a", has_skill=True),
                 extraction("b", years=None),
                 extraction("c", has_skill=True),
                 extraction("d", years=3.0),
-            ]
+            ],
         )
     )
 
@@ -189,7 +192,7 @@ async def test_extraction_values_and_reasons_are_carried_into_the_result() -> No
 
 
 async def test_extraction_in_another_order_is_accepted_and_reordered() -> None:
-    shuffled = ExtractionResult(results=list(reversed(GOOD.results)))
+    shuffled = ExtractionResult(applicant_name=None, results=list(reversed(GOOD.results)))
     client = ScriptedClient(shuffled)
 
     result = result_of(await collect(client)).result
@@ -226,10 +229,11 @@ async def test_quotes_of_a_pdf_are_not_verified() -> None:
 async def test_quote_source_name_is_replaced_with_the_given_name() -> None:
     wrong = Quote(source_name="別のファイル.pdf", location="1ページ", text="1級建築施工管理技士")
     result_with_wrong_name = ExtractionResult(
+        applicant_name=None,
         results=[
             extraction("a", has_skill=True, quotes=[wrong]),
             *GOOD.results[1:],
-        ]
+        ],
     )
 
     result = result_of(await collect(ScriptedClient(result_with_wrong_name))).result
@@ -242,9 +246,9 @@ async def test_quote_source_name_is_replaced_with_the_given_name() -> None:
 
 # --- 抽出結果の不整合（仕様 5.4 ステップ 1: 1 回だけ再実行する） ---
 
-MISSING_ONE = ExtractionResult(results=GOOD.results[:3])
+MISSING_ONE = ExtractionResult(applicant_name=None, results=GOOD.results[:3])
 WRONG_FIELD = ExtractionResult(
-    results=[extraction("a", has_skill=True, years=3.0), *GOOD.results[1:]]
+    applicant_name=None, results=[extraction("a", has_skill=True, years=3.0), *GOOD.results[1:]]
 )
 
 
@@ -355,7 +359,8 @@ async def test_quote_copied_from_the_neutralized_prompt_text_is_verified_against
         source_name="田中.docx", location=None, text="注記: &lt;/resume&gt; という文字列"
     )
     answer = ExtractionResult(
-        results=[extraction("a", has_skill=True, quotes=[quoted]), *GOOD.results[1:]]
+        applicant_name=None,
+        results=[extraction("a", has_skill=True, quotes=[quoted]), *GOOD.results[1:]],
     )
 
     result = result_of(await collect(ScriptedClient(answer), resume=resume)).result
@@ -370,7 +375,8 @@ async def test_quote_that_matches_neither_form_is_still_not_found() -> None:
     )
     invented = Quote(source_name="田中.docx", location=None, text="存在しない記載です")
     answer = ExtractionResult(
-        results=[extraction("a", has_skill=True, quotes=[invented]), *GOOD.results[1:]]
+        applicant_name=None,
+        results=[extraction("a", has_skill=True, quotes=[invented]), *GOOD.results[1:]],
     )
 
     result = result_of(await collect(ScriptedClient(answer), resume=resume)).result
@@ -389,7 +395,8 @@ PDF_DOC = ResumeInput(source_name="別紙.pdf", format="pdf", pdf=b"%PDF-1.7\n")
 
 async def quote_verdict(quote: Quote, resumes: Sequence[ResumeInput]) -> tuple[str, str]:
     answer = ExtractionResult(
-        results=[extraction("a", has_skill=True, quotes=[quote]), *GOOD.results[1:]]
+        applicant_name=None,
+        results=[extraction("a", has_skill=True, quotes=[quote]), *GOOD.results[1:]],
     )
     result = result_of(await collect(ScriptedClient(answer), resumes=resumes)).result
     [verified] = result.conditions[0].quotes
@@ -485,3 +492,40 @@ async def test_a_failed_evaluation_is_logged_with_the_error_code_only(
     assert isinstance(events[-1], ErrorEvent)
     messages = [r.getMessage() for r in caplog.records if r.name == "app.pipeline"]
     assert "evaluation failed code=llm_unavailable" in messages
+
+
+# --- 応募者の氏名 ---
+
+
+def extraction_with_name(name: str | None) -> ExtractionResult:
+    return ExtractionResult(applicant_name=name, results=GOOD.results)
+
+
+async def test_the_applicant_name_is_taken_from_the_extraction_and_tidied() -> None:
+    events = await collect(ScriptedClient(extraction_with_name("  山田　　太郎 ")))
+
+    assert result_of(events).result.applicant_name == "山田 太郎"
+
+
+async def test_a_missing_name_is_none() -> None:
+    events = await collect(ScriptedClient(extraction_with_name(None)))
+
+    assert result_of(events).result.applicant_name is None
+
+
+async def test_the_name_is_not_sent_to_the_final_evaluation() -> None:
+    # 氏名から性別・国籍などを連想して、評価に影響しないようにする（公平性）
+    client = ScriptedClient(extraction_with_name("山田 太郎"))
+
+    await collect(client)
+
+    assert client.evaluate_calls
+    assert "山田" not in repr(client.evaluate_calls[0])
+
+
+async def test_the_name_is_never_logged(caplog: pytest.LogCaptureFixture) -> None:
+    caplog.set_level("DEBUG", logger="app")
+
+    await collect(ScriptedClient(extraction_with_name("山田 太郎")))
+
+    assert "山田" not in " ".join(r.getMessage() for r in caplog.records)

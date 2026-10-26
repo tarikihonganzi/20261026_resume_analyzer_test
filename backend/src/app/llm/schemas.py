@@ -69,6 +69,14 @@ class ConditionExtraction(BaseModel):
 
 
 class ExtractionResult(BaseModel):
+    applicant_name: str | None = Field(
+        description=(
+            "応募者本人の氏名。書類の本文に書かれている氏名を、書かれたとおりに写す（姓と名の間の空白もそのまま）。"
+            "複数の書類があるときは、同一人物の氏名を 1 つだけ書く。"
+            "氏名が書かれていない場合、応募者本人の氏名と判断できない場合（上司・取引先・推薦者などの名前）、"
+            "ファイル名にしか書かれていない場合は null。推測や補完をしない。"
+        )
+    )
     results: list[ConditionExtraction] = Field(
         description=(
             "入力のすべての条件について 1 件ずつ、入力と同じ順序で返す。"

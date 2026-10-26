@@ -57,6 +57,8 @@ class EvaluationResult(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
+    # 応募者の氏名。書類から読み取れなかったときは None（最終評価には渡さない）
+    applicant_name: str | None
     score: int
     original_score: int
     clipped: bool

@@ -103,6 +103,7 @@ def test_result_has_everything_the_screen_needs(make_app: MakeApp) -> None:
     result = evaluate_text(make_app())[-1][1]
 
     assert set(result) == {
+        "applicant_name",
         "score",
         "original_score",
         "clipped",
@@ -360,6 +361,7 @@ def canned_extraction() -> ExtractionResult:
         return ConditionExtraction.model_validate({"condition_id": condition_id} | fields | values)
 
     return ExtractionResult(
+        applicant_name=None,
         results=[
             one(
                 "a",
@@ -370,7 +372,7 @@ def canned_extraction() -> ExtractionResult:
             one("b", years=1.0),
             one("c", has_skill=False),
             one("d", years=4.0),
-        ]
+        ],
     )
 
 
@@ -669,3 +671,10 @@ async def test_uploaded_temp_files_are_closed_after_a_disconnect(
     await asyncio.sleep(0.2)
     assert tracked_spools
     assert all(spool.closed for spool in tracked_spools)
+
+
+def test_the_result_carries_the_applicant_name(make_app: MakeApp) -> None:
+    events = evaluate_text(make_app())
+
+    assert events[-1][0] == "result"
+    assert events[-1][1]["applicant_name"] == "架空 太郎"
