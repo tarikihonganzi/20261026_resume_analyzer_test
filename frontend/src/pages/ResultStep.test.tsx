@@ -163,6 +163,25 @@ describe('③ 評価の進捗とエラー', () => {
     expect(screen.getByRole('region', { name: '③ 結果' })).toHaveFocus()
   })
 
+  it('結果の先頭に、応募者の氏名を出す', async () => {
+    const evaluation = controlEvaluation()
+    await startAndWaitForRequest(evaluation)
+
+    evaluation.send(0, 'result', makeResult({ applicant_name: '架空 太郎' }))
+
+    expect(await screen.findByText('架空 太郎')).toBeInTheDocument()
+    expect(screen.getByText('応募者')).toBeInTheDocument()
+  })
+
+  it('氏名が読み取れなかったときは、「氏名の記載なし」と出す', async () => {
+    const evaluation = controlEvaluation()
+    await startAndWaitForRequest(evaluation)
+
+    evaluation.send(0, 'result', makeResult({ applicant_name: null }))
+
+    expect(await screen.findByText('氏名の記載なし')).toBeInTheDocument()
+  })
+
   it('サーバーがエラーを返したら、原因を示し、「再実行」で新しい要求を送る', async () => {
     const evaluation = controlEvaluation()
     await startAndWaitForRequest(evaluation)

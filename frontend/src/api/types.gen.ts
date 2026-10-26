@@ -333,6 +333,8 @@ export interface components {
          * @description 評価の結果。`score` は補正後で、`original_score` が LLM の元のスコア。
          */
         EvaluationResult: {
+            /** Applicant Name */
+            applicant_name: string | null;
             /** Clipped */
             clipped: boolean;
             /** Conditions */

@@ -20,6 +20,8 @@ from app.llm.schemas import (
 
 # 最終評価に 1 件だけ入れる、原文にない引用
 UNVERIFIABLE_QUOTE = "この引用は書類の原文にありません（偽のクライアントが入れたもの）"
+# 偽のクライアントが返す、架空の氏名（結果画面の表示の確認用）
+FAKE_APPLICANT_NAME = "架空 太郎"
 _ACHIEVED_PATTERN = (True, False, False, True)
 _PDF_QUOTE = "（PDF の内容の引用）"
 
@@ -104,10 +106,11 @@ class FakeClient:
         name = primary.source_name
         quote = self._quote_source(primary)
         return ExtractionResult(
+            applicant_name=FAKE_APPLICANT_NAME,
             results=[
                 self._extract_one(index, condition, name, quote)
                 for index, condition in enumerate(request.conditions)
-            ]
+            ],
         )
 
     async def evaluate(self, request: EvaluateRequest) -> FinalEvaluation:

@@ -1,5 +1,6 @@
 import { Alert, Button, Card, Flex, Result, Spin, Steps, Typography } from 'antd'
 import type { Stage } from '../api/types'
+import { ApplicantName } from '../components/ApplicantName'
 import { useFlow } from '../state/flow-context'
 import { ResultView } from './ResultView'
 import { useEvaluationRun } from './useEvaluationRun'
@@ -98,22 +99,26 @@ export function ResultStep() {
   if (evaluation.status === 'done') {
     return (
       <Flex vertical gap={16}>
-        <Flex justify="flex-end" gap={8} wrap>
-          <Button
-            onClick={() => {
-              dispatch({ type: 'reevaluate' })
-            }}
-          >
-            条件を変えて再評価
-          </Button>
-          <Button
-            type="primary"
-            onClick={() => {
-              dispatch({ type: 'newApplicant' })
-            }}
-          >
-            別の応募者を評価
-          </Button>
+        {/* 左に応募者の氏名、右に操作のボタン。狭い画面では、折り返して縦に並ぶ */}
+        <Flex justify="space-between" align="center" gap={8} wrap>
+          <ApplicantName name={evaluation.result.applicant_name} />
+          <Flex gap={8} wrap>
+            <Button
+              onClick={() => {
+                dispatch({ type: 'reevaluate' })
+              }}
+            >
+              条件を変えて再評価
+            </Button>
+            <Button
+              type="primary"
+              onClick={() => {
+                dispatch({ type: 'newApplicant' })
+              }}
+            >
+              別の応募者を評価
+            </Button>
+          </Flex>
         </Flex>
         <ResultView result={evaluation.result} />
       </Flex>

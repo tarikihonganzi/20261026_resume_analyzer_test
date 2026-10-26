@@ -38,6 +38,7 @@ export function makeJudged(overrides: Partial<JudgedCondition> = {}): JudgedCond
 export function makeResult(overrides: Partial<EvaluationResult> = {}): EvaluationResult {
   return {
     score: 72,
+    applicant_name: '架空 太郎',
     original_score: 72,
     clipped: false,
     match_rate: 70,

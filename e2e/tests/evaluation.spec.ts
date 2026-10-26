@@ -33,6 +33,8 @@ test('職歴書を評価すると、スコア・必須条件の NG・判定・�
 
   // 結果: 最終スコア（AI 算出）とマッチ度合い（スキルの充足度）
   await expect(page.getByText('最終スコア（AI 算出）')).toBeVisible({ timeout: 20_000 })
+  // 応募者の氏名（偽の LLM は、決まった架空の氏名を返す）
+  await expect(page.getByText('架空 太郎')).toBeVisible()
   await expect(page.getByText('マッチ度合い（スキルの充足度）')).toBeVisible()
 
   // 必須条件の NG が、赤い文字で示される（偽の LLM は、年数の条件を NG にする）
