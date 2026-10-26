@@ -1,7 +1,7 @@
 {
   "name": "resume-matching",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "職歴書マッチング評価アプリ。タスクの入口（npm scripts は cmd.exe と sh の両方で動く書き方にする）",
   "scripts": {
     "setup": "npm ci && uv sync --directory backend && npm ci --prefix frontend && npm ci --prefix e2e",

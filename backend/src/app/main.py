@@ -34,7 +34,7 @@ def create_app(
     settings = settings or AppSettings.from_env()
     if settings.log_dir is not None:
         configure_logging(settings.log_dir, level=settings.log_level)
-    app = FastAPI(title="マッチング評価", version="1.0.0")
+    app = FastAPI(title="マッチング評価", version="1.1.0")
     app.state.services = Services(
         settings=settings,
         config_store=ConfigStore(settings.data_dir / "config.json", environ=environ),
