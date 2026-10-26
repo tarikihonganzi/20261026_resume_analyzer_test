@@ -38,6 +38,7 @@ class ConditionExtraction(BaseModel):
         description=(
             "kind が boolean の条件でのみ使う。職歴書の記載から保有が読み取れれば true、"
             "読み取れなければ false。関連しそうな別の資格・経験からの類推で true にしない。"
+            "ただし、条件の資格より明確に上位の資格（2級に対する1級など）の保有が読み取れる場合は true にする。"
             "kind が number の条件では null。"
         )
     )
