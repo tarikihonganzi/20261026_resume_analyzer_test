@@ -41,7 +41,7 @@ def test_catalog_matches_the_spec_tables_in_order() -> None:
 
     actual = [(i.category, i.label, i.kind, i.unit) for i in load_catalog()]
 
-    assert len(expected) == 75
+    assert len(expected) == 40
     assert actual == expected
 
 
@@ -143,3 +143,27 @@ def test_ambiguous_presets_say_what_does_not_count() -> None:
     for label in ("品質管理", "原価管理", "安全管理", "工程管理"):
         description = by_label[label].description or ""
         assert "含めない" in description, f"{label} の補足説明に、数えないものの例がありません"
+
+
+def test_descriptions_avoid_vague_wording_that_the_model_cannot_use() -> None:
+    # 「国家資格の記載」のような、何を数えるかが分からない説明や、求人の事情は書かない
+    for item in load_catalog():
+        description = item.description or ""
+        assert description != "国家資格の記載", item.label
+        assert "求人" not in description, f"{item.label}: 求人の事情は書かない"
+
+
+def test_lower_grade_qualifications_accept_the_higher_grade() -> None:
+    # 2 級の条件は、1 級の取得でも満たす（仕様 13.1 #39）。説明に、そのことを書く
+    by_label = {item.label: item for item in load_catalog()}
+
+    for label, higher in (
+        ("2級建築施工管理技士", "1級建築施工管理技士"),
+        ("2級土木施工管理技士", "1級土木施工管理技士"),
+        ("2級電気工事施工管理技士", "1級電気工事施工管理技士"),
+        ("2級建築士", "1級建築士"),
+    ):
+        description = by_label[label].description or ""
+        assert f"{higher}の" in description and "でも可" in description, label
+        # 以前の「上位の資格だけでは『あり』にしない」という逆の記述は、残さない
+        assert "あり」にしない" not in description, label
