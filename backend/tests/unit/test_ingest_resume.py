@@ -270,7 +270,7 @@ async def test_zip_is_not_accepted() -> None:
         await load_file("resume.zip", buffer.getvalue())
 
 
-# --- Copilot のレビューで指摘された、取り込みの抜け穴 ---
+# --- 取り込みの抜け穴（拡張子の偽装など） ---
 
 
 @pytest.mark.parametrize("filename", ["resume", "resume.dat", "resume.zip", "resume.docx.bak"])
@@ -582,3 +582,79 @@ async def test_a_corrupted_zip_without_an_extension_cannot_be_identified() -> No
         await load_file("経歴", corrupted)
 
     assert "拡張子" in str(excinfo.value)
+
+
+# --- 画像（PNG・JPEG・WebP）。PDF と同じく、手元でテキストにせず、そのまま LLM に渡す ---
+
+
+@pytest.mark.parametrize(
+    ("filename", "pillow_format", "format_"),
+    [
+        pytest.param("スキャン.png", "PNG", "png", id="png"),
+        pytest.param("スキャン.jpg", "JPEG", "jpeg", id="jpg"),
+        pytest.param("スキャン.jpeg", "JPEG", "jpeg", id="jpeg"),
+        pytest.param("スキャン.webp", "WEBP", "webp", id="webp"),
+        pytest.param("スキャン.PNG", "PNG", "png", id="uppercase-extension"),
+    ],
+)
+async def test_an_image_is_kept_as_bytes_and_not_converted(
+    filename: str, pillow_format: str, format_: str
+) -> None:
+    content = factory.make_image(pillow_format)
+
+    result = await load_file(filename, content)
+
+    assert result.format == format_
+    assert result.image == content
+    assert result.pdf is None
+    assert result.text is None
+    assert result.source_name == filename
+
+
+async def test_an_image_is_detected_by_its_content_even_with_another_or_no_extension() -> None:
+    png = factory.make_image("PNG")
+
+    assert (await load_file("写真", png)).format == "png"
+    assert (await load_file("写真.dat", png)).format == "png"
+    # 拡張子が .jpg でも、中身が PNG なら、中身に従う（LLM に渡す MIME は、中身で決める）
+    assert (await load_file("写真.jpg", png)).format == "png"
+
+
+@pytest.mark.parametrize("filename", ["写真.png", "写真.jpg", "写真.webp"])
+async def test_a_file_named_as_an_image_without_an_image_header_is_an_error(filename: str) -> None:
+    with pytest.raises(ConversionFailedError) as excinfo:
+        await load_file(filename, factory.make_text().encode("utf-8"))
+
+    assert "画像" in str(excinfo.value)
+
+
+@pytest.mark.parametrize(
+    "filename", ["写真.gif", "写真.bmp", "写真.tif", "写真.tiff", "写真.heic", "写真.svg"]
+)
+async def test_image_formats_that_are_not_supported_name_the_supported_ones(filename: str) -> None:
+    with pytest.raises(UnsupportedFormatError) as excinfo:
+        await load_file(filename, b"GIF89a" + bytes(range(256)) * 4)
+
+    message = str(excinfo.value)
+    assert "PNG" in message and "JPEG" in message and "WebP" in message
+
+
+async def test_an_image_is_also_subject_to_the_size_limit() -> None:
+    content = factory.make_image("PNG", size=(1200, 1200), noise=True)
+    assert len(content) > MB
+
+    with pytest.raises(FileTooLargeError):
+        await load_file("大きい.png", content, max_size_mb=1)
+
+
+async def test_the_check_of_an_image_has_no_character_count() -> None:
+    result = check_of(await load_file("スキャン.png", factory.make_image("PNG")))
+
+    assert (result.format, result.char_count) == ("png", None)
+
+
+async def test_the_supported_formats_hint_mentions_images() -> None:
+    with pytest.raises(UnsupportedFormatError) as excinfo:
+        await load_file("setup.exe", b"MZ" + bytes(range(256)) * 4)
+
+    assert "画像" in str(excinfo.value)

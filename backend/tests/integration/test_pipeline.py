@@ -529,3 +529,33 @@ async def test_the_name_is_never_logged(caplog: pytest.LogCaptureFixture) -> Non
     await collect(ScriptedClient(extraction_with_name("山田 太郎")))
 
     assert "山田" not in " ".join(r.getMessage() for r in caplog.records)
+
+
+# --- 画像 ---
+
+IMAGE_RESUME = ResumeInput(
+    source_name="スキャン.png", format="png", image=bytes.fromhex("89504e470d0a1a0a")
+)
+
+
+async def test_a_quote_whose_source_is_an_image_is_not_verified() -> None:
+    quote = Quote(source_name="スキャン.png", location=None, text="1級建築施工管理技士")
+
+    assert await quote_verdict(quote, [IMAGE_RESUME]) == ("スキャン.png", "skipped")
+
+
+async def test_an_unknown_source_name_with_an_image_among_the_documents_is_not_verified() -> None:
+    quote = Quote(source_name="どこか.png", location=None, text="原文にない文")
+
+    verdict = await quote_verdict(quote, [TEXT_RESUME, IMAGE_RESUME])
+
+    assert verdict == ("どこか.png", "skipped")
+
+
+async def test_an_image_document_goes_through_the_whole_pipeline() -> None:
+    events = await collect(FakeClient(), resumes=[IMAGE_RESUME])
+
+    assert isinstance(events[-1], ResultEvent)
+    quotes = [q for c in result_of(events).result.conditions for q in c.quotes]
+    assert quotes
+    assert {q.verified for q in quotes} == {"skipped"}

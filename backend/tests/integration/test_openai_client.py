@@ -28,6 +28,7 @@ from app.llm import prompts
 from app.llm.openai_client import MAX_OUTPUT_TOKENS, OpenAIClient
 from app.llm.requests import EvaluateRequest, ExtractRequest
 from app.llm.schemas import ConditionExtraction, ExtractionResult, FinalEvaluation
+from fixtures import resume_factory as factory
 from fixtures.openai_api import api_response
 
 API_KEY = "sk-test-0123456789abcdefghijklmnopqrstuv"
@@ -193,6 +194,20 @@ async def test_pdf_is_sent_as_an_input_file_with_the_configured_detail() -> None
     assert file_part["filename"] == "田中.pdf"
     assert file_part["detail"] == "low"
     assert file_part["file_data"].startswith("data:application/pdf;base64,")
+
+
+async def test_an_image_is_sent_as_an_input_image_with_the_configured_detail() -> None:
+    recorder = Recorder(ok(EXTRACTION_RESULT))
+    config = Config(openai_api_key=API_KEY, openai_base_url=BASE_URL, pdf_detail="low")
+    image = ResumeInput(source_name="田中.png", format="png", image=factory.make_image("PNG"))
+
+    await make_client(recorder, config=config).extract(extract_request(image))
+
+    parts = recorder.body["input"][0]["content"]
+    image_part = next(p for p in parts if p["type"] == "input_image")
+    assert image_part["detail"] == "low"
+    assert image_part["image_url"].startswith("data:image/png;base64,")
+    assert all(p["type"] != "input_file" for p in parts)
 
 
 async def test_evaluate_uses_the_final_evaluation_schema_and_prompt() -> None:

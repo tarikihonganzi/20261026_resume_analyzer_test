@@ -1,6 +1,6 @@
 """職歴書の取り込み（仕様 5.3）。種別の判定、サイズ検査、テキスト化、空チェックを行う。
 
-PDF は手元でテキストにせず、バイト列のまま LLM に渡す。それ以外は MarkItDown の
+PDF と画像は手元でテキストにせず、バイト列のまま LLM に渡す。それ以外は MarkItDown の
 `convert_stream` で、メモリ上の stream だけを使ってテキストにする（ファイルを作らない）。
 """
 
@@ -82,8 +82,17 @@ _PDF_AT_LINE_START = re.compile(rb"(?:^|[\r\n])%PDF-[12]\.\d")
 
 _SUPPORTED_FORMATS_HINT = (
     "対応している形式は、PDF、Word（docx）、Excel（xlsx・xls）、PowerPoint（pptx）、"
-    "テキスト（txt・md・csv）です。"
+    "テキスト（txt・md・csv）、画像（PNG・JPEG・WebP）です。"
 )
+
+# 画像の先頭の署名。LLM は、手元でテキストにせず、そのまま渡す（PDF と同じ）。形式（MIME）は、
+# 拡張子ではなく、中身で決める（拡張子が違っていても、LLM に正しい形式で渡すため）
+_PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
+_JPEG_SIGNATURE = b"\xff\xd8\xff"
+# 画像の拡張子。署名がなければ、壊れているか、拡張子が違うファイル
+_IMAGE_EXTENSIONS = frozenset({"png", "jpg", "jpeg", "webp"})
+# 画像だが、LLM が対応しない、または動くかどうかの判別が難しい形式（GIF は、動くものが対応外）
+_UNSUPPORTED_IMAGE_EXTENSIONS = frozenset({"gif", "bmp", "tif", "tiff", "heic", "heif", "svg"})
 
 # 変換結果から、本文でない行を除くための規則（見出し、水平線、表の区切り）
 _HEADING_LINE = re.compile(r"^#{1,6}(?:\s|$)")
@@ -94,11 +103,12 @@ _RULE_ONLY_LINE = re.compile(r"[\s|:\-=_*~]*")
 
 @dataclass(frozen=True)
 class ResumeInput:
-    """評価に使う職歴書。`pdf` か `text` のどちらか一方だけを持つ。"""
+    """評価に使う職歴書。`pdf`・`image`・`text` のどれか 1 つだけを持つ。"""
 
     source_name: str
     format: str
     pdf: bytes | None = None
+    image: bytes | None = None
     text: str | None = None
 
 
@@ -197,6 +207,17 @@ def _is_pdf(content: bytes, extension: str) -> bool:
     return extension == "pdf" and _PDF_AT_LINE_START.search(head) is not None
 
 
+def _image_format_of(content: bytes) -> str | None:
+    """先頭の署名から、画像の形式（png・jpeg・webp）を返す。画像でなければ None。"""
+    if content.startswith(_PNG_SIGNATURE):
+        return "png"
+    if content.startswith(_JPEG_SIGNATURE):
+        return "jpeg"
+    if content[:4] == b"RIFF" and content[8:12] == b"WEBP":
+        return "webp"
+    return None
+
+
 def _looks_binary(content: bytes) -> bool:
     """Office や zip の署名、または（BOM のない）NUL バイトを含むなら、テキストではない。"""
     if content.startswith(_BINARY_SIGNATURES):
@@ -237,6 +258,18 @@ async def _load_file(filename: str, content: bytes, max_size_mb: int) -> ResumeI
     if extension == "pdf":
         raise ConversionFailedError(
             "PDF として読み取れませんでした。ファイルが壊れていないかを確認してください。"
+        )
+    image_format = _image_format_of(content)
+    if image_format is not None:
+        return ResumeInput(source_name=source_name, format=image_format, image=content)
+    if extension in _IMAGE_EXTENSIONS:
+        raise ConversionFailedError(
+            "画像として読み取れませんでした。ファイルが壊れていないか、"
+            "拡張子と内容が一致しているかを確認してください。"
+        )
+    if extension in _UNSUPPORTED_IMAGE_EXTENSIONS:
+        raise UnsupportedFormatError(
+            f"この画像の形式（{extension}）は読み取れません。{_SUPPORTED_FORMATS_HINT}"
         )
     if extension == "zip":
         raise UnsupportedFormatError(

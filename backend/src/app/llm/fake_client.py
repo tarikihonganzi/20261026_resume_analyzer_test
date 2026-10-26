@@ -24,6 +24,7 @@ UNVERIFIABLE_QUOTE = "この引用は書類の原文にありません（偽の�
 FAKE_APPLICANT_NAME = "架空 太郎"
 _ACHIEVED_PATTERN = (True, False, False, True)
 _PDF_QUOTE = "（PDF の内容の引用）"
+_IMAGE_QUOTE = "（画像の内容の引用）"
 
 
 class FakeClient:
@@ -62,7 +63,7 @@ class FakeClient:
         """引用に使う、原文の一部。テキストの職歴書なら、最初の十分に長い行。"""
         text = resume.text
         if text is None:
-            return _PDF_QUOTE
+            return _IMAGE_QUOTE if resume.image is not None else _PDF_QUOTE
         # 短すぎる引用は、原文のどこにでも一致してしまうので、8 文字以上の最初の行を使う
         lines = [line.strip() for line in text.splitlines() if len(line.strip()) >= 8]
         return lines[0] if lines else text.strip()[:30]

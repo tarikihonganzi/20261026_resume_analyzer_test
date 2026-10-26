@@ -218,8 +218,8 @@ def make_pdf_digital(*, injection: bool = False) -> bytes:
     return buffer.getvalue()
 
 
-def make_pdf_scanned(*, injection: bool = False) -> bytes:
-    """画像だけの PDF（スキャン PDF）。テキストの層を持たない。
+def _scan_page(*, injection: bool = False) -> Image.Image:
+    """スキャンした紙の職歴書のような、文字だけの画像（A4・150dpi）。
 
     日本語のフォントファイルが必要。なければ RuntimeError。
     """
@@ -238,9 +238,36 @@ def make_pdf_scanned(*, injection: bool = False) -> bytes:
         draw.text((100, y), line, fill=30, font=title_font if is_title else body_font)
         y += 64 if is_title else 44
     # スキャンらしく、ごくわずかに傾ける
-    image = image.rotate(0.4, resample=Image.Resampling.BICUBIC, fillcolor=255)
+    return image.rotate(0.4, resample=Image.Resampling.BICUBIC, fillcolor=255)
+
+
+def make_pdf_scanned(*, injection: bool = False) -> bytes:
+    """画像だけの PDF（スキャン PDF）。テキストの層を持たない。"""
     buffer = io.BytesIO()
-    image.save(buffer, format="PDF", resolution=150.0)
+    _scan_page(injection=injection).save(buffer, format="PDF", resolution=150.0)
+    return buffer.getvalue()
+
+
+def make_image(
+    pillow_format: str,
+    *,
+    size: tuple[int, int] = (64, 64),
+    noise: bool = False,
+    scan: bool = False,
+) -> bytes:
+    """画像ファイル（`pillow_format` は PNG・JPEG・WEBP など）。
+
+    `scan=True` は、職歴書のスキャン画像（日本語のフォントが必要）。`noise=True` は、圧縮されにくい
+    ランダムな画素（大きなファイルを作る用）。どちらでもなければ、小さな無地の画像。
+    """
+    if scan:
+        image = _scan_page()
+    elif noise:
+        image = Image.frombytes("L", size, os.urandom(size[0] * size[1]))
+    else:
+        image = Image.new("L", size, 255)
+    buffer = io.BytesIO()
+    image.save(buffer, format=pillow_format)
     return buffer.getvalue()
 
 
@@ -280,6 +307,8 @@ def all_fixtures() -> list[Fixture]:
     ]
     if find_japanese_font() is not None:
         makers.append(("resume_scanned.pdf", make_pdf_scanned))
+        makers.append(("resume_scan.png", lambda: make_image("PNG", scan=True)))
+        makers.append(("resume_scan.jpg", lambda: make_image("JPEG", scan=True)))
     return [Fixture(name, make()) for name, make in makers]
 
 
