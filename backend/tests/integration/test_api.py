@@ -40,7 +40,7 @@ def test_catalog_returns_the_presets(make_app: MakeApp) -> None:
 
     assert response.status_code == 200
     items = response.json()["items"]
-    assert len(items) == 75
+    assert len(items) == 40
     description = items[0].pop("description")  # 何をその条件として数えるか（仕様 5.1）
     assert items[0] == {
         "id": "qual-kenchiku-sekou-1",
