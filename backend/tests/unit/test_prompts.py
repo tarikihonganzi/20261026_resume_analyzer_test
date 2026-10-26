@@ -228,6 +228,27 @@ def test_extract_prompt_forbids_guessing_and_explains_years() -> None:
     assert "今日の日付" in prompts.EXTRACT_SYSTEM_PROMPT
 
 
+def test_extract_prompt_accepts_a_clearly_higher_grade_qualification() -> None:
+    # 条件が 2 級でも、書類に 1 級の保有が明確にあれば、条件を満たす（等級のある資格）
+    prompt = prompts.EXTRACT_SYSTEM_PROMPT
+
+    assert "上位の資格" in prompt
+    assert "2級建築施工管理技士" in prompt  # 条件の例
+    assert "1級建築施工管理技士" in prompt  # 書類にある、上位の資格の例
+    # 類推の禁止と両立する。上位かどうかが明確でない場合は、満たすとしない
+    assert "明確" in prompt
+    # 逆（条件が上位で、書類に下位だけ）は、満たさない
+    assert "下位の資格だけ" in prompt
+
+
+def test_the_schema_description_allows_a_higher_grade_qualification() -> None:
+    from app.llm.schemas import ConditionExtraction
+
+    description = ConditionExtraction.model_fields["has_skill"].description or ""
+
+    assert "上位" in description
+
+
 def test_evaluate_prompt_requires_mentioning_missing_required_conditions() -> None:
     prompt = prompts.EVALUATE_SYSTEM_PROMPT
 
