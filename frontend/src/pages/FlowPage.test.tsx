@@ -50,6 +50,31 @@ describe('画面の切り替えと、フォーカス', () => {
     expect(await screen.findByRole('region', { name: '① 条件' })).toHaveFocus()
   })
 
+  it('フォーカスを移したあと、選択範囲（キャレットの位置）を残さない', async () => {
+    // キャレットブラウジングが有効なブラウザは、フォーカスを移した領域の先頭にキャレットを置く。
+    // 評価中の回転するアイコンの上に、縦棒が出て、一緒に回ってしまうので、移したあとに消す
+    // 元の `focus` を、`this` を指定して呼び直すために、取り出す
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    const focus = HTMLElement.prototype.focus
+    HTMLElement.prototype.focus = function (this: HTMLElement, options?: FocusOptions) {
+      focus.call(this, options)
+      const range = document.createRange()
+      range.setStart(this, 0)
+      window.getSelection()?.removeAllRanges()
+      window.getSelection()?.addRange(range)
+    }
+    try {
+      await renderFlow()
+
+      await userEvent.click(screen.getByRole('button', { name: /次へ/ }))
+      await screen.findByRole('region', { name: '② 書類' })
+
+      expect(window.getSelection()?.rangeCount).toBe(0)
+    } finally {
+      HTMLElement.prototype.focus = focus
+    }
+  })
+
   it('画面に「職歴書」という言葉を出さない（Steps・① ②）。「書類」と言う', async () => {
     await renderFlow()
     expect(document.body.textContent).not.toContain('職歴書')
