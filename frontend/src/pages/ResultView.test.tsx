@@ -97,7 +97,7 @@ describe('結果画面', () => {
   })
 
   describe('AI の評価コメント', () => {
-    it('総評・良かった点・悪かった点を、条件別の判定より先に示す', () => {
+    it('総評・良かった点・気になる点を、条件別の判定より先に示す', () => {
       render(<ResultView result={makeResult()} />)
 
       const comments = screen.getByText('AI の評価コメント')
@@ -107,7 +107,7 @@ describe('結果画面', () => {
       ).toBeTruthy()
       expect(section('総評').getByText(/要件を概ね満たしています/)).toBeInTheDocument()
       expect(section('良かった点').getByText('大規模現場の経験')).toBeInTheDocument()
-      expect(section('悪かった点').getByText('BIM の経験が少ない')).toBeInTheDocument()
+      expect(section('気になる点').getByText('BIM の経験が少ない')).toBeInTheDocument()
     })
 
     it('Markdown（太字・下線・箇条書き）を描画する（受け入れ基準 7）', () => {
@@ -159,8 +159,8 @@ describe('結果画面', () => {
     it('根拠が出力されなかった項目は、その旨を示す', () => {
       render(<ResultView result={makeResult()} />)
 
-      // 悪かった点の項目は、reason も quotes も空
-      expect(section('悪かった点').getByText('根拠が出力されませんでした')).toBeInTheDocument()
+      // 気になる点の項目は、reason も quotes も空
+      expect(section('気になる点').getByText('根拠が出力されませんでした')).toBeInTheDocument()
     })
   })
 
@@ -283,6 +283,14 @@ describe('結果画面', () => {
       expect(Number(item.style.fontWeight)).toBeGreaterThanOrEqual(500)
     })
 
+    it('最終スコアとマッチ度合いは、それぞれのカードの中央に寄せる', () => {
+      render(<ResultView result={makeResult()} />)
+
+      for (const label of ['最終スコア（AI 算出）', 'マッチ度合い（スキルの充足度）']) {
+        expect(screen.getByText(label).parentElement).toHaveStyle({ textAlign: 'center' })
+      }
+    })
+
     it('number の条件には、年数と必要な最低値を、不明には、確認できなかった旨を添える', () => {
       render(<ResultView result={result} />)
 
@@ -391,7 +399,7 @@ describe('結果画面', () => {
       expect(quote.querySelector('strong, script, u')).toBeNull()
     })
 
-    it('総評・良かった点・悪かった点にも、根拠がある', async () => {
+    it('総評・良かった点・気になる点にも、根拠がある', async () => {
       render(<ResultView result={makeResult()} />)
 
       await userEvent.click(section('良かった点').getByRole('button', { name: '根拠を見る' }))
@@ -403,7 +411,9 @@ describe('結果画面', () => {
   it('注意書きを、結果の末尾に、小さく薄い文字で示す（仕様 5.5）', () => {
     const { container } = render(<ResultView result={makeResult()} />)
 
-    const note = screen.getByText('本結果は判断材料です。最終的な判断は人が行ってください。')
+    const note = screen.getByText(
+      '本結果は AI が判断したものです。AI は誤った判断をすることがあります。最終的な判断は人が行ってください。',
+    )
     expect(note).toHaveClass('ant-typography-secondary')
     expect(note).toHaveStyle({ fontSize: '14px' })
     expect(container.firstElementChild?.lastElementChild).toBe(note)

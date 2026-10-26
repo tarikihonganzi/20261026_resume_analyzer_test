@@ -3,7 +3,7 @@ import type { EvaluationPoint } from '../api/types'
 import { EvidenceView } from './EvidenceView'
 import { MarkdownView } from './MarkdownView'
 
-/** 評価コメントの小見出し（総評・良かった点・悪かった点）。太い文字と下線で、本文と区切る。 */
+/** 評価コメントの小見出し（総評・良かった点・気になる点）。太い文字と下線で、本文と区切る。 */
 function SubHeading({ children }: { children: string }) {
   return (
     <div
@@ -54,7 +54,7 @@ interface CommentsCardProps {
 }
 
 /**
- * AI の評価コメント（総評・良かった点・悪かった点。仕様 5.5）。Markdown で描画し、項目ごとに、閉じた
+ * AI の評価コメント（総評・良かった点・気になる点。仕様 5.5）。Markdown で描画し、項目ごとに、閉じた
  * 「根拠を見る」を付ける。見落とされないよう、条件別の判定より先に置く（仕様 5.5）。
  */
 export function CommentsCard({ summary, strengths, weaknesses }: CommentsCardProps) {
@@ -70,7 +70,7 @@ export function CommentsCard({ summary, strengths, weaknesses }: CommentsCardPro
             <PointColumn title="良かった点" points={strengths} />
           </Col>
           <Col xs={24} md={12}>
-            <PointColumn title="悪かった点" points={weaknesses} />
+            <PointColumn title="気になる点" points={weaknesses} />
           </Col>
         </Row>
       </Flex>
