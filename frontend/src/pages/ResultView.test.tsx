@@ -273,6 +273,16 @@ describe('結果画面', () => {
       expect(item.style.fontWeight).not.toBe('700')
     })
 
+    it('見出しは 22px 以上、条件名は 18px 以上の、やや太い文字にして、読みやすくする', () => {
+      render(<ResultView result={result} />)
+
+      const heading = section('判定').getAllByTestId('column-heading')[0]
+      const item = screen.getByText('必須の達成')
+      expect(Number.parseInt(heading?.style.fontSize ?? '0', 10)).toBeGreaterThanOrEqual(22)
+      expect(Number.parseInt(item.style.fontSize, 10)).toBeGreaterThanOrEqual(18)
+      expect(Number(item.style.fontWeight)).toBeGreaterThanOrEqual(500)
+    })
+
     it('number の条件には、年数と必要な最低値を、不明には、確認できなかった旨を添える', () => {
       render(<ResultView result={result} />)
 
